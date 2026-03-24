@@ -8,6 +8,7 @@
 
 #import "LKHelper.h"
 #import "NSString+Score.h"
+#import "LookinAppInfo.h"
 
 const CGFloat HierarchyMinWidth = 200;
 const CGFloat MeasureViewWidth = 240;
@@ -95,6 +96,18 @@ const CGFloat ZoomSliderMaxValue = 2.8;
         isEnglish = ![language hasPrefix:@"zh"];
     });
     return isEnglish;
+}
+
++ (BOOL)appInfoLooksLikeMacTarget:(LookinAppInfo *)appInfo {
+    if (!appInfo) {
+        return NO;
+    }
+
+    NSString *osDescription = appInfo.osDescription.lowercaseString ?: @"";
+    NSString *deviceDescription = appInfo.deviceDescription.lowercaseString ?: @"";
+    return [osDescription containsString:@"macos"] ||
+        [osDescription containsString:@"os x"] ||
+        [deviceDescription containsString:@"mac"];
 }
 
 + (NSColor *)accentColor {

@@ -64,6 +64,8 @@ CG_INLINE HorizontalMargins HorizontalMarginsMake(CGFloat left, CGFloat right) {
 
 #define IsEnglish [LKHelper isEnglish]
 
+@class LookinAppInfo;
+
 @interface LKHelper : NSObject
 
 + (instancetype)sharedInstance;
@@ -85,6 +87,8 @@ CG_INLINE HorizontalMargins HorizontalMarginsMake(CGFloat left, CGFloat right) {
 + (void)openProjectREADME;
 
 + (BOOL)isEnglish;
+
++ (BOOL)appInfoLooksLikeMacTarget:(LookinAppInfo *)appInfo;
 
 /// macOS 10.14 及以后返回用户的系统主题色，旧版本系统返回蓝色
 + (NSColor *)accentColor;

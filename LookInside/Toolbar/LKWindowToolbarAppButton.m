@@ -83,19 +83,23 @@
         self.deviceLabel.stringValue = [NSString stringWithFormat:@"%@ (%@)", appInfo.deviceDescription, appInfo.osDescription];
         
         NSImage *deviceIcon = nil;
-        switch (appInfo.deviceType) {
-            case LookinAppInfoDeviceSimulator:
-                deviceIcon = NSImageMake(@"icon_simulator_small");
-                break;
-            case LookinAppInfoDeviceIPad:
-                deviceIcon = NSImageMake(@"icon_ipad_small");
-                break;
-            case LookinAppInfoDeviceOthers:
-                deviceIcon = NSImageMake(@"icon_iphone_small");
-                break;
-            default:
-                deviceIcon = NSImageMake(@"icon_simulator_small");
-                break;
+        if ([LKHelper appInfoLooksLikeMacTarget:appInfo]) {
+            deviceIcon = NSImageMake(@"icon_mac_small");
+        } else {
+            switch (appInfo.deviceType) {
+                case LookinAppInfoDeviceSimulator:
+                    deviceIcon = NSImageMake(@"icon_simulator_small");
+                    break;
+                case LookinAppInfoDeviceIPad:
+                    deviceIcon = NSImageMake(@"icon_ipad_small");
+                    break;
+                case LookinAppInfoDeviceOthers:
+                    deviceIcon = NSImageMake(@"icon_iphone_small");
+                    break;
+                default:
+                    deviceIcon = NSImageMake(@"icon_simulator_small");
+                    break;
+            }
         }
         self.deviceImageView.image = deviceIcon;
         

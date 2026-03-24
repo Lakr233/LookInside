@@ -37,7 +37,7 @@
     
     if (self = [super init]) {
         self.dataSource = dataSource;
-        self.isMacTarget = NO;
+        self.isMacTarget = [LKHelper appInfoLooksLikeMacTarget:self.dataSource.rawHierarchyInfo.appInfo];
         self.contentPlane = [SCNPlane geometry];
         self.contentPlane.firstMaterial.doubleSided = YES;
         self.contentPlane.firstMaterial.lightingModelName = SCNLightingModelConstant;

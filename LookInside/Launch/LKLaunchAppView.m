@@ -158,7 +158,9 @@
         self.subtitleLabel.hidden = NO;
         
         self.previewImageView.image = app.appInfo.screenshot;
-        if (app.appInfo.deviceType == LookinAppInfoDeviceSimulator) {
+        if ([LKHelper appInfoLooksLikeMacTarget:app.appInfo]) {
+            self.iconImageView.image = NSImageMake(@"icon_mac_big");
+        } else if (app.appInfo.deviceType == LookinAppInfoDeviceSimulator) {
             self.iconImageView.image = NSImageMake(@"icon_simulator_big");
         } else if (app.appInfo.deviceType == LookinAppInfoDeviceIPad) {
             self.iconImageView.image = NSImageMake(@"icon_ipad_big");

@@ -58,7 +58,7 @@
             if (app) {
                 [self.connectionTipsView endAnimation];
                 self.connectionTipsView.hidden = YES;
-                [self.connectionTipsView setImageByDeviceType:app.appInfo.deviceType];
+                [self.connectionTipsView setImageByAppInfo:app.appInfo];
                 
             } else {
                 if (!self.connectionTipsView.superview) {

@@ -192,7 +192,7 @@ NSString *const LKAppShowConsoleNotificationName = @"LKAppShowConsoleNotificatio
     [RACObserve([LKAppsManager sharedInstance], inspectingApp) subscribeNext:^(LKInspectableApp *app) {
         @strongify(self);
         if (app) {
-            [self.imageSyncTipsView setImageByDeviceType:app.appInfo.deviceType];
+            [self.imageSyncTipsView setImageByAppInfo:app.appInfo];
         }
     }];
     

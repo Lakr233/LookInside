@@ -146,6 +146,14 @@
     }
 }
 
+- (void)setImageByAppInfo:(LookinAppInfo *)appInfo {
+    if ([LKHelper appInfoLooksLikeMacTarget:appInfo]) {
+        self.image = NSImageMake(@"icon_mac_big");
+        return;
+    }
+    [self setImageByDeviceType:appInfo.deviceType];
+}
+
 - (void)setButtonText:(NSString *)buttonText {
     _buttonText = buttonText.copy;
     [self _updateButton];

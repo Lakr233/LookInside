@@ -25,6 +25,7 @@
 @property(nonatomic, strong) NSImage *image;
 
 - (void)setImageByDeviceType:(LookinAppInfoDevice)type;
+- (void)setImageByAppInfo:(LookinAppInfo *)appInfo;
 
 @property(nonatomic, weak) id target;
 
