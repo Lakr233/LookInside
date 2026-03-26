@@ -26,9 +26,29 @@ The CLI returns an array of discovered targets.
 Field notes:
 
 - `targetID`: runtime-discovered opaque identifier used by `inspect`, `hierarchy`, and `export`
-- `transport`: `simulator` or `usb`
+- `transport`: `mac`, `simulator`, or `usb`
 - `port`: transport port used to connect to the embedded server
 - `appInfoIdentifier`: per-run app identifier exposed by LookinServer
+- `bundleIdentifier`: may be empty for some macOS validation hosts or non-bundled targets
+
+Example mac target:
+
+```json
+[
+  {
+    "appInfoIdentifier": 7268387651031256382,
+    "appName": "lookinside-mac-swift-host",
+    "bundleIdentifier": "",
+    "deviceDescription": "Managed's Virtual Machine",
+    "osDescription": "macOS 26.2.0",
+    "port": 47170,
+    "serverReadableVersion": "1.2.8",
+    "serverVersion": 7,
+    "targetID": "mac:47170:7268387651031256382",
+    "transport": "mac"
+  }
+]
+```
 
 ## `inspect --format json`
 
@@ -131,3 +151,5 @@ Archive output writes a serialized LookInside/Lookin document and must use one o
 - `.archive`
 - `.lookin`
 - `.lookinside`
+
+If `export --format auto` is used, the CLI infers JSON vs. archive from the output extension.
