@@ -45,6 +45,16 @@ xcodebuild -project LookInside.xcodeproj -scheme LookInside -configuration Debug
 
 The sync step refreshes the app's mirrored shared sources from [`Sources/`](Sources/) into [`LookInside/DerivedSource`](LookInside/DerivedSource).
 
+### Local Release
+
+To run a signed local release build, bump the app version, notarize it, push the release tag, and publish a GitHub Release from your machine:
+
+```bash
+bash Scripts/build-and-release.sh
+```
+
+By default the script increments the app target's patch version and build number. You can override the version explicitly with `--version x.y.z`.
+
 ## CLI Quick Start
 
 Run `swift run lookinside ...` from the repository root. If you run it from `~` or another directory, SwiftPM will fail with `Could not find Package.swift`.
@@ -148,7 +158,7 @@ Example mac target output:
     "appInfoIdentifier": 7268387651031256382,
     "appName": "lookinside-mac-swift-host",
     "bundleIdentifier": "",
-    "deviceDescription": "Managed’s Virtual Machine",
+    "deviceDescription": "Managed's Virtual Machine",
     "osDescription": "macOS 26.2.0",
     "port": 47170,
     "serverReadableVersion": "1.2.8",
@@ -266,7 +276,7 @@ Run them from the repository root:
 
 ## Codex Skill
 
-This repository also ships a Codex skill for the CLI at [`skills/lookinside-cli`](skills/lookinside-cli).
+This repository also ships a Codex skill for the CLI and host integration workflow at [`skills/lookinside-cli`](skills/lookinside-cli).
 
 Install it into your local Codex skills directory:
 
@@ -287,7 +297,7 @@ Then invoke it in Codex with a prompt such as:
 Use $lookinside-cli to inspect a running app, capture a hierarchy, or export a LookInside archive.
 ```
 
-The skill includes a concise workflow guide plus output-shape reference material for `list`, `inspect`, `hierarchy`, and `export`.
+The skill includes a concise workflow guide, integration notes for embedding or packaging `LookinServer`, and output-shape reference material for `list`, `inspect`, `hierarchy`, and `export`.
 
 ## Project Notes
 
