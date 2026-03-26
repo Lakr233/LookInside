@@ -102,6 +102,9 @@ const CGFloat ZoomSliderMaxValue = 2.8;
     if (!appInfo) {
         return NO;
     }
+    if (appInfo.deviceType == LookinAppInfoDeviceMac) {
+        return YES;
+    }
 
     NSString *osDescription = appInfo.osDescription.lowercaseString ?: @"";
     NSString *deviceDescription = appInfo.deviceDescription.lowercaseString ?: @"";

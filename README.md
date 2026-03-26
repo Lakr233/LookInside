@@ -1,6 +1,6 @@
 # LookInside
 
-LookInside is a macOS UI inspector for debuggable iOS apps.
+LookInside is a macOS UI inspector for debuggable macOS and iOS apps.
 
 This repository packages:
 
@@ -16,7 +16,7 @@ The project is intended to ship without telemetry, crash upload, or automatic up
 
 LookInside can:
 
-- discover inspectable apps running in the iOS Simulator or on USB-connected devices
+- discover inspectable macOS targets, iOS Simulator apps, and USB-connected devices
 - inspect target metadata from a desktop app or the CLI
 - fetch live view hierarchies
 - export hierarchy archives for later analysis
@@ -27,7 +27,7 @@ LookInside can:
 
 - macOS
 - Xcode and command line tools
-- a debuggable iOS app running in Simulator or on a connected device if you want to inspect something live
+- a debuggable macOS or iOS app running locally, in Simulator, or on a connected device if you want to inspect something live
 
 ### Build the CLI
 
@@ -66,20 +66,20 @@ The built binary is the most direct way to use the CLI during local development:
 
 ## Commands
 
-- `lookinside list [--format text|json] [--transport simulator|usb] [--bundle-id <id>] [--name-contains <text>] [--ids-only]`
+- `lookinside list [--format text|json] [--transport mac|simulator|usb] [--bundle-id <id>] [--name-contains <text>] [--ids-only]`
 - `lookinside inspect --target <id> [--format text|json]`
 - `lookinside hierarchy --target <id> [--format tree|json] [--output <path>]`
 - `lookinside export --target <id> --output <path> [--format auto|json|archive]`
 
 ## Common Argument Patterns
 
-List only simulator targets as JSON:
+List only macOS targets as JSON:
 
 ```bash
-.build/debug/lookinside list --format json --transport simulator
+.build/debug/lookinside list --format json --transport mac
 ```
 
-List only target IDs for piping into other tools:
+List only simulator target IDs for piping into other tools:
 
 ```bash
 .build/debug/lookinside list --transport simulator --ids-only
@@ -119,7 +119,7 @@ Export a LookInside archive:
 
 ## Example Output Shapes
 
-`targetID` values are opaque identifiers discovered at runtime. In practice they look like `simulator:47164:1774294178`.
+`targetID` values are opaque identifiers discovered at runtime. In practice they look like `mac:47170:1774294178` or `simulator:47164:1774294178`.
 
 Example `list --format json` output:
 
@@ -136,6 +136,25 @@ Example `list --format json` output:
     "serverVersion": 0,
     "targetID": "simulator:47164:1774294178",
     "transport": "simulator"
+  }
+]
+```
+
+Example mac target output:
+
+```json
+[
+  {
+    "appInfoIdentifier": 7268387651031256382,
+    "appName": "lookinside-mac-swift-host",
+    "bundleIdentifier": "",
+    "deviceDescription": "Managed’s Virtual Machine",
+    "osDescription": "macOS 26.2.0",
+    "port": 47170,
+    "serverReadableVersion": "1.2.8",
+    "serverVersion": 7,
+    "targetID": "mac:47170:7268387651031256382",
+    "transport": "mac"
   }
 ]
 ```
@@ -228,6 +247,22 @@ Example `hierarchy --format json` shape:
 ```
 
 The JSON hierarchy is recursive. Each item includes geometry (`frame`, `bounds`), visibility (`alpha`, `isHidden`), identity (`className`, `memoryAddress`, `oid`), and nested `children`.
+
+## Validation Hosts
+
+SwiftPM builds two embedded macOS validation hosts for local end-to-end checks:
+
+```bash
+swift build -c debug --product lookinside-mac-swift-host
+swift build -c debug --product lookinside-mac-objc-host
+```
+
+Run them from the repository root:
+
+```bash
+.build/debug/lookinside-mac-swift-host
+.build/debug/lookinside-mac-objc-host
+```
 
 ## Codex Skill
 

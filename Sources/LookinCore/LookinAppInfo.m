@@ -12,10 +12,6 @@
 
 #import "LookinAppInfo.h"
 
-#if TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_VISION
-#import "../LookinServer/Server/Others/LKS_MultiplatformAdapter.h"
-#endif
-
 static NSString * const CodingKey_AppIcon = @"1";
 static NSString * const CodingKey_Screenshot = @"2";
 static NSString * const CodingKey_DeviceDescription = @"3";
@@ -26,6 +22,44 @@ static NSString * const CodingKey_ScreenHeight = @"7";
 static NSString * const CodingKey_DeviceType = @"8";
 
 @implementation LookinAppInfo
+
++ (Class)_adapterClass {
+    return NSClassFromString(@"LKS_MultiplatformAdapter");
+}
+
++ (id)_invokeAdapterSelector:(NSString *)selectorName {
+    Class adapterClass = [self _adapterClass];
+    SEL selector = NSSelectorFromString(selectorName);
+    if (!adapterClass || ![adapterClass respondsToSelector:selector]) {
+        return nil;
+    }
+    NSMethodSignature *signature = [adapterClass methodSignatureForSelector:selector];
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = adapterClass;
+    invocation.selector = selector;
+    [invocation invoke];
+
+    const char *returnType = signature.methodReturnType;
+    if (strcmp(returnType, @encode(CGRect)) == 0) {
+        CGRect value = CGRectZero;
+        [invocation getReturnValue:&value];
+        return [NSValue valueWithRect:value];
+    }
+    if (strcmp(returnType, @encode(CGFloat)) == 0 || strcmp(returnType, @encode(double)) == 0) {
+        CGFloat value = 0;
+        [invocation getReturnValue:&value];
+        return @(value);
+    }
+    if (strcmp(returnType, @encode(NSUInteger)) == 0) {
+        NSUInteger value = 0;
+        [invocation getReturnValue:&value];
+        return @(value);
+    }
+
+    __unsafe_unretained id value = nil;
+    [invocation getReturnValue:&value];
+    return value;
+}
 
 - (id)copyWithZone:(NSZone *)zone {
     LookinAppInfo *newAppInfo = [[LookinAppInfo allocWithZone:zone] init];
@@ -39,6 +73,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     newAppInfo.screenHeight = self.screenHeight;
     newAppInfo.screenScale = self.screenScale;
     newAppInfo.appInfoIdentifier = self.appInfoIdentifier;
+    newAppInfo.cachedTimestamp = self.cachedTimestamp;
     return newAppInfo;
 }
 
@@ -132,7 +167,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     return NO;
 }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
 
 + (LookinAppInfo *)currentInfoWithScreenshot:(BOOL)hasScreenshot icon:(BOOL)hasIcon localIdentifiers:(NSArray<NSNumber *> *)localIdentifiers {
     NSInteger selfIdentifier = [self getAppInfoIdentifier];
@@ -144,6 +179,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     }
     
     LookinAppInfo *info = [[LookinAppInfo alloc] init];
+    info.serverVersion = LOOKIN_SERVER_VERSION;
     info.serverReadableVersion = LOOKIN_SERVER_READABLE_VERSION;
 #ifdef LOOKIN_SERVER_SWIFT_ENABLED
     info.swiftEnabledInLookinServer = 1;
@@ -152,8 +188,14 @@ static NSString * const CodingKey_DeviceType = @"8";
 #endif
     info.appInfoIdentifier = selfIdentifier;
     info.appName = [self appName];
-    info.deviceDescription = [UIDevice currentDevice].name;
     info.appBundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+#if TARGET_OS_MAC
+    info.deviceDescription = [self _invokeAdapterSelector:@"deviceDescription"] ?: @"Mac";
+    info.deviceType = LookinAppInfoDeviceMac;
+    info.osDescription = [self _invokeAdapterSelector:@"operatingSystemDescription"] ?: @"macOS";
+    info.osMainVersion = [[self _invokeAdapterSelector:@"operatingSystemMainVersion"] unsignedIntegerValue];
+#else
+    info.deviceDescription = [UIDevice currentDevice].name;
     if ([self isSimulator]) {
         info.deviceType = LookinAppInfoDeviceSimulator;
     } else if ([LKS_MultiplatformAdapter isiPad]) {
@@ -161,16 +203,21 @@ static NSString * const CodingKey_DeviceType = @"8";
     } else {
         info.deviceType = LookinAppInfoDeviceOthers;
     }
-    
     info.osDescription = [UIDevice currentDevice].systemVersion;
-    
     NSString *mainVersionStr = [[[UIDevice currentDevice] systemVersion] componentsSeparatedByString:@"."].firstObject;
     info.osMainVersion = [mainVersionStr integerValue];
+#endif
     
-    CGSize screenSize = [LKS_MultiplatformAdapter mainScreenBounds].size;
+    CGRect screenBounds = CGRectZero;
+#if TARGET_OS_MAC
+    screenBounds = [(NSValue *)[self _invokeAdapterSelector:@"mainScreenBounds"] rectValue];
+#else
+    screenBounds = [(NSValue *)[self _invokeAdapterSelector:@"mainScreenBounds"] CGRectValue];
+#endif
+    CGSize screenSize = screenBounds.size;
     info.screenWidth = screenSize.width;
     info.screenHeight = screenSize.height;
-    info.screenScale = [LKS_MultiplatformAdapter mainScreenScale];
+    info.screenScale = [[self _invokeAdapterSelector:@"mainScreenScale"] doubleValue];
 
     if (hasScreenshot) {
         info.screenshot = [self screenshotImage];
@@ -186,11 +233,27 @@ static NSString * const CodingKey_DeviceType = @"8";
     NSDictionary *info = [[NSBundle mainBundle] infoDictionary];
     NSString *displayName = [info objectForKey:@"CFBundleDisplayName"];
     NSString *name = [info objectForKey:@"CFBundleName"];
-    return displayName.length ? displayName : name;
+    if (displayName.length) {
+        return displayName;
+    }
+    if (name.length) {
+        return name;
+    }
+    return NSProcessInfo.processInfo.processName;
 }
 
-+ (UIImage *)appIcon {
++ (LookinImage *)appIcon {
 #if TARGET_OS_TV
+    return nil;
+#elif TARGET_OS_MAC
+    NSImage *icon = [NSApp applicationIconImage];
+    if (icon) {
+        return icon;
+    }
+    NSImage *bundleIcon = [NSWorkspace.sharedWorkspace iconForFile:NSBundle.mainBundle.bundlePath];
+    if (bundleIcon) {
+        return bundleIcon;
+    }
     return nil;
 #else
     NSString *imageName;
@@ -211,7 +274,27 @@ static NSString * const CodingKey_DeviceType = @"8";
 #endif
 }
 
-+ (UIImage *)screenshotImage {
++ (LookinImage *)screenshotImage {
+#if TARGET_OS_MAC
+    NSWindow *window = [self _invokeAdapterSelector:@"keyWindow"];
+    if (!window) {
+        return nil;
+    }
+    Class adapterClass = [self _adapterClass];
+    SEL selector = NSSelectorFromString(@"screenshotForWindow:");
+    if (!adapterClass || ![adapterClass respondsToSelector:selector]) {
+        return nil;
+    }
+    NSMethodSignature *signature = [adapterClass methodSignatureForSelector:selector];
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = adapterClass;
+    invocation.selector = selector;
+    [invocation setArgument:&window atIndex:2];
+    [invocation invoke];
+    __unsafe_unretained NSImage *image = nil;
+    [invocation getReturnValue:&image];
+    return image;
+#else
     UIWindow *window = [LKS_MultiplatformAdapter keyWindow];
     if (!window) {
         return nil;
@@ -229,6 +312,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     UIGraphicsEndImageContext();
     
     return image;
+#endif
 }
 
 + (BOOL)isSimulator {
@@ -244,7 +328,13 @@ static NSString * const CodingKey_DeviceType = @"8";
     static dispatch_once_t onceToken;
     static NSInteger identifier = 0;
     dispatch_once(&onceToken,^{
-        identifier = [[NSDate date] timeIntervalSince1970];
+        uint64_t nowMicros = (uint64_t)([[NSDate date] timeIntervalSince1970] * 1000000.0);
+        uint64_t processID = (uint64_t)NSProcessInfo.processInfo.processIdentifier;
+        uint64_t randomBits = arc4random();
+        identifier = (NSInteger)((nowMicros << 12) ^ (processID << 1) ^ randomBits);
+        if (identifier <= 0) {
+            identifier = (NSInteger)(processID ^ (randomBits ?: 1));
+        }
     });
     return identifier;
 }

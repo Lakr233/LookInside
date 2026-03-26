@@ -16,15 +16,36 @@
 #import "NSArray+Lookin.h"
 #import "NSString+Lookin.h"
 
-#if TARGET_OS_IPHONE
-#import "../LookinServer/Server/Others/LKS_HierarchyDisplayItemsMaker.h"
-#import "../LookinServer/Server/Others/LKSConfigManager.h"
-#import "../LookinServer/Server/Others/LKS_CustomAttrSetterManager.h"
-#endif
-
 @implementation LookinHierarchyInfo
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
+
++ (NSArray<LookinDisplayItem *> *)_displayItemsWithScreenshots:(BOOL)hasScreenshots
+                                                     attrList:(BOOL)hasAttrList
+                                              lowImageQuality:(BOOL)lowQuality
+                                               readCustomInfo:(BOOL)readCustomInfo
+                                             saveCustomSetter:(BOOL)saveCustomSetter {
+    Class makerClass = NSClassFromString(@"LKS_HierarchyDisplayItemsMaker");
+    SEL selector = NSSelectorFromString(@"itemsWithScreenshots:attrList:lowImageQuality:readCustomInfo:saveCustomSetter:");
+    if (!makerClass || ![makerClass respondsToSelector:selector]) {
+        return @[];
+    }
+
+    NSMethodSignature *signature = [makerClass methodSignatureForSelector:selector];
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = makerClass;
+    invocation.selector = selector;
+    [invocation setArgument:&hasScreenshots atIndex:2];
+    [invocation setArgument:&hasAttrList atIndex:3];
+    [invocation setArgument:&lowQuality atIndex:4];
+    [invocation setArgument:&readCustomInfo atIndex:5];
+    [invocation setArgument:&saveCustomSetter atIndex:6];
+    [invocation invoke];
+
+    __unsafe_unretained NSArray<LookinDisplayItem *> *items = nil;
+    [invocation getReturnValue:&items];
+    return items ?: @[];
+}
 
 + (instancetype)staticInfoWithLookinVersion:(NSString *)version {
     BOOL readCustomInfo = NO;
@@ -33,24 +54,22 @@
         readCustomInfo = YES;
     }
     
-    [[LKS_CustomAttrSetterManager sharedInstance] removeAll];
-    
     LookinHierarchyInfo *info = [LookinHierarchyInfo new];
     info.serverVersion = LOOKIN_SERVER_VERSION;
-    info.displayItems = [LKS_HierarchyDisplayItemsMaker itemsWithScreenshots:NO attrList:NO lowImageQuality:NO readCustomInfo:readCustomInfo saveCustomSetter:YES];
+    info.displayItems = [self _displayItemsWithScreenshots:NO attrList:NO lowImageQuality:NO readCustomInfo:readCustomInfo saveCustomSetter:YES];
     info.appInfo = [LookinAppInfo currentInfoWithScreenshot:NO icon:YES localIdentifiers:nil];
-    info.collapsedClassList = [LKSConfigManager collapsedClassList];
-    info.colorAlias = [LKSConfigManager colorAlias];
+    info.collapsedClassList = @[];
+    info.colorAlias = @{};
     return info;
 }
 
 + (instancetype)exportedInfo {
     LookinHierarchyInfo *info = [LookinHierarchyInfo new];
     info.serverVersion = LOOKIN_SERVER_VERSION;
-    info.displayItems = [LKS_HierarchyDisplayItemsMaker itemsWithScreenshots:YES attrList:YES lowImageQuality:YES readCustomInfo:YES saveCustomSetter:NO];
+    info.displayItems = [self _displayItemsWithScreenshots:YES attrList:YES lowImageQuality:YES readCustomInfo:YES saveCustomSetter:NO];
     info.appInfo = [LookinAppInfo currentInfoWithScreenshot:NO icon:YES localIdentifiers:nil];
-    info.collapsedClassList = [LKSConfigManager collapsedClassList];
-    info.colorAlias = [LKSConfigManager colorAlias];
+    info.collapsedClassList = @[];
+    info.colorAlias = @{};
     return info;
 }
 

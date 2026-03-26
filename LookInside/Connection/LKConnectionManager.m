@@ -60,6 +60,22 @@ static NSIndexSet * PushFrameTypeList(void) {
 
 @end
 
+@interface LKMacConnectionPort : NSObject
+
+@property(nonatomic, assign) int portNumber;
+
+@property(nonatomic, strong) Lookin_PTChannel *connectedChannel;
+
+@end
+
+@implementation LKMacConnectionPort
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"number:%@", @(self.portNumber)];
+}
+
+@end
+
 @interface LKUSBConnectionPort : NSObject
 
 @property(nonatomic, assign) int portNumber;
@@ -81,6 +97,7 @@ static NSIndexSet * PushFrameTypeList(void) {
 @interface LKConnectionManager () <Lookin_PTChannelDelegate>
 
 @property(nonatomic, copy) NSArray<LKSimulatorConnectionPort *> *allSimulatorPorts;
+@property(nonatomic, copy) NSArray<LKMacConnectionPort *> *allMacPorts;
 @property(nonatomic, strong) NSMutableArray<LKUSBConnectionPort *> *allUSBPorts;
 
 @end
@@ -114,6 +131,15 @@ static NSIndexSet * PushFrameTypeList(void) {
             }
             ports;
         });
+        self.allMacPorts = ({
+            NSMutableArray<LKMacConnectionPort *> *ports = [NSMutableArray array];
+            for (int number = LookinMacIPv4PortNumberStart; number <= LookinMacIPv4PortNumberEnd; number++) {
+                LKMacConnectionPort *port = [LKMacConnectionPort new];
+                port.portNumber = number;
+                [ports addObject:port];
+            }
+            ports;
+        });
         self.allUSBPorts = [NSMutableArray array];
         
         [self _startListeningForUSBDevices];
@@ -127,9 +153,10 @@ static NSIndexSet * PushFrameTypeList(void) {
 
 - (RACSignal *)tryToConnectAllPorts {
     return [[RACSignal zip:@[[self _tryToConnectAllSimulatorPorts],
+                            [self _tryToConnectAllMacPorts],
                             [self _tryToConnectAllUSBDevices]]] map:^id _Nullable(RACTuple * _Nullable value) {
-        RACTupleUnpack(NSArray<Lookin_PTChannel *> *simulatorChannels, NSArray<Lookin_PTChannel *> *usbChannels) = value;
-        NSArray *connectedChannels = [simulatorChannels arrayByAddingObjectsFromArray:usbChannels];
+        RACTupleUnpack(NSArray<Lookin_PTChannel *> *simulatorChannels, NSArray<Lookin_PTChannel *> *macChannels, NSArray<Lookin_PTChannel *> *usbChannels) = value;
+        NSArray *connectedChannels = [[simulatorChannels arrayByAddingObjectsFromArray:macChannels] arrayByAddingObjectsFromArray:usbChannels];
         return connectedChannels;
     }];
 }
@@ -138,6 +165,20 @@ static NSIndexSet * PushFrameTypeList(void) {
 - (RACSignal *)_tryToConnectAllSimulatorPorts {
     NSArray<RACSignal *> *tries = [self.allSimulatorPorts lookin_map:^id(NSUInteger idx, LKSimulatorConnectionPort *port) {
         return [[self _connectToSimulatorPort:port] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
+            return [RACSignal return:nil];
+        }];
+    }];
+    return [[RACSignal zip:tries] map:^id _Nullable(RACTuple * _Nullable value) {
+        NSArray<Lookin_PTChannel *> *connectedChannels = [value.allObjects lookin_filter:^BOOL(id obj) {
+            return (obj != [NSNull null]);
+        }];
+        return connectedChannels;
+    }];
+}
+
+- (RACSignal *)_tryToConnectAllMacPorts {
+    NSArray<RACSignal *> *tries = [self.allMacPorts lookin_map:^id(NSUInteger idx, LKMacConnectionPort *port) {
+        return [[self _connectToMacPort:port] catch:^RACSignal * _Nonnull(NSError * _Nonnull error) {
             return [RACSignal return:nil];
         }];
     }];
@@ -168,6 +209,29 @@ static NSIndexSet * PushFrameTypeList(void) {
                 } else {
                     // 意外
                 }
+                [localChannel close];
+                [subscriber sendError:error];
+            } else {
+                port.connectedChannel = localChannel;
+                [subscriber sendNext:localChannel];
+                [subscriber sendCompleted];
+            }
+        }];
+        return nil;
+    }];
+}
+
+- (RACSignal *)_connectToMacPort:(LKMacConnectionPort *)port {
+    return [RACSignal createSignal:^RACDisposable * _Nullable(id<RACSubscriber>  _Nonnull subscriber) {
+        if (port.connectedChannel) {
+            [subscriber sendNext:port.connectedChannel];
+            [subscriber sendCompleted];
+            return nil;
+        }
+
+        Lookin_PTChannel *localChannel = [Lookin_PTChannel channelWithDelegate:self];
+        [localChannel connectToPort:port.portNumber IPv4Address:INADDR_LOOPBACK callback:^(NSError *error, Lookin_PTAddress *address) {
+            if (error) {
                 [localChannel close];
                 [subscriber sendError:error];
             } else {
@@ -287,20 +351,20 @@ static NSIndexSet * PushFrameTypeList(void) {
     int serverVersion = pingResponse.lookinServerVersion;
     if (serverVersion == -1 || serverVersion == 100) {
         // 说明用的还是旧版本的内部版本 LookinServer，这里兼容一下
-        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooLow userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Fail to inspect this iOS app due to a version problem.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Please update the embedded LookinServer integration in your target app to a newer version from this repository.", nil)}];
+        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooLow userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Fail to inspect this target app due to a version problem.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Please update the embedded LookinServer integration in your target app to a newer version from this repository.", nil)}];
         return versionErr;
     }
     
     if (serverVersion > LOOKIN_SUPPORTED_SERVER_MAX) {
         // server 版本过高，需要升级 client
-        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooHigh userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"LookInside app version is too low.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Target iOS app is linked with a higher version LookinServer.framework. Update this community build from the current repository source.", nil)}];
+        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooHigh userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"LookInside app version is too low.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Target app is linked with a higher version LookinServer.framework. Update this community build from the current repository source.", nil)}];
         return versionErr;
         
     }
     
     if (serverVersion < LOOKIN_SUPPORTED_SERVER_MIN) {
         // server 版本过低，需要升级 server
-        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooLow userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Fail to inspect this iOS app due to a version problem.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Please update the embedded LookinServer integration in your target app to a newer version from this repository.", nil)}];
+        NSError *versionErr = [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ServerVersionTooLow userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Fail to inspect this target app due to a version problem.", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Please update the embedded LookinServer integration in your target app to a newer version from this repository.", nil)}];
         return versionErr;
     }
     
@@ -533,6 +597,11 @@ static NSIndexSet * PushFrameTypeList(void) {
 - (void)ioFrameChannel:(Lookin_PTChannel*)channel didEndWithError:(NSError*)error {
     // iOS 客户端断开
     [self.allSimulatorPorts enumerateObjectsUsingBlock:^(LKSimulatorConnectionPort * _Nonnull port, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (port.connectedChannel == channel) {
+            port.connectedChannel = nil;
+        }
+    }];
+    [self.allMacPorts enumerateObjectsUsingBlock:^(LKMacConnectionPort * _Nonnull port, NSUInteger idx, BOOL * _Nonnull stop) {
         if (port.connectedChannel == channel) {
             port.connectedChannel = nil;
         }

@@ -41,6 +41,14 @@ let package = Package(
             name: "lookinside",
             targets: ["LookInsideCLI"]
         ),
+        .executable(
+            name: "lookinside-mac-swift-host",
+            targets: ["LookInsideMacSwiftHost"]
+        ),
+        .executable(
+            name: "lookinside-mac-objc-host",
+            targets: ["LookInsideMacObjCHost"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0"),
@@ -113,6 +121,26 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Sources/LookInsideCLI"
+        ),
+        .executableTarget(
+            name: "LookInsideMacSwiftHost",
+            dependencies: ["LookinServer"],
+            path: "Samples/MacSwiftHost",
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+            ]
+        ),
+        .executableTarget(
+            name: "LookInsideMacObjCHost",
+            dependencies: ["LookinServer"],
+            path: "Samples/MacObjCHost",
+            publicHeadersPath: "include",
+            cSettings: [
+                .headerSearchPath("."),
+            ],
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+            ]
         ),
     ]
 )

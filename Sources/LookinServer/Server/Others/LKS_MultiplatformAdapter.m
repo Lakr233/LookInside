@@ -1,4 +1,4 @@
-#if defined(SHOULD_COMPILE_LOOKIN_SERVER) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_VISION)
+#if defined(SHOULD_COMPILE_LOOKIN_SERVER) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_VISION || TARGET_OS_MAC)
 //
 //  LKS_MultiplatformAdapter.m
 //  
@@ -7,9 +7,82 @@
 //
 
 #import "LKS_MultiplatformAdapter.h"
+#if TARGET_OS_MAC
+#import <AppKit/AppKit.h>
+#else
 #import <UIKit/UIKit.h>
+#endif
 
 @implementation LKS_MultiplatformAdapter
+
+#if TARGET_OS_MAC
+
++ (NSWindow *)keyWindow {
+    NSWindow *keyWindow = NSApplication.sharedApplication.keyWindow;
+    if (keyWindow) {
+        return keyWindow;
+    }
+    return [self allWindows].firstObject;
+}
+
++ (NSArray<NSWindow *> *)allWindows {
+    NSArray<NSWindow *> *windows = NSApplication.sharedApplication.orderedWindows ?: @[];
+    return [windows filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSWindow *window, NSDictionary<NSString *, id> *bindings) {
+        return window.contentView != nil;
+    }]];
+}
+
++ (NSImage *)screenshotForWindow:(NSWindow *)window {
+    if (!window || !window.contentView) {
+        return nil;
+    }
+
+    NSRect bounds = window.contentView.bounds;
+    if (bounds.size.width <= 0 || bounds.size.height <= 0) {
+        return nil;
+    }
+
+    NSBitmapImageRep *bitmapRep = [window.contentView bitmapImageRepForCachingDisplayInRect:bounds];
+    if (!bitmapRep) {
+        return nil;
+    }
+    [window.contentView cacheDisplayInRect:bounds toBitmapImageRep:bitmapRep];
+    NSImage *image = [[NSImage alloc] initWithSize:bounds.size];
+    [image addRepresentation:bitmapRep];
+    return image;
+}
+
++ (CGRect)mainScreenBounds {
+    return NSScreen.mainScreen.frame;
+}
+
++ (CGFloat)mainScreenScale {
+    return NSScreen.mainScreen.backingScaleFactor ?: 1;
+}
+
++ (NSString *)deviceDescription {
+    NSString *name = NSHost.currentHost.localizedName;
+    if (name.length) {
+        return name;
+    }
+    return @"Mac";
+}
+
++ (NSString *)operatingSystemDescription {
+    NSProcessInfo *info = NSProcessInfo.processInfo;
+    NSOperatingSystemVersion version = info.operatingSystemVersion;
+    return [NSString stringWithFormat:@"macOS %ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion];
+}
+
++ (NSUInteger)operatingSystemMainVersion {
+    return NSProcessInfo.processInfo.operatingSystemVersion.majorVersion;
+}
+
++ (BOOL)isiPad {
+    return NO;
+}
+
+#else
 
 + (BOOL)isiPad {
     static BOOL s_isiPad = NO;
@@ -37,6 +110,19 @@
 #else
     return [UIScreen mainScreen].scale;
 #endif
+}
+
++ (NSString *)deviceDescription {
+    return UIDevice.currentDevice.name ?: @"";
+}
+
++ (NSString *)operatingSystemDescription {
+    return UIDevice.currentDevice.systemVersion ?: @"";
+}
+
++ (NSUInteger)operatingSystemMainVersion {
+    NSString *mainVersionStr = [UIDevice.currentDevice.systemVersion componentsSeparatedByString:@"."].firstObject;
+    return (NSUInteger)mainVersionStr.integerValue;
 }
 
 #if TARGET_OS_VISION
@@ -86,6 +172,8 @@
     return [[UIApplication sharedApplication].windows copy];
 #endif
 }
+
+#endif
 
 @end
 

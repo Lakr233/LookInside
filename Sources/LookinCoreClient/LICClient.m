@@ -250,6 +250,9 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
 @end
 
 @interface LICClient ()
+- (LICChannelSession *)connectToLoopbackPort:(NSInteger)port timeout:(NSTimeInterval)timeout retries:(NSInteger)retries retryDelay:(NSTimeInterval)retryDelay error:(NSError **)error;
+- (nullable LICDiscoveredTarget *)directTargetForTransport:(NSString *)transport port:(NSInteger)port deviceID:(nullable NSString *)deviceID appInfoIdentifier:(NSInteger)appInfoIdentifier error:(NSError **)error;
+- (BOOL)parseTargetID:(NSString *)targetID transport:(NSString * __autoreleasing *)transport port:(NSInteger *)port deviceID:(NSString * __autoreleasing *)deviceID appInfoIdentifier:(NSInteger *)appInfoIdentifier;
 @end
 
 @implementation LICClient
@@ -257,6 +260,7 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
 - (NSArray<LICDiscoveredTarget *> *)listTargets:(NSError **)error {
     NSMutableArray<LICDiscoveredTarget *> *targets = [NSMutableArray array];
     [targets addObjectsFromArray:[self simulatorTargets]];
+    [targets addObjectsFromArray:[self macTargets]];
     [targets addObjectsFromArray:[self usbTargets]];
     [targets sortUsingComparator:^NSComparisonResult(LICDiscoveredTarget *lhs, LICDiscoveredTarget *rhs) {
         NSComparisonResult transportCompare = [lhs.transport compare:rhs.transport];
@@ -337,11 +341,28 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
     NSMutableArray<LICDiscoveredTarget *> *targets = [NSMutableArray array];
     for (NSInteger port = LookinSimulatorIPv4PortNumberStart; port <= LookinSimulatorIPv4PortNumberEnd; port++) {
         NSError *error = nil;
-        LICChannelSession *session = [self connectToSimulatorPort:port error:&error];
+        LICChannelSession *session = [self connectToLoopbackPort:port timeout:0.6 retries:2 retryDelay:0.1 error:&error];
         if (!session) {
             continue;
         }
         LICDiscoveredTarget *target = [self targetFromSession:session transport:@"simulator" port:port deviceID:nil error:nil];
+        [session close];
+        if (target) {
+            [targets addObject:target];
+        }
+    }
+    return targets;
+}
+
+- (NSArray<LICDiscoveredTarget *> *)macTargets {
+    NSMutableArray<LICDiscoveredTarget *> *targets = [NSMutableArray array];
+    for (NSInteger port = LookinMacIPv4PortNumberStart; port <= LookinMacIPv4PortNumberEnd; port++) {
+        NSError *error = nil;
+        LICChannelSession *session = [self connectToLoopbackPort:port timeout:0.6 retries:2 retryDelay:0.1 error:&error];
+        if (!session) {
+            continue;
+        }
+        LICDiscoveredTarget *target = [self targetFromSession:session transport:@"mac" port:port deviceID:nil error:nil];
         [session close];
         if (target) {
             [targets addObject:target];
@@ -386,7 +407,28 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
     return deviceIDs.array;
 }
 
-- (LICChannelSession *)connectToSimulatorPort:(NSInteger)port error:(NSError **)error {
+- (LICChannelSession *)connectToLoopbackPort:(NSInteger)port timeout:(NSTimeInterval)timeout error:(NSError **)error {
+    return [self connectToLoopbackPort:port timeout:timeout retries:0 retryDelay:0 error:error];
+}
+
+- (LICChannelSession *)connectToLoopbackPort:(NSInteger)port timeout:(NSTimeInterval)timeout retries:(NSInteger)retries retryDelay:(NSTimeInterval)retryDelay error:(NSError **)error {
+    NSError *latestError = nil;
+    for (NSInteger attempt = 0; attempt <= retries; attempt++) {
+        LICChannelSession *session = [self _connectToLoopbackPortOnce:port timeout:timeout error:&latestError];
+        if (session) {
+            return session;
+        }
+        if (attempt < retries) {
+            [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:retryDelay]];
+        }
+    }
+    if (error) {
+        *error = latestError;
+    }
+    return nil;
+}
+
+- (LICChannelSession *)_connectToLoopbackPortOnce:(NSInteger)port timeout:(NSTimeInterval)timeout error:(NSError **)error {
     LICChannelSession *session = [[LICChannelSession alloc] init];
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block NSError *callbackError = nil;
@@ -394,11 +436,11 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
         callbackError = connectError;
         dispatch_semaphore_signal(semaphore);
     }];
-    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)));
+    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)));
     if (waitResult != 0) {
         [session close];
         if (error) {
-            *error = [NSError errorWithDomain:LICErrorDomain code:LICErrorCodeTimeout userInfo:@{NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Timed out connecting to simulator port %@", @(port)]}];
+            *error = [NSError errorWithDomain:LICErrorDomain code:LICErrorCodeTimeout userInfo:@{NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Timed out connecting to loopback port %@", @(port)]}];
         }
         return nil;
     }
@@ -410,6 +452,10 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
         return nil;
     }
     return session;
+}
+
+- (LICChannelSession *)connectToSimulatorPort:(NSInteger)port error:(NSError **)error {
+    return [self connectToLoopbackPort:port timeout:0.6 error:error];
 }
 
 - (LICChannelSession *)connectToUSBDeviceID:(NSNumber *)deviceID port:(NSInteger)port error:(NSError **)error {
@@ -463,7 +509,7 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
     target.serverReadableVersion = appInfo.serverReadableVersion ?: @"";
     target.appInfoIdentifier = appInfo.appInfoIdentifier;
     NSMutableArray<NSString *> *pieces = [NSMutableArray arrayWithObject:transport];
-    if (deviceID.length) {
+    if (deviceID.length && ![transport isEqualToString:@"mac"]) {
         [pieces addObject:deviceID];
     }
     [pieces addObject:[NSString stringWithFormat:@"%@", @(port)]];
@@ -479,6 +525,34 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
             return target;
         }
     }
+
+    NSString *transport = nil;
+    NSString *deviceID = nil;
+    NSInteger port = 0;
+    NSInteger appInfoIdentifier = 0;
+    if ([self parseTargetID:targetID transport:&transport port:&port deviceID:&deviceID appInfoIdentifier:&appInfoIdentifier]) {
+        for (LICDiscoveredTarget *target in targets) {
+            if (![target.transport isEqualToString:transport]) {
+                continue;
+            }
+            if (target.appInfoIdentifier != appInfoIdentifier) {
+                continue;
+            }
+            if (target.port != port) {
+                continue;
+            }
+            if (deviceID.length > 0 && ![target.deviceID isEqualToString:deviceID]) {
+                continue;
+            }
+            return target;
+        }
+
+        LICDiscoveredTarget *directTarget = [self directTargetForTransport:transport port:port deviceID:deviceID appInfoIdentifier:appInfoIdentifier error:nil];
+        if (directTarget) {
+            return directTarget;
+        }
+    }
+
     NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
     if (targets.count == 0) {
         userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Target '%@' was not found. No inspectable apps are currently available.", targetID];
@@ -502,7 +576,7 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
     if ([target.transport isEqualToString:@"usb"]) {
         session = [self connectToUSBDeviceID:@(target.deviceID.integerValue) port:target.port error:error];
     } else {
-        session = [self connectToSimulatorPort:target.port error:error];
+        session = [self connectToLoopbackPort:target.port timeout:0.8 retries:3 retryDelay:0.1 error:error];
     }
     if (!session) {
         return nil;
@@ -521,6 +595,73 @@ typedef NS_ENUM(NSInteger, LICErrorCode) {
         return nil;
     }
     return (LookinHierarchyInfo *)response.data;
+}
+
+- (nullable LICDiscoveredTarget *)directTargetForTransport:(NSString *)transport port:(NSInteger)port deviceID:(nullable NSString *)deviceID appInfoIdentifier:(NSInteger)appInfoIdentifier error:(NSError **)error {
+    LICChannelSession *session = nil;
+    if ([transport isEqualToString:@"usb"]) {
+        session = [self connectToUSBDeviceID:@(deviceID.integerValue) port:port error:error];
+    } else {
+        session = [self connectToLoopbackPort:port timeout:0.8 retries:3 retryDelay:0.1 error:error];
+    }
+    if (!session) {
+        return nil;
+    }
+
+    LICDiscoveredTarget *target = [self targetFromSession:session transport:transport port:port deviceID:deviceID error:error];
+    [session close];
+    if (!target) {
+        return nil;
+    }
+    if (target.appInfoIdentifier != appInfoIdentifier) {
+        return nil;
+    }
+    return target;
+}
+
+- (BOOL)parseTargetID:(NSString *)targetID transport:(NSString * __autoreleasing *)transport port:(NSInteger *)port deviceID:(NSString * __autoreleasing *)deviceID appInfoIdentifier:(NSInteger *)appInfoIdentifier {
+    NSArray<NSString *> *pieces = [targetID componentsSeparatedByString:@":"];
+    if (pieces.count < 3) {
+        return NO;
+    }
+
+    NSString *resolvedTransport = pieces.firstObject ?: @"";
+    NSString *resolvedDeviceID = nil;
+    NSInteger resolvedPort = 0;
+    NSInteger resolvedAppInfoIdentifier = 0;
+
+    if ([resolvedTransport isEqualToString:@"usb"]) {
+        if (pieces.count != 4) {
+            return NO;
+        }
+        resolvedDeviceID = pieces[1];
+        resolvedPort = pieces[2].integerValue;
+        resolvedAppInfoIdentifier = pieces[3].integerValue;
+    } else {
+        if (pieces.count != 3) {
+            return NO;
+        }
+        resolvedPort = pieces[1].integerValue;
+        resolvedAppInfoIdentifier = pieces[2].integerValue;
+    }
+
+    if (resolvedPort <= 0 || resolvedAppInfoIdentifier <= 0) {
+        return NO;
+    }
+
+    if (transport) {
+        *transport = resolvedTransport;
+    }
+    if (port) {
+        *port = resolvedPort;
+    }
+    if (deviceID) {
+        *deviceID = resolvedDeviceID;
+    }
+    if (appInfoIdentifier) {
+        *appInfoIdentifier = resolvedAppInfoIdentifier;
+    }
+    return YES;
 }
 
 - (NSDictionary *)hierarchyJSONObject:(LookinHierarchyInfo *)hierarchyInfo {

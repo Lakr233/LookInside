@@ -1,4 +1,4 @@
-#if defined(SHOULD_COMPILE_LOOKIN_SERVER) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_VISION)
+#if defined(SHOULD_COMPILE_LOOKIN_SERVER) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_VISION || TARGET_OS_MAC)
 //
 //  LookinServer.m
 //  LookinServer
@@ -10,10 +10,8 @@
 #import "LKS_ConnectionManager.h"
 #import "Lookin_PTChannel.h"
 #import "LKS_RequestHandler.h"
+#import "LookinDefines.h"
 #import "LookinConnectionResponseAttachment.h"
-#import "LKS_ExportManager.h"
-#import "LookinServerDefines.h"
-#import "LKS_TraceManager.h"
 #import "LKS_MultiplatformAdapter.h"
 
 NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNotificationName";
@@ -45,32 +43,50 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 - (instancetype)init {
     if (self = [super init]) {
         NSLog(@"LookinServer - Will launch. Framework version: %@", LOOKIN_SERVER_READABLE_VERSION);
-        
+
+#if TARGET_OS_MAC
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleApplicationDidBecomeActive) name:NSApplicationDidBecomeActiveNotification object:nil];
+#else
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleApplicationDidBecomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleWillResignActiveNotification) name:UIApplicationWillResignActiveNotification object:nil];
-        
+#endif
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleLocalInspect:) name:@"Lookin_2D" object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleLocalInspect:) name:@"Lookin_3D" object:nil];
+#if !TARGET_OS_MAC
         [[NSNotificationCenter defaultCenter] addObserverForName:@"Lookin_Export" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
             [[LKS_ExportManager sharedInstance] exportAndShare];
         }];
         [[NSNotificationCenter defaultCenter] addObserverForName:@"Lookin_RelationSearch" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
             [[LKS_TraceManager sharedInstance] addSearchTarger:note.object];
         }];
+#endif
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleGetLookinInfo:) name:@"GetLookinInfo" object:nil];
         
         self.requestHandler = [LKS_RequestHandler new];
+        self.preferredListenPort = LookinUSBDeviceIPv4PortNumberStart;
+#if TARGET_OS_MAC
+        self.preferredListenPort = LookinMacIPv4PortNumberStart;
+        self.applicationIsActive = YES;
+        [self searchPortToListenIfNoConnection];
+#elif TARGET_OS_SIMULATOR
+        self.preferredListenPort = LookinSimulatorIPv4PortNumberStart;
+#endif
     }
     return self;
 }
 
 - (void)_handleWillResignActiveNotification {
+#if TARGET_OS_MAC
+    // macOS targets remain inspectable even when they are not the frontmost app.
+    return;
+#else
     self.applicationIsActive = NO;
     
     if (self.peerChannel_ && ![self.peerChannel_ isConnected]) {
         [self.peerChannel_ close];
         self.peerChannel_ = nil;
     }
+#endif
 }
 
 - (void)_handleApplicationDidBecomeActive {
@@ -79,22 +95,33 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 }
 
 - (void)searchPortToListenIfNoConnection {
-    if ([self.peerChannel_ isConnected]) {
-        NSLog(@"LookinServer - Abort to search ports. Already has connected channel.");
+    if (self.peerChannel_ && (self.peerChannel_.isConnected || self.peerChannel_.isListening)) {
+        NSLog(@"LookinServer - Abort to search ports. Already has active channel %@.", self.peerChannel_.debugTag);
         return;
     }
     NSLog(@"LookinServer - Searching port to listen...");
     [self.peerChannel_ close];
     self.peerChannel_ = nil;
     
-    if ([self isiOSAppOnMac]) {
-        [self _tryToListenOnPortFrom:LookinSimulatorIPv4PortNumberStart to:LookinSimulatorIPv4PortNumberEnd current:LookinSimulatorIPv4PortNumberStart];
+    if (TARGET_OS_MAC) {
+        [self _tryToListenWithPreferredPort:self.preferredListenPort
+                                   fromPort:LookinMacIPv4PortNumberStart
+                                     toPort:LookinMacIPv4PortNumberEnd];
+    } else if ([self isiOSAppOnMac]) {
+        [self _tryToListenWithPreferredPort:self.preferredListenPort
+                                   fromPort:LookinSimulatorIPv4PortNumberStart
+                                     toPort:LookinSimulatorIPv4PortNumberEnd];
     } else {
-        [self _tryToListenOnPortFrom:LookinUSBDeviceIPv4PortNumberStart to:LookinUSBDeviceIPv4PortNumberEnd current:LookinUSBDeviceIPv4PortNumberStart];
+        [self _tryToListenWithPreferredPort:self.preferredListenPort
+                                   fromPort:LookinUSBDeviceIPv4PortNumberStart
+                                     toPort:LookinUSBDeviceIPv4PortNumberEnd];
     }
 }
 
 - (BOOL)isiOSAppOnMac {
+#if TARGET_OS_MAC
+    return NO;
+#else
 #if TARGET_OS_SIMULATOR
     return YES;
 #else
@@ -113,9 +140,19 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
     }
     return NO;
 #endif
+#endif
 }
 
-- (void)_tryToListenOnPortFrom:(int)fromPort to:(int)toPort current:(int)currentPort  {
+- (void)_tryToListenWithPreferredPort:(int)preferredPort fromPort:(int)fromPort toPort:(int)toPort {
+    int currentPort = preferredPort;
+    if (currentPort < fromPort || currentPort > toPort) {
+        currentPort = fromPort;
+    }
+    int wrapStartPort = currentPort > fromPort ? fromPort : -1;
+    [self _tryToListenOnPortFrom:fromPort to:toPort current:currentPort wrapStartPort:wrapStartPort];
+}
+
+- (void)_tryToListenOnPortFrom:(int)fromPort to:(int)toPort current:(int)currentPort wrapStartPort:(int)wrapStartPort {
     Lookin_PTChannel *channel = [Lookin_PTChannel channelWithDelegate:self];
     channel.targetPort = currentPort;
     [channel listenOnPort:currentPort IPv4Address:INADDR_LOOPBACK callback:^(NSError *error) {
@@ -129,7 +166,10 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
             if (currentPort < toPort) {
                 // 尝试下一个端口
                 NSLog(@"LookinServer - 127.0.0.1:%d is unavailable(%@). Will try anothor address ...", currentPort, error);
-                [self _tryToListenOnPortFrom:fromPort to:toPort current:(currentPort + 1)];
+                [self _tryToListenOnPortFrom:fromPort to:toPort current:(currentPort + 1) wrapStartPort:wrapStartPort];
+            } else if (wrapStartPort >= fromPort && wrapStartPort < currentPort) {
+                NSLog(@"LookinServer - 127.0.0.1:%d is unavailable(%@). Will wrap and retry lower ports ...", currentPort, error);
+                [self _tryToListenOnPortFrom:wrapStartPort to:(currentPort - 1) current:wrapStartPort wrapStartPort:-1];
             } else {
                 // 所有端口都尝试完毕，全部失败
                 NSLog(@"LookinServer - 127.0.0.1:%d is unavailable(%@).", currentPort, error);
@@ -140,6 +180,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
             // 成功
             NSLog(@"LookinServer - Connected successfully on 127.0.0.1:%d", currentPort);
             // 此时 peerChannel_ 状态为 listening
+            self.preferredListenPort = currentPort;
             self.peerChannel_ = channel;
         }
     }];
@@ -205,7 +246,8 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 
     Lookin_PTChannel *previousChannel = self.peerChannel_;
     
-    otherChannel.targetPort = address.port;
+    otherChannel.targetPort = channel.targetPort;
+    self.preferredListenPort = channel.targetPort;
     self.peerChannel_ = otherChannel;
     
     [previousChannel cancel];
@@ -228,13 +270,20 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 #pragma mark - Handler
 
 - (void)_handleLocalInspect:(NSNotification *)note {
+#if TARGET_OS_MAC
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"LookInside";
+    alert.informativeText = @"Failed to run local inspection. The feature has been removed. Please use the desktop client or CLI.";
+    [alert addButtonWithTitle:@"OK"];
+    [alert runModal];
+#else
     UIAlertController  *alertController = [UIAlertController  alertControllerWithTitle:@"LookInside" message:@"Failed to run local inspection. The feature has been removed. Please use the computer version of LookInside or consider SDKs like FLEX for similar functionality."  preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *okAction  = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [alertController addAction:okAction];
     UIWindow *keyWindow = [LKS_MultiplatformAdapter keyWindow];
     UIViewController *rootViewController = [keyWindow rootViewController];
     [rootViewController presentViewController:alertController animated:YES completion:nil];
-    
+#endif
     NSLog(@"LookinServer - Failed to run local inspection. The feature has been removed. Please use the computer version of Lookin or consider SDKs like FLEX for similar functionality.");
 }
 

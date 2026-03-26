@@ -135,7 +135,9 @@
 }
 
 - (void)setImageByDeviceType:(LookinAppInfoDevice)type {
-    if (type == LookinAppInfoDeviceSimulator) {
+    if (type == LookinAppInfoDeviceMac) {
+        self.image = NSImageMake(@"icon_mac_big");
+    } else if (type == LookinAppInfoDeviceSimulator) {
         self.image = NSImageMake(@"icon_simulator_big");
     } else if (type == LookinAppInfoDeviceIPad) {
         self.image = NSImageMake(@"icon_ipad_big");

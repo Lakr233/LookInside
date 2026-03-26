@@ -15,7 +15,8 @@
 typedef NS_ENUM(NSInteger, LookinAppInfoDevice) {
     LookinAppInfoDeviceSimulator,   // 模拟器
     LookinAppInfoDeviceIPad,    // iPad 真机
-    LookinAppInfoDeviceOthers   // 应该视为 iPhone 真机
+    LookinAppInfoDeviceOthers,   // 应该视为 iPhone 真机
+    LookinAppInfoDeviceMac
 };
 
 @interface LookinAppInfo : NSObject <NSSecureCoding, NSCopying>
@@ -54,16 +55,13 @@ typedef NS_ENUM(NSInteger, LookinAppInfoDevice) {
 @property(nonatomic, assign) double screenHeight;
 /// 是几倍的屏幕
 @property(nonatomic, assign) double screenScale;
+@property(nonatomic, assign) NSTimeInterval cachedTimestamp;
 
 - (BOOL)isEqualToAppInfo:(LookinAppInfo *)info;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
 
 + (LookinAppInfo *)currentInfoWithScreenshot:(BOOL)hasScreenshot icon:(BOOL)hasIcon localIdentifiers:(NSArray<NSNumber *> *)localIdentifiers;
-
-#else
-
-@property(nonatomic, assign) NSTimeInterval cachedTimestamp;
 
 #endif
 

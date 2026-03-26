@@ -22,7 +22,7 @@
 
 @interface LookinHierarchyInfo : NSObject <NSSecureCoding, NSCopying>
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
 
 /// version 可能为 nil，此时说明 Client 版本号 < 1.0.4
 + (instancetype)staticInfoWithLookinVersion:(NSString *)version;

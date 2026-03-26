@@ -13,13 +13,18 @@
 #import "NSArray+Lookin.h"
 #import "NSString+Lookin.h"
 
-#if TARGET_OS_IPHONE
-#import "../LookinServer/Server/Category/NSObject+LookinServer.h"
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
+@interface NSObject (LookinObjectServerBridge)
+- (unsigned long)lks_registerOid;
+- (NSArray<NSString *> *)lks_classChainList;
+@property(nonatomic, copy) NSString *lks_specialTrace;
+@property(nonatomic, copy) NSArray<LookinIvarTrace *> *lks_ivarTraces;
+@end
 #endif
 
 @implementation LookinObject
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || TARGET_OS_MAC
 + (instancetype)instanceWithObject:(NSObject *)object {
     LookinObject *lookinObj = [LookinObject new];
     lookinObj.oid = [object lks_registerOid];

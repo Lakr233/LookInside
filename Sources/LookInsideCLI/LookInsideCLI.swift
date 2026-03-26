@@ -8,9 +8,9 @@ private let supportedProtocolVersion = 7
 struct LookInside: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "lookinside",
-        abstract: "Inspect debuggable iOS apps from the command line.",
+        abstract: "Inspect debuggable app targets from the command line.",
         discussion: """
-        LookInside discovers inspectable simulator and USB-connected device targets,
+        LookInside discovers inspectable macOS, simulator, and USB-connected targets,
         prints target metadata, fetches live view hierarchies, and exports hierarchy
         archives for later analysis.
         """,
@@ -40,6 +40,7 @@ private enum HierarchyFormat: String, ExpressibleByArgument, Codable, CaseIterab
 }
 
 private enum TransportFilter: String, ExpressibleByArgument, Codable, CaseIterable {
+    case mac
     case simulator
     case usb
 }
@@ -89,7 +90,7 @@ private struct List: ParsableCommand {
                 }
                 StandardPrinter.printLine(target.targetID)
                 StandardPrinter.printLine("  \(target.appName) (\(target.bundleIdentifier))")
-                StandardPrinter.printLine("  \(target.transport) port \(target.port) | \(target.deviceDescription) | iOS \(target.osDescription) | server \(target.serverReadableVersion)")
+                StandardPrinter.printLine("  \(target.transport) port \(target.port) | \(target.deviceDescription) | \(target.osDescription) | server \(target.serverReadableVersion)")
             }
         }
     }
