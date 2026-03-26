@@ -6,16 +6,42 @@ cd "$(dirname "$0")/.."
 
 PROJECT_DIR="$PWD"
 WORKSPACE_PATH="LookInside.xcworkspace"
-SCHEME="${SCHEME:-LookinServerDynamic}"
 CONFIGURATION="${CONFIGURATION:-Release}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_DIR/build/lookinserver}"
-DERIVED_ROOT="${DERIVED_ROOT:-/tmp/LookinServerDynamicDD}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
-
-FRAMEWORK_NAME="LookinServer"
-PRODUCT_NAME="LookinServerDynamic"
 MIN_IOS_VERSION="${MIN_IOS_VERSION:-12.0}"
 USE_XCBEAUTIFY="${USE_XCBEAUTIFY:-1}"
+RUNTIME_VARIANT="${RUNTIME_VARIANT:-standard}"
+
+case "$RUNTIME_VARIANT" in
+    standard|dynamic)
+        DEFAULT_SCHEME="LookinServerDynamic"
+        DEFAULT_FRAMEWORK_NAME="LookinServer"
+        DEFAULT_PRODUCT_NAME="LookinServerDynamic"
+        DEFAULT_OUTPUT_ROOT="$PROJECT_DIR/build/lookinserver"
+        DEFAULT_DERIVED_ROOT="/tmp/LookinServerDynamicDD"
+        COPY_RUNTIME_HEADERS=1
+        SWIFT_HEADER_TARGET="LookinServerSwift"
+        ;;
+    injected)
+        DEFAULT_SCHEME="LookinServerInjected"
+        DEFAULT_FRAMEWORK_NAME="LookinServerInjected"
+        DEFAULT_PRODUCT_NAME="LookinServerInjected"
+        DEFAULT_OUTPUT_ROOT="$PROJECT_DIR/build/lookinserver-injected"
+        DEFAULT_DERIVED_ROOT="/tmp/LookinServerInjectedDD"
+        COPY_RUNTIME_HEADERS=0
+        SWIFT_HEADER_TARGET=""
+        ;;
+    *)
+        echo "Unsupported RUNTIME_VARIANT: $RUNTIME_VARIANT" >&2
+        exit 1
+        ;;
+esac
+
+SCHEME="${SCHEME:-$DEFAULT_SCHEME}"
+FRAMEWORK_NAME="${FRAMEWORK_NAME:-$DEFAULT_FRAMEWORK_NAME}"
+PRODUCT_NAME="${PRODUCT_NAME:-$DEFAULT_PRODUCT_NAME}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$DEFAULT_OUTPUT_ROOT}"
+DERIVED_ROOT="${DERIVED_ROOT:-$DEFAULT_DERIVED_ROOT}"
 
 copy_public_headers() {
     local headers_dir="$1"
@@ -69,7 +95,11 @@ stage_framework_bundle() {
     mkdir -p "$staged_root"
     cp -R "$source_framework" "$staged_framework"
 
-    mv "$staged_framework/$PRODUCT_NAME" "$staged_binary"
+    if [ "$PRODUCT_NAME" != "$FRAMEWORK_NAME" ]; then
+        mv "$staged_framework/$PRODUCT_NAME" "$staged_binary"
+    else
+        staged_binary="$staged_framework/$PRODUCT_NAME"
+    fi
 
     /usr/libexec/PlistBuddy \
         -c "Set :CFBundleExecutable $FRAMEWORK_NAME" \
@@ -77,17 +107,19 @@ stage_framework_bundle() {
         -c "Set :CFBundleIdentifier lookinside.$FRAMEWORK_NAME" \
         "$staged_framework/Info.plist"
 
-    copy_public_headers "$staged_framework/Headers"
+    if [ "$COPY_RUNTIME_HEADERS" = "1" ]; then
+        copy_public_headers "$staged_framework/Headers"
 
-    swift_header="$derived_dir/Build/Intermediates.noindex/LookInside.build/$CONFIGURATION-$sdk/LookinServerSwift.build/Objects-normal"
-    if [ "$sdk" = "iphoneos" ]; then
-        swift_header="$swift_header/arm64/LookinServerSwift-Swift.h"
-    else
-        swift_header="$swift_header/arm64/LookinServerSwift-Swift.h"
+        swift_header="$derived_dir/Build/Intermediates.noindex/LookInside.build/$CONFIGURATION-$sdk/$SWIFT_HEADER_TARGET.build/Objects-normal"
+        if [ "$sdk" = "iphoneos" ]; then
+            swift_header="$swift_header/arm64/$SWIFT_HEADER_TARGET-Swift.h"
+        else
+            swift_header="$swift_header/arm64/$SWIFT_HEADER_TARGET-Swift.h"
+        fi
+        cp "$swift_header" "$staged_framework/Headers/$FRAMEWORK_NAME-Swift.h"
+
+        write_modulemap "$staged_framework"
     fi
-    cp "$swift_header" "$staged_framework/Headers/$FRAMEWORK_NAME-Swift.h"
-
-    write_modulemap "$staged_framework"
 
     install_name_tool -id "@rpath/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME" "$staged_binary"
 

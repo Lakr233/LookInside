@@ -37,6 +37,11 @@ let package = Package(
             type: .dynamic,
             targets: ["LookinServer"]
         ),
+        .library(
+            name: "LookinServerInjected",
+            type: .dynamic,
+            targets: ["LookinServerInjected"]
+        ),
         .executable(
             name: "lookinside",
             targets: ["LookInsideCLI"]
@@ -104,6 +109,18 @@ let package = Package(
                 .headerSearchPath("../LookinCore/Peertalk"),
             ],
             cxxSettings: sharedCXXDefines
+        ),
+        .target(
+            name: "LookinServerInjected",
+            dependencies: ["LookinServer"],
+            path: "Sources/LookinServerInjected",
+            publicHeadersPath: "",
+            cSettings: sharedCDefines,
+            cxxSettings: sharedCXXDefines,
+            linkerSettings: [
+                .linkedFramework("AppKit", .when(platforms: [.macOS])),
+                .linkedFramework("UIKit", .when(platforms: [.iOS, .tvOS])),
+            ]
         ),
         .target(
             name: "LookinCoreClient",

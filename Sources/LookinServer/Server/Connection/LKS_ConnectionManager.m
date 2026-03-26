@@ -18,7 +18,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 
 @interface LKS_ConnectionManager () <Lookin_PTChannelDelegate>
 
-@property(nonatomic, weak) Lookin_PTChannel *peerChannel_;
+@property(nonatomic, strong) Lookin_PTChannel *peerChannel_;
 
 @property(nonatomic, strong) LKS_RequestHandler *requestHandler;
 
@@ -178,7 +178,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
             
         } else {
             // 成功
-            NSLog(@"LookinServer - Connected successfully on 127.0.0.1:%d", currentPort);
+            NSLog(@"LookinServer - Listening on 127.0.0.1:%d with channel %@.", currentPort, channel.debugTag);
             // 此时 peerChannel_ 状态为 listening
             self.preferredListenPort = currentPort;
             self.peerChannel_ = channel;
@@ -242,13 +242,14 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 
 /// 当 Client 端链接成功时，该方法会被调用，然后 channel 的状态会变成 connected
 - (void)ioFrameChannel:(Lookin_PTChannel*)channel didAcceptConnection:(Lookin_PTChannel*)otherChannel fromAddress:(Lookin_PTAddress*)address {
-    NSLog(@"LookinServer - channel:%@, acceptConnection:%@", channel.debugTag, otherChannel.debugTag);
+    NSLog(@"LookinServer - channel:%@ accepted %@ from %@.", channel.debugTag, otherChannel.debugTag, address);
 
     Lookin_PTChannel *previousChannel = self.peerChannel_;
     
     otherChannel.targetPort = channel.targetPort;
     self.preferredListenPort = channel.targetPort;
     self.peerChannel_ = otherChannel;
+    NSLog(@"LookinServer - Active peer channel switched from %@ to %@.", previousChannel.debugTag, otherChannel.debugTag);
     
     [previousChannel cancel];
 }
@@ -262,6 +263,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
     }
     // Client 端关闭时，会走到这里
     NSLog(@"LookinServer - channel%@ DidEndWithError:%@", channel.debugTag, error);
+    self.peerChannel_ = nil;
     
     [[NSNotificationCenter defaultCenter] postNotificationName:LKS_ConnectionDidEndNotificationName object:self];
     [self searchPortToListenIfNoConnection];

@@ -11,6 +11,17 @@
 
 @implementation LookinDisplayItem (LookinClient)
 
+- (BOOL)_lk_usesAbsoluteRootCoordinates {
+    LookinDisplayItem *rootItem = self;
+    while (rootItem.superItem) {
+        rootItem = rootItem.superItem;
+    }
+
+    LookinObject *rootObject = rootItem.windowObject ?: rootItem.viewObject ?: rootItem.layerObject;
+    NSString *rootClassName = rootObject.classChainList.firstObject ?: @"";
+    return [rootClassName hasPrefix:@"NSWindow"];
+}
+
 - (LookinObject *)windowObject {
     return self.viewObject;
 }
@@ -114,6 +125,9 @@
 - (CGRect)calculateFrameToRoot {
     if (self.customInfo) {
         return [self.customInfo.frameInWindow rectValue];
+    }
+    if ([self _lk_usesAbsoluteRootCoordinates]) {
+        return self.frame;
     }
     if (!self.superItem) {
         return self.frame;
