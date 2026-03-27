@@ -107,11 +107,12 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
     [self.peerChannel_ close];
     self.peerChannel_ = nil;
     
-    if (TARGET_OS_OSX) {
-        [self _tryToListenWithPreferredPort:self.preferredListenPort
-                                   fromPort:LookinMacIPv4PortNumberStart
-                                     toPort:LookinMacIPv4PortNumberEnd];
-    } else if ([self isiOSAppOnMac]) {
+#if TARGET_OS_OSX
+    [self _tryToListenWithPreferredPort:self.preferredListenPort
+                               fromPort:LookinMacIPv4PortNumberStart
+                                 toPort:LookinMacIPv4PortNumberEnd];
+#else
+    if ([self isiOSAppOnMac]) {
         [self _tryToListenWithPreferredPort:self.preferredListenPort
                                    fromPort:LookinSimulatorIPv4PortNumberStart
                                      toPort:LookinSimulatorIPv4PortNumberEnd];
@@ -120,6 +121,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
                                    fromPort:LookinUSBDeviceIPv4PortNumberStart
                                      toPort:LookinUSBDeviceIPv4PortNumberEnd];
     }
+#endif
 }
 
 - (BOOL)isiOSAppOnMac {

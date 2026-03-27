@@ -102,12 +102,16 @@
 
     if (requestType == LookinRequestTypeHierarchyDetails) {
         NSArray<LookinStaticAsyncUpdateTasksPackage *> *packages = [object isKindOfClass:[NSArray class]] ? object : @[];
+        NSUInteger responsesDataTotalCount = 0;
+        for (LookinStaticAsyncUpdateTasksPackage *package in packages) {
+            responsesDataTotalCount += package.tasks.count;
+        }
         LKS_HierarchyDetailsHandler *handler = [LKS_HierarchyDetailsHandler new];
         [self.activeDetailHandlers addObject:handler];
         [handler startWithPackages:packages block:^(NSArray<LookinDisplayItemDetail *> *details) {
             LookinConnectionResponseAttachment *attachment = [LookinConnectionResponseAttachment new];
             attachment.data = details;
-            attachment.dataTotalCount = details.count;
+            attachment.dataTotalCount = responsesDataTotalCount;
             attachment.currentDataCount = details.count;
             [[LKS_ConnectionManager sharedInstance] respond:attachment requestType:requestType tag:tag];
         } finishedBlock:^{
@@ -225,7 +229,12 @@
         }
         [self _respondWithData:imageView.image.lookin_data requestType:requestType tag:tag];
 #else
-        [self _respondWithError:LookinErr_Inner requestType:requestType tag:tag];
+        UIImageView *imageView = (UIImageView *)[NSObject lks_objectWithOid:[(NSNumber *)object unsignedLongValue]];
+        if (![imageView isKindOfClass:[UIImageView class]] || !imageView.image) {
+            [self _respondWithError:LookinErr_ObjNotFound requestType:requestType tag:tag];
+            return;
+        }
+        [self _respondWithData:[imageView.image lookin_data] requestType:requestType tag:tag];
 #endif
         return;
     }
