@@ -2,6 +2,8 @@
 
 LookInside is a macOS UI inspector for debuggable macOS and iOS apps.
 
+![Preview](./Resources/SCR-20260330-ccud.png)
+
 This repository packages:
 
 - the macOS app in [`LookInside/`](LookInside/), [`LookInside.xcodeproj`](LookInside.xcodeproj), and [`LookInside.xcworkspace`](LookInside.xcworkspace)
