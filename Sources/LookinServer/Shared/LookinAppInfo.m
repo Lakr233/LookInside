@@ -168,7 +168,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     
 #if TARGET_OS_IPHONE
     info.osDescription = [UIDevice currentDevice].systemVersion;
-    NSString *mainVersionStr = [[[UIDevice currentDevice] systemVersion] componentsSeparatedByString:@”.”].firstObject;
+    NSString *mainVersionStr = [[[UIDevice currentDevice] systemVersion] componentsSeparatedByString:@"."].firstObject;
     info.osMainVersion = [mainVersionStr integerValue];
 #elif TARGET_OS_OSX
     info.osDescription = [LKS_MultiplatformAdapter operatingSystemDescription];
@@ -192,8 +192,8 @@ static NSString * const CodingKey_DeviceType = @"8";
 
 + (NSString *)appName {
     NSDictionary *info = [[NSBundle mainBundle] infoDictionary];
-    NSString *displayName = [info objectForKey:@”CFBundleDisplayName”];
-    NSString *name = [info objectForKey:@”CFBundleName”];
+    NSString *displayName = [info objectForKey:@"CFBundleDisplayName"];
+    NSString *name = [info objectForKey:@"CFBundleName"];
     return displayName.length ? displayName : name;
 }
 
@@ -202,11 +202,11 @@ static NSString * const CodingKey_DeviceType = @"8";
     return nil;
 #elif TARGET_OS_IPHONE
     NSString *imageName;
-    id CFBundleIcons = [[[NSBundle mainBundle] infoDictionary] objectForKey:@”CFBundleIcons”];
+    id CFBundleIcons = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIcons"];
     if ([CFBundleIcons respondsToSelector:@selector(objectForKey:)]) {
-        id CFBundlePrimaryIcon = [CFBundleIcons objectForKey:@”CFBundlePrimaryIcon”];
+        id CFBundlePrimaryIcon = [CFBundleIcons objectForKey:@"CFBundlePrimaryIcon"];
         if ([CFBundlePrimaryIcon respondsToSelector:@selector(objectForKey:)]) {
-            imageName = [[CFBundlePrimaryIcon objectForKey:@”CFBundleIconFiles”] lastObject];
+            imageName = [[CFBundlePrimaryIcon objectForKey:@"CFBundleIconFiles"] lastObject];
         } else if ([CFBundlePrimaryIcon isKindOfClass:NSString.class]) {
             imageName = CFBundlePrimaryIcon;
         }

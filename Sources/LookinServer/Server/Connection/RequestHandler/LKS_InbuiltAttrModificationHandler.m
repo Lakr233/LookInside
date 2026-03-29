@@ -36,14 +36,14 @@
     }
 
     NSMethodSignature *setterSignature = [receiver methodSignatureForSelector:modification.setterSelector];
-    NSInvocation *setterInvocation = [NSInvocation invocationWithMethodSignature:setterSignature];
-    setterInvocation.target = receiver;
-    setterInvocation.selector = modification.setterSelector;
-
-    if (setterSignature.numberOfArguments != 3 || ![receiver respondsToSelector:modification.setterSelector]) {
+    if (!setterSignature || setterSignature.numberOfArguments != 3 || ![receiver respondsToSelector:modification.setterSelector]) {
         completion(nil, LookinErr_Inner);
         return;
     }
+
+    NSInvocation *setterInvocation = [NSInvocation invocationWithMethodSignature:setterSignature];
+    setterInvocation.target = receiver;
+    setterInvocation.selector = modification.setterSelector;
 
     switch (modification.attrType) {
         case LookinAttrTypeNone:

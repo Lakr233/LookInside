@@ -12,7 +12,7 @@
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #elif TARGET_OS_OSX
-#import <Appkit/Appkit.h>
+#import <AppKit/AppKit.h>
 #endif
 
 extern NSString *const LKS_ConnectionDidEndNotificationName;

@@ -15,7 +15,7 @@
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #elif TARGET_OS_OSX
-#import <Appkit/Appkit.h>
+#import <AppKit/AppKit.h>
 #endif
 
 @class LookinAttributesGroup, LookinIvarTrace, LookinPreviewItemLayer, LookinEventHandler, LKDisplayItemNode, LookinDisplayItem;

@@ -643,7 +643,20 @@
       }
     },
     "Fail to inspect this target app due to a version problem." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Fail to inspect this target app due to a version problem."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由于版本问题，无法检查此目标 App。"
+          }
+        }
+      }
     },
     "Failed to get target object in iOS app" : {
       "localizations" : {
