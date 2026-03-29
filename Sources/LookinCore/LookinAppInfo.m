@@ -284,7 +284,13 @@ static NSString * const CodingKey_DeviceType = @"8";
     static dispatch_once_t onceToken;
     static NSInteger identifier = 0;
     dispatch_once(&onceToken,^{
-        identifier = [[NSDate date] timeIntervalSince1970];
+        uint64_t nowMicros = (uint64_t)([[NSDate date] timeIntervalSince1970] * 1000000.0);
+        uint64_t processID = (uint64_t)NSProcessInfo.processInfo.processIdentifier;
+        uint64_t randomBits = arc4random();
+        identifier = (NSInteger)((nowMicros << 12) ^ (processID << 1) ^ randomBits);
+        if (identifier <= 0) {
+            identifier = (NSInteger)(processID ^ (randomBits ?: 1));
+        }
     });
     return identifier;
 }
