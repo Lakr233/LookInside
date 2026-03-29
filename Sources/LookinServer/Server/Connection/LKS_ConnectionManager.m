@@ -20,7 +20,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 
 @interface LKS_ConnectionManager () <Lookin_PTChannelDelegate>
 
-@property(nonatomic, weak) Lookin_PTChannel *peerChannel_;
+@property(nonatomic, strong) Lookin_PTChannel *peerChannel_;
 
 @property(nonatomic, strong) LKS_RequestHandler *requestHandler;
 
@@ -67,6 +67,10 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleGetLookinInfo:) name:@"GetLookinInfo" object:nil];
         
         self.requestHandler = [LKS_RequestHandler new];
+#if TARGET_OS_OSX
+        self.applicationIsActive = YES;
+        [self searchPortToListenIfNoConnection];
+#endif
     }
     return self;
 }
@@ -86,8 +90,8 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 }
 
 - (void)searchPortToListenIfNoConnection {
-    if ([self.peerChannel_ isConnected]) {
-        NSLog(@"LookinServer - Abort to search ports. Already has connected channel.");
+    if (self.peerChannel_ && (self.peerChannel_.isConnected || self.peerChannel_.isListening)) {
+        NSLog(@"LookinServer - Abort to search ports. Already has active channel %@.", self.peerChannel_.debugTag);
         return;
     }
     NSLog(@"LookinServer - Searching port to listen...");
@@ -151,7 +155,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
             
         } else {
             // 成功
-            NSLog(@"LookinServer - Connected successfully on 127.0.0.1:%d", currentPort);
+            NSLog(@"LookinServer - Listening on 127.0.0.1:%d with channel %@.", currentPort, channel.debugTag);
             // 此时 peerChannel_ 状态为 listening
             self.peerChannel_ = channel;
         }
@@ -218,7 +222,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
 
     Lookin_PTChannel *previousChannel = self.peerChannel_;
     
-    otherChannel.targetPort = address.port;
+    otherChannel.targetPort = channel.targetPort;
     self.peerChannel_ = otherChannel;
     
     [previousChannel cancel];
@@ -233,6 +237,7 @@ NSString *const LKS_ConnectionDidEndNotificationName = @"LKS_ConnectionDidEndNot
     }
     // Client 端关闭时，会走到这里
     NSLog(@"LookinServer - channel%@ DidEndWithError:%@", channel.debugTag, error);
+    self.peerChannel_ = nil;
     
     [[NSNotificationCenter defaultCenter] postNotificationName:LKS_ConnectionDidEndNotificationName object:self];
     [self searchPortToListenIfNoConnection];
