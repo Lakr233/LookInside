@@ -229,6 +229,9 @@ ensure_signing_context() {
 sign_cli() {
     local cli_binary="$1"
 
+    chmod 755 "$cli_binary"
+    [[ -x "$cli_binary" ]] || fail "CLI binary is not executable: $cli_binary"
+
     log "Signing CLI binary"
     print_signing_context
     codesign \
@@ -279,6 +282,9 @@ sign_app_bundle() {
     local macos_entries
     macos_entries="$(find "$app_path/Contents/MacOS" -maxdepth 1 -type f | wc -l | tr -d ' ')"
     [[ "$macos_entries" == "1" ]] || fail "Expected exactly one executable in Contents/MacOS, found $macos_entries."
+
+    chmod 755 "$app_path/Contents/MacOS/LookInside"
+    [[ -x "$app_path/Contents/MacOS/LookInside" ]] || fail "Main app executable is not executable: $app_path/Contents/MacOS/LookInside"
 
     log "Signing app bundle"
     print_signing_context
