@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     name: ${{ matrix.name }}
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 30
     strategy:
       fail-fast: false
