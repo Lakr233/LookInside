@@ -421,6 +421,135 @@
             MakeItem(@"NSWindowTabbingModePreferred", 1),
             MakeItem(@"NSWindowTabbingModeDisallowed", 2),
         ];
+
+        // MARK: - NSSlider
+        mData[@"NSSliderType"] = @[
+            MakeItem(@"NSSliderTypeLinear", 0),
+            MakeItem(@"NSSliderTypeCircular", 1),
+        ];
+        mData[@"NSTickMarkPosition"] = @[
+            MakeItem(@"NSTickMarkPositionBelow", 0),
+            MakeItem(@"NSTickMarkPositionAbove", 1),
+            MakeItem(@"NSTickMarkPositionLeading", 0),
+            MakeItem(@"NSTickMarkPositionTrailing", 1),
+        ];
+
+        // MARK: - NSProgressIndicator
+        mData[@"NSProgressIndicatorStyle"] = @[
+            MakeItem(@"NSProgressIndicatorStyleBar", 0),
+            MakeItem(@"NSProgressIndicatorStyleSpinning", 1),
+        ];
+
+        // MARK: - NSSegmentedControl
+        mData[@"NSSegmentStyle"] = @[
+            MakeItem(@"NSSegmentStyleAutomatic", 0),
+            MakeItem(@"NSSegmentStyleRounded", 1),
+            MakeItem(@"NSSegmentStyleRoundRect", 3),
+            MakeItem(@"NSSegmentStyleTexturedSquare", 4),
+            MakeItem(@"NSSegmentStyleSmallSquare", 6),
+            MakeItem(@"NSSegmentStyleSeparated", 8),
+            MakeItem(@"NSSegmentStyleTexturedRounded", 2),
+            MakeItem(@"NSSegmentStyleCapsule", 5),
+        ];
+        mData[@"NSSegmentSwitchTracking"] = @[
+            MakeItem(@"NSSegmentSwitchTrackingSelectOne", 0),
+            MakeItem(@"NSSegmentSwitchTrackingSelectAny", 1),
+            MakeItem(@"NSSegmentSwitchTrackingMomentary", 2),
+            MakeItem(@"NSSegmentSwitchTrackingMomentaryAccelerator", 3),
+        ];
+
+        // MARK: - NSPopUpButton
+        mData[@"NSRectEdge"] = @[
+            MakeItem(@"NSRectEdgeMinX", 0),
+            MakeItem(@"NSRectEdgeMinY", 1),
+            MakeItem(@"NSRectEdgeMaxX", 2),
+            MakeItem(@"NSRectEdgeMaxY", 3),
+        ];
+
+        // MARK: - NSColorWell
+        mData[@"NSColorWellStyle"] = @[
+            MakeItem(@"NSColorWellStyleDefault", 0),
+            MakeItem(@"NSColorWellStyleMinimal", 1),
+            MakeItem(@"NSColorWellStyleExpanded", 2),
+        ];
+
+        // MARK: - NSDatePicker
+        mData[@"NSDatePickerStyle"] = @[
+            MakeItem(@"NSDatePickerStyleTextFieldAndStepper", 0),
+            MakeItem(@"NSDatePickerStyleClockAndCalendar", 1),
+            MakeItem(@"NSDatePickerStyleTextField", 2),
+        ];
+        mData[@"NSDatePickerMode"] = @[
+            MakeItem(@"NSDatePickerModeSingle", 0),
+            MakeItem(@"NSDatePickerModeRange", 1),
+        ];
+
+        // MARK: - NSLevelIndicator
+        mData[@"NSLevelIndicatorStyle"] = @[
+            MakeItem(@"NSLevelIndicatorStyleRelevancy", 0),
+            MakeItem(@"NSLevelIndicatorStyleContinuousCapacity", 1),
+            MakeItem(@"NSLevelIndicatorStyleDiscreteCapacity", 2),
+            MakeItem(@"NSLevelIndicatorStyleRating", 3),
+        ];
+
+        // MARK: - NSBox
+        mData[@"NSBoxType"] = @[
+            MakeItem(@"NSBoxPrimary", 0),
+            MakeItem(@"NSBoxSeparator", 2),
+            MakeItem(@"NSBoxCustom", 4),
+        ];
+        mData[@"NSTitlePosition"] = @[
+            MakeItem(@"NSNoTitle", 0),
+            MakeItem(@"NSAboveTop", 1),
+            MakeItem(@"NSAtTop", 2),
+            MakeItem(@"NSBelowTop", 3),
+            MakeItem(@"NSAboveBottom", 4),
+            MakeItem(@"NSAtBottom", 5),
+            MakeItem(@"NSBelowBottom", 6),
+        ];
+
+        // MARK: - NSSplitView
+        mData[@"NSSplitViewDividerStyle"] = @[
+            MakeItem(@"NSSplitViewDividerStyleThick", 1),
+            MakeItem(@"NSSplitViewDividerStyleThin", 2),
+            MakeItem(@"NSSplitViewDividerStylePaneSplitter", 3),
+        ];
+
+        // MARK: - NSTabView
+        mData[@"NSTabViewType"] = @[
+            MakeItem(@"NSTopTabsBezelBorder", 0),
+            MakeItem(@"NSLeftTabsBezelBorder", 1),
+            MakeItem(@"NSBottomTabsBezelBorder", 2),
+            MakeItem(@"NSRightTabsBezelBorder", 3),
+            MakeItem(@"NSNoTabsBezelBorder", 4),
+            MakeItem(@"NSNoTabsLineBorder", 5),
+            MakeItem(@"NSNoTabsNoBorder", 6),
+        ];
+        mData[@"NSTabPosition"] = @[
+            MakeItem(@"NSTabPositionNone", 0),
+            MakeItem(@"NSTabPositionTop", 1),
+            MakeItem(@"NSTabPositionLeft", 2),
+            MakeItem(@"NSTabPositionBottom", 3),
+            MakeItem(@"NSTabPositionRight", 4),
+        ];
+        mData[@"NSTabViewBorderType"] = @[
+            MakeItem(@"NSTabViewBorderTypeNone", 0),
+            MakeItem(@"NSTabViewBorderTypeLine", 1),
+            MakeItem(@"NSTabViewBorderTypeBezel", 2),
+        ];
+
+        // MARK: - NSGridView
+        mData[@"NSGridCellPlacement"] = @[
+            MakeItem(@"NSGridCellPlacementInherited", 0),
+            MakeItem(@"NSGridCellPlacementNone", 1),
+            MakeItem(@"NSGridCellPlacementLeading", 2),
+            MakeItem(@"NSGridCellPlacementTop", 2),
+            MakeItem(@"NSGridCellPlacementTrailing", 3),
+            MakeItem(@"NSGridCellPlacementBottom", 3),
+            MakeItem(@"NSGridCellPlacementCenter", 4),
+            MakeItem(@"NSGridCellPlacementFill", 5),
+        ];
+
         self.data = mData;
     }
     return self;
