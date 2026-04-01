@@ -114,6 +114,9 @@ static BOOL LKShouldFallbackToGroupScreenshot(NSImage *soloScreenshot, NSImage *
     if (self.viewObject.oid) {
         return self.viewObject.oid;
     }
+    if (self.windowObject.oid) {
+        return self.windowObject.oid;
+    }
     return 0;
 }
 
@@ -153,6 +156,10 @@ static BOOL LKShouldFallbackToGroupScreenshot(NSImage *soloScreenshot, NSImage *
         return self.customInfo.subtitle;
     }
     
+    NSString *windowControllerName = self.hostWindowControllerObject.lk_simpleDemangledClassName;
+    if (windowControllerName.length) {
+        return [NSString stringWithFormat:@"%@.window", windowControllerName];
+    }
     NSString *text = self.hostViewControllerObject.lk_simpleDemangledClassName;
     if (text.length) {
         return [NSString stringWithFormat:@"%@.view", text];

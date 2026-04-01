@@ -24,18 +24,88 @@
 //#import "LookinObject+LookinServer.h"
 #import "UIView+LookinServer.h"
 #import "NSWindow+LookinServer.h"
+#if TARGET_OS_IPHONE
+#import "UIWindowScene+LookinServer.h"
+#endif
 @implementation LKS_HierarchyDisplayItemsMaker
 
 + (NSArray<LookinDisplayItem *> *)itemsWithScreenshots:(BOOL)hasScreenshots attrList:(BOOL)hasAttrList lowImageQuality:(BOOL)lowQuality readCustomInfo:(BOOL)readCustomInfo saveCustomSetter:(BOOL)saveCustomSetter {
 
     [[LKS_TraceManager sharedInstance] reload];
 
+#if TARGET_OS_IPHONE
+    NSMutableArray<LookinDisplayItem *> *resultArray = [NSMutableArray array];
+    if (@available(iOS 13.0, *)) {
+        // iOS 13+: group windows by UIWindowScene, scene is the top-level container
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (![scene isKindOfClass:[UIWindowScene class]]) {
+                continue;
+            }
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+
+            // Create the scene display item
+            LookinDisplayItem *sceneItem = [LookinDisplayItem new];
+            sceneItem.windowObject = [LookinObject instanceWithObject:windowScene];
+            sceneItem.shouldCaptureImage = YES;
+            sceneItem.alpha = 1.0;
+
+            if (hasAttrList) {
+                sceneItem.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindowScene:windowScene];
+            }
+
+            // Build child items for each window in this scene
+            NSMutableArray<LookinDisplayItem *> *windowItems = [NSMutableArray array];
+            NSArray<UIWindow *> *windows = windowScene.windows;
+            for (UIWindow *window in windows) {
+                LookinDisplayItem *windowItem = [self _displayItemWithLayer:window.layer screenshots:hasScreenshots attrList:hasAttrList lowImageQuality:lowQuality readCustomInfo:readCustomInfo saveCustomSetter:saveCustomSetter];
+                if (windowItem) {
+                    windowItem.representedAsKeyWindow = window.isKeyWindow;
+                    [windowItems addObject:windowItem];
+                }
+            }
+
+            // Also check for keyWindow not in windows list (e.g. form sheet presentations)
+            UIWindow *keyWindow = nil;
+            if (@available(iOS 15.0, *)) {
+                keyWindow = windowScene.keyWindow;
+            } else {
+                for (UIWindow *window in windows) {
+                    if (window.isKeyWindow) {
+                        keyWindow = window;
+                        break;
+                    }
+                }
+            }
+            if (keyWindow && ![windows containsObject:keyWindow]) {
+                if (![NSStringFromClass(keyWindow.class) containsString:@"HUD"]) {
+                    LookinDisplayItem *keyWindowItem = [self _displayItemWithLayer:keyWindow.layer screenshots:hasScreenshots attrList:hasAttrList lowImageQuality:lowQuality readCustomInfo:readCustomInfo saveCustomSetter:saveCustomSetter];
+                    if (keyWindowItem) {
+                        keyWindowItem.representedAsKeyWindow = YES;
+                        [windowItems addObject:keyWindowItem];
+                    }
+                }
+            }
+
+            sceneItem.subitems = windowItems;
+            [resultArray addObject:sceneItem];
+        }
+    } else {
+        // iOS 12 fallback: flat window list without scene grouping
+        NSArray<LookinWindow *> *windows = [LKS_MultiplatformAdapter allWindows];
+        for (LookinWindow *window in windows) {
+            LookinDisplayItem *item = [self _displayItemWithLayer:window.layer screenshots:hasScreenshots attrList:hasAttrList lowImageQuality:lowQuality readCustomInfo:readCustomInfo saveCustomSetter:saveCustomSetter];
+            if (item) {
+                item.representedAsKeyWindow = window.isKeyWindow;
+                [resultArray addObject:item];
+            }
+        }
+    }
+
+    return [resultArray copy];
+#elif TARGET_OS_OSX
     NSArray<LookinWindow *> *windows = [LKS_MultiplatformAdapter allWindows];
     NSMutableArray *resultArray = [NSMutableArray arrayWithCapacity:windows.count];
     [windows enumerateObjectsUsingBlock:^(__kindof LookinWindow * _Nonnull window, NSUInteger idx, BOOL * _Nonnull stop) {
-#if TARGET_OS_IPHONE
-        LookinDisplayItem *item = [self _displayItemWithLayer:window.layer screenshots:hasScreenshots attrList:hasAttrList lowImageQuality:lowQuality readCustomInfo:readCustomInfo saveCustomSetter:saveCustomSetter];
-#elif TARGET_OS_OSX
         // macOS: view is the source of truth — always start from the root view
         NSView *rootView = window.lks_rootView;
         LookinDisplayItem *item = [LookinDisplayItem new];
@@ -53,10 +123,15 @@
             item.soloScreenshot = [rootView lks_soloScreenshotWithLowQuality:lowQuality];
         }
         item.screenshotEncodeType = LookinDisplayItemImageEncodeTypeNSData;
+        if (window.windowController) {
+            item.hostWindowControllerObject = [LookinObject instanceWithObject:window.windowController];
+        }
+        if (hasAttrList) {
+            item.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindow:window];
+        }
         if (rootView) {
             item.subitems = @[[self _displayItemWithView:rootView screenshots:hasScreenshots attrList:hasAttrList lowImageQuality:lowQuality readCustomInfo:readCustomInfo saveCustomSetter:saveCustomSetter]];
         }
-#endif
         item.representedAsKeyWindow = window.isKeyWindow;
         if (item) {
             [resultArray addObject:item];
@@ -64,6 +139,7 @@
     }];
 
     return [resultArray copy];
+#endif
 }
 
 + (LookinDisplayItem *)_displayItemWithLayer:(CALayer *)layer screenshots:(BOOL)hasScreenshots attrList:(BOOL)hasAttrList lowImageQuality:(BOOL)lowQuality readCustomInfo:(BOOL)readCustomInfo saveCustomSetter:(BOOL)saveCustomSetter {

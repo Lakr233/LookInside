@@ -17,6 +17,12 @@
 #import "UIColor+LookinServer.h"
 #import "LookinServerDefines.h"
 #import "NSValue+Lookin.h"
+#if TARGET_OS_OSX
+#import "NSWindow+LookinServer.h"
+#endif
+#if TARGET_OS_IPHONE
+#import "UIWindowScene+LookinServer.h"
+#endif
 @implementation LKS_AttrGroupsMaker
 
 + (NSArray<LookinAttributesGroup *> *)attrGroupsForLayer:(CALayer *)layer {
@@ -164,6 +170,228 @@
     
     return groups;
 }
+
++ (NSArray<LookinAttributesGroup *> *)attrGroupsForWindow:(NSWindow *)window {
+    if (!window) {
+        NSAssert(NO, @"");
+        return nil;
+    }
+
+    NSMutableArray<LookinAttributesGroup *> *result = [NSMutableArray array];
+
+    // Class group - show window class hierarchy and optional window controller
+    {
+        LookinAttribute *classAttr = [LookinAttribute new];
+        classAttr.identifier = LookinAttr_Class_Class_Class;
+        classAttr.attrType = LookinAttrTypeCustomObj;
+        classAttr.value = [window lks_relatedClassChainList];
+
+        LookinAttributesSection *classSec = [LookinAttributesSection new];
+        classSec.identifier = LookinAttrSec_Class_Class;
+        classSec.attributes = @[classAttr];
+
+        LookinAttributesGroup *classGroup = [LookinAttributesGroup new];
+        classGroup.identifier = LookinAttrGroup_Class;
+        classGroup.attrSections = @[classSec];
+        [result addObject:classGroup];
+    }
+
+    // Relation group - show window controller / delegate relation
+    {
+        NSArray<NSString *> *selfRelation = [window lks_selfRelation];
+        if (selfRelation.count > 0) {
+            LookinAttribute *relationAttr = [LookinAttribute new];
+            relationAttr.identifier = LookinAttr_Relation_Relation_Relation;
+            relationAttr.attrType = LookinAttrTypeCustomObj;
+            relationAttr.value = selfRelation;
+
+            LookinAttributesSection *relationSec = [LookinAttributesSection new];
+            relationSec.identifier = LookinAttrSec_Relation_Relation;
+            relationSec.attributes = @[relationAttr];
+
+            LookinAttributesGroup *relationGroup = [LookinAttributesGroup new];
+            relationGroup.identifier = LookinAttrGroup_Relation;
+            relationGroup.attrSections = @[relationSec];
+            [result addObject:relationGroup];
+        }
+    }
+
+    // Layout group - show frame and bounds
+    {
+        LookinAttribute *frameAttr = [LookinAttribute new];
+        frameAttr.identifier = LookinAttr_Layout_Frame_Frame;
+        frameAttr.attrType = LookinAttrTypeCGRect;
+        frameAttr.value = [NSValue valueWithCGRect:window.frame];
+
+        LookinAttributesSection *frameSec = [LookinAttributesSection new];
+        frameSec.identifier = LookinAttrSec_Layout_Frame;
+        frameSec.attributes = @[frameAttr];
+
+        LookinAttributesGroup *layoutGroup = [LookinAttributesGroup new];
+        layoutGroup.identifier = LookinAttrGroup_Layout;
+        layoutGroup.attrSections = @[frameSec];
+        [result addObject:layoutGroup];
+    }
+
+    // NSWindow-specific groups from blueprint
+    NSArray<LookinAttributesGroup *> *blueprintGroups = [[LookinDashboardBlueprint groupIDs] lookin_map:^id(NSUInteger idx, LookinAttrGroupIdentifier groupID) {
+        LookinAttributesGroup *group = [LookinAttributesGroup new];
+        group.identifier = groupID;
+
+        NSArray<LookinAttrSectionIdentifier> *secIDs = [LookinDashboardBlueprint sectionIDsForGroupID:groupID];
+        group.attrSections = [secIDs lookin_map:^id(NSUInteger idx, LookinAttrSectionIdentifier secID) {
+            LookinAttributesSection *sec = [LookinAttributesSection new];
+            sec.identifier = secID;
+
+            NSArray<LookinAttrIdentifier> *attrIDs = [LookinDashboardBlueprint attrIDsForSectionID:secID];
+            sec.attributes = [attrIDs lookin_map:^id(NSUInteger idx, LookinAttrIdentifier attrID) {
+                NSInteger minAvailableVersion = [LookinDashboardBlueprint minAvailableOSVersionWithAttrID:attrID];
+                if (minAvailableVersion > 0 && (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < minAvailableVersion)) {
+                    return nil;
+                }
+
+                if (![LookinDashboardBlueprint isWindowPropertyWithAttrID:attrID]) {
+                    return nil;
+                }
+
+                Class targetClass = NSClassFromString([LookinDashboardBlueprint classNameWithAttrID:attrID]);
+                if (![window isKindOfClass:targetClass]) {
+                    return nil;
+                }
+
+                LookinAttribute *attr = [self _attributeWithIdentifer:attrID targetObject:window];
+                return attr;
+            }];
+
+            if (sec.attributes.count) {
+                return sec;
+            } else {
+                return nil;
+            }
+        }];
+
+        if (group.attrSections.count) {
+            return group;
+        } else {
+            return nil;
+        }
+    }];
+
+    [result addObjectsFromArray:blueprintGroups];
+    return result;
+}
+#endif
+
+#if TARGET_OS_IPHONE
++ (NSArray<LookinAttributesGroup *> *)attrGroupsForWindowScene:(UIWindowScene *)windowScene API_AVAILABLE(ios(13.0)) {
+    if (!windowScene) {
+        NSAssert(NO, @"");
+        return nil;
+    }
+
+    NSMutableArray<LookinAttributesGroup *> *result = [NSMutableArray array];
+
+    // Class group - show scene class hierarchy
+    {
+        LookinAttribute *classAttr = [LookinAttribute new];
+        classAttr.identifier = LookinAttr_Class_Class_Class;
+        classAttr.attrType = LookinAttrTypeCustomObj;
+        classAttr.value = [windowScene lks_relatedClassChainList];
+
+        LookinAttributesSection *classSec = [LookinAttributesSection new];
+        classSec.identifier = LookinAttrSec_Class_Class;
+        classSec.attributes = @[classAttr];
+
+        LookinAttributesGroup *classGroup = [LookinAttributesGroup new];
+        classGroup.identifier = LookinAttrGroup_Class;
+        classGroup.attrSections = @[classSec];
+        [result addObject:classGroup];
+    }
+
+    // Relation group - show delegate relation
+    {
+        NSArray<NSString *> *selfRelation = [windowScene lks_selfRelation];
+        if (selfRelation.count > 0) {
+            LookinAttribute *relationAttr = [LookinAttribute new];
+            relationAttr.identifier = LookinAttr_Relation_Relation_Relation;
+            relationAttr.attrType = LookinAttrTypeCustomObj;
+            relationAttr.value = selfRelation;
+
+            LookinAttributesSection *relationSec = [LookinAttributesSection new];
+            relationSec.identifier = LookinAttrSec_Relation_Relation;
+            relationSec.attributes = @[relationAttr];
+
+            LookinAttributesGroup *relationGroup = [LookinAttributesGroup new];
+            relationGroup.identifier = LookinAttrGroup_Relation;
+            relationGroup.attrSections = @[relationSec];
+            [result addObject:relationGroup];
+        }
+    }
+
+    // Layout group - show coordinateSpace bounds
+    {
+        LookinAttribute *frameAttr = [LookinAttribute new];
+        frameAttr.identifier = LookinAttr_Layout_Frame_Frame;
+        frameAttr.attrType = LookinAttrTypeCGRect;
+        frameAttr.value = [NSValue valueWithCGRect:windowScene.coordinateSpace.bounds];
+
+        LookinAttributesSection *frameSec = [LookinAttributesSection new];
+        frameSec.identifier = LookinAttrSec_Layout_Frame;
+        frameSec.attributes = @[frameAttr];
+
+        LookinAttributesGroup *layoutGroup = [LookinAttributesGroup new];
+        layoutGroup.identifier = LookinAttrGroup_Layout;
+        layoutGroup.attrSections = @[frameSec];
+        [result addObject:layoutGroup];
+    }
+
+    // UIWindowScene-specific groups from blueprint
+    NSArray<LookinAttributesGroup *> *blueprintGroups = [[LookinDashboardBlueprint groupIDs] lookin_map:^id(NSUInteger idx, LookinAttrGroupIdentifier groupID) {
+        LookinAttributesGroup *group = [LookinAttributesGroup new];
+        group.identifier = groupID;
+
+        NSArray<LookinAttrSectionIdentifier> *secIDs = [LookinDashboardBlueprint sectionIDsForGroupID:groupID];
+        group.attrSections = [secIDs lookin_map:^id(NSUInteger idx, LookinAttrSectionIdentifier secID) {
+            LookinAttributesSection *sec = [LookinAttributesSection new];
+            sec.identifier = secID;
+
+            NSArray<LookinAttrIdentifier> *attrIDs = [LookinDashboardBlueprint attrIDsForSectionID:secID];
+            sec.attributes = [attrIDs lookin_map:^id(NSUInteger idx, LookinAttrIdentifier attrID) {
+                NSInteger minAvailableVersion = [LookinDashboardBlueprint minAvailableOSVersionWithAttrID:attrID];
+                if (minAvailableVersion > 0 && (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < minAvailableVersion)) {
+                    return nil;
+                }
+
+                if (![LookinDashboardBlueprint isWindowPropertyWithAttrID:attrID]) {
+                    return nil;
+                }
+
+                Class targetClass = NSClassFromString([LookinDashboardBlueprint classNameWithAttrID:attrID]);
+                if (![windowScene isKindOfClass:targetClass]) {
+                    return nil;
+                }
+
+                LookinAttribute *attr = [self _attributeWithIdentifer:attrID targetObject:windowScene];
+                return attr;
+            }];
+
+            if (sec.attributes.count) {
+                return sec;
+            } else {
+                return nil;
+            }
+        }];
+
+        if (group.attrSections.count) {
+            return group;
+        } else {
+            return nil;
+        }
+    }];
+
+    [result addObjectsFromArray:blueprintGroups];
+    return result;
+}
 #endif
 
 + (LookinAttribute *)_attributeWithIdentifer:(LookinAttrIdentifier)identifier targetObject:(id)target {
@@ -248,8 +476,12 @@
     } else if (strcmp(returnType, @encode(unsigned int)) == 0) {
         unsigned int targetValue;
         [invocation getReturnValue:&targetValue];
-        attribute.attrType = LookinAttrTypeUnsignedInt;
         attribute.value = @(targetValue);
+        if ([LookinDashboardBlueprint enumListNameWithAttrID:identifier]) {
+            attribute.attrType = LookinAttrTypeEnumInt;
+        } else {
+            attribute.attrType = LookinAttrTypeUnsignedInt;
+        }
 
     } else if (strcmp(returnType, @encode(unsigned short)) == 0) {
         unsigned short targetValue;
@@ -260,8 +492,12 @@
     } else if (strcmp(returnType, @encode(unsigned long)) == 0) {
         unsigned long targetValue;
         [invocation getReturnValue:&targetValue];
-        attribute.attrType = LookinAttrTypeUnsignedLong;
         attribute.value = @(targetValue);
+        if ([LookinDashboardBlueprint enumListNameWithAttrID:identifier]) {
+            attribute.attrType = LookinAttrTypeEnumLong;
+        } else {
+            attribute.attrType = LookinAttrTypeUnsignedLong;
+        }
 
     } else if (strcmp(returnType, @encode(unsigned long long)) == 0) {
         unsigned long long targetValue;

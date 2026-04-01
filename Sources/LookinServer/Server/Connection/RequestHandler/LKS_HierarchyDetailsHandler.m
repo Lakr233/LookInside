@@ -19,6 +19,9 @@
 #import "NSValue+Lookin.h"
 #import "NSObject+LookinServer.h"
 #import "CALayer+LookinServer.h"
+#if TARGET_OS_IPHONE
+#import "UIWindowScene+LookinServer.h"
+#endif
 @interface LKS_HierarchyDetailsHandler ()
 
 @property(nonatomic, strong) NSMutableArray<LookinStaticAsyncUpdateTasksPackage *> *taskPackages;
@@ -157,13 +160,38 @@
                         CGImageRelease(cgImage);
                     }
                 }
+                BOOL shouldMakeAttr = [self queryIfShouldMakeAttrsFromTask:task];
+                if (shouldMakeAttr) {
+                    itemDetail.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindow:window];
+                    [self.attrGroupsSyncedOids addObject:@(task.oid)];
+                }
                 if (task.needBasisVisualInfo) {
-                    itemDetail.frameValue = [NSValue valueWithCGRect:window.frame];
-                    itemDetail.boundsValue = [NSValue valueWithCGRect:window.contentView.bounds];
+                    CGRect windowBounds = window.frame;
+                    windowBounds.origin = CGPointZero;
+                    itemDetail.frameValue = [NSValue valueWithCGRect:windowBounds];
+                    itemDetail.boundsValue = [NSValue valueWithCGRect:windowBounds];
                     itemDetail.hiddenValue = @(!window.visible);
                     itemDetail.alphaValue = @(window.alphaValue);
                 }
                 return itemDetail;
+            }
+#endif
+#if TARGET_OS_IPHONE
+            if (@available(iOS 13.0, *)) {
+                if ([object isKindOfClass:[UIWindowScene class]]) {
+                    UIWindowScene *windowScene = (UIWindowScene *)object;
+                    // UIWindowScene has no screenshots
+                    BOOL shouldMakeAttr = [self queryIfShouldMakeAttrsFromTask:task];
+                    if (shouldMakeAttr) {
+                        itemDetail.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindowScene:windowScene];
+                        [self.attrGroupsSyncedOids addObject:@(task.oid)];
+                    }
+                    if (task.needBasisVisualInfo) {
+                        itemDetail.hiddenValue = @(NO);
+                        itemDetail.alphaValue = @(1.0);
+                    }
+                    return itemDetail;
+                }
             }
 #endif
             if (!object || ![object isKindOfClass:[CALayer class]]) {
