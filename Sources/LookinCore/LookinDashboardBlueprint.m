@@ -34,7 +34,8 @@
             LookinAttrGroup_UIScrollView,
             LookinAttrGroup_UITableView,
             LookinAttrGroup_UITextView,
-            LookinAttrGroup_UITextField
+            LookinAttrGroup_UITextField,
+            LookinAttrGroup_UIWindowScene
 #endif
 #if TARGET_OS_OSX
             LookinAttrGroup_NSImageView,
@@ -46,6 +47,23 @@
             LookinAttrGroup_NSTextField,
             LookinAttrGroup_NSVisualEffectView,
             LookinAttrGroup_NSStackView,
+            LookinAttrGroup_NSWindow,
+            LookinAttrGroup_NSSlider,
+            LookinAttrGroup_NSProgressIndicator,
+            LookinAttrGroup_NSSegmentedControl,
+            LookinAttrGroup_NSPopUpButton,
+            LookinAttrGroup_NSComboBox,
+            LookinAttrGroup_NSStepper,
+            LookinAttrGroup_NSColorWell,
+            LookinAttrGroup_NSSwitch,
+            LookinAttrGroup_NSDatePicker,
+            LookinAttrGroup_NSLevelIndicator,
+            LookinAttrGroup_NSOutlineView,
+            LookinAttrGroup_NSCollectionView,
+            LookinAttrGroup_NSBox,
+            LookinAttrGroup_NSSplitView,
+            LookinAttrGroup_NSTabView,
+            LookinAttrGroup_NSGridView,
 #endif
         ];
     });
@@ -155,11 +173,24 @@
                                            LookinAttrSec_UITextField_Clears,
                                            LookinAttrSec_UITextField_CanAdjustFont,
                                            LookinAttrSec_UITextField_ClearButtonMode],
+            LookinAttrGroup_UIWindowScene: @[
+                LookinAttrSec_UIWindowScene_State,
+                LookinAttrSec_UIWindowScene_Title,
+                LookinAttrSec_UIWindowScene_Orientation,
+                LookinAttrSec_UIWindowScene_Windows,
+                LookinAttrSec_UIWindowScene_Screen,
+                LookinAttrSec_UIWindowScene_StatusBar,
+                LookinAttrSec_UIWindowScene_Traits,
+                LookinAttrSec_UIWindowScene_Session,
+            ],
 #endif
 #if TARGET_OS_OSX
             LookinAttrGroup_NSImageView: @[
                 LookinAttrSec_NSImageView_Name,
-                LookinAttrSec_NSImageView_Open
+                LookinAttrSec_NSImageView_Open,
+                LookinAttrSec_NSImageView_Scaling,
+                LookinAttrSec_NSImageView_Behavior,
+                LookinAttrSec_NSImageView_ContentTintColor,
             ],
 
             LookinAttrGroup_NSControl: @[
@@ -168,17 +199,16 @@
                 LookinAttrSec_NSControl_Font,
                 LookinAttrSec_NSControl_Alignment,
                 LookinAttrSec_NSControl_Misc,
+                LookinAttrSec_NSControl_StringValue,
                 LookinAttrSec_NSControl_Value,
             ],
 
             LookinAttrGroup_NSButton: @[
                 LookinAttrSec_NSButton_ButtonType,
-                LookinAttrSec_NSButton_Title,
                 LookinAttrSec_NSButton_BezelStyle,
+                LookinAttrSec_NSButton_Title,
                 LookinAttrSec_NSButton_Bordered,
-                LookinAttrSec_NSButton_Transparent,
                 LookinAttrSec_NSButton_BezelColor,
-                LookinAttrSec_NSButton_ContentTintColor,
                 LookinAttrSec_NSButton_Misc,
             ],
 
@@ -237,18 +267,12 @@
             ],
 
             LookinAttrGroup_NSTextField: @[
-                LookinAttrSec_NSTextField_Bordered,
-                LookinAttrSec_NSTextField_Bezeled,
                 LookinAttrSec_NSTextField_BezelStyle,
-                LookinAttrSec_NSTextField_Editable,
-                LookinAttrSec_NSTextField_Selectable,
-                LookinAttrSec_NSTextField_DrawsBackground,
-                LookinAttrSec_NSTextField_PreferredMaxLayoutWidth,
-                LookinAttrSec_NSTextField_MaximumNumberOfLines,
-                LookinAttrSec_NSTextField_AllowsDefaultTighteningForTruncation,
                 LookinAttrSec_NSTextField_LineBreakStrategy,
-                LookinAttrSec_NSTextField_Placeholder,
+                LookinAttrSec_NSTextField_Bordered,
                 LookinAttrSec_NSTextField_TextColor,
+                LookinAttrSec_NSTextField_Placeholder,
+                LookinAttrSec_NSTextField_PreferredMaxLayoutWidth,
             ],
 
 
@@ -267,6 +291,117 @@
                 LookinAttrSec_NSStackView_Distribution,
                 LookinAttrSec_NSStackView_Alignment,
                 LookinAttrSec_NSStackView_Spacing,
+            ],
+
+            LookinAttrGroup_NSWindow: @[
+                LookinAttrSec_NSWindow_Title,
+                LookinAttrSec_NSWindow_Subtitle,
+                LookinAttrSec_NSWindow_State,
+                LookinAttrSec_NSWindow_Style,
+                LookinAttrSec_NSWindow_CollectionBehavior,
+                LookinAttrSec_NSWindow_Appearance,
+                LookinAttrSec_NSWindow_TitleVisibility,
+                LookinAttrSec_NSWindow_ToolbarStyle,
+                LookinAttrSec_NSWindow_TitlebarSeparatorStyle,
+                LookinAttrSec_NSWindow_Behavior,
+                LookinAttrSec_NSWindow_AnimationBehavior,
+                LookinAttrSec_NSWindow_Level,
+                LookinAttrSec_NSWindow_TabbingMode,
+                LookinAttrSec_NSWindow_Size,
+                LookinAttrSec_NSWindow_Info,
+            ],
+
+            LookinAttrGroup_NSSlider: @[
+                LookinAttrSec_NSSlider_SliderType,
+                LookinAttrSec_NSSlider_Range,
+                LookinAttrSec_NSSlider_TickMark,
+                LookinAttrSec_NSSlider_Misc,
+            ],
+
+            LookinAttrGroup_NSProgressIndicator: @[
+                LookinAttrSec_NSProgressIndicator_Style,
+                LookinAttrSec_NSProgressIndicator_Range,
+                LookinAttrSec_NSProgressIndicator_Misc,
+            ],
+
+            LookinAttrGroup_NSSegmentedControl: @[
+                LookinAttrSec_NSSegmentedControl_SegmentCount,
+                LookinAttrSec_NSSegmentedControl_Selection,
+                LookinAttrSec_NSSegmentedControl_Style,
+                LookinAttrSec_NSSegmentedControl_Colors,
+            ],
+
+            LookinAttrGroup_NSPopUpButton: @[
+                LookinAttrSec_NSPopUpButton_Behavior,
+                LookinAttrSec_NSPopUpButton_Selection,
+                LookinAttrSec_NSPopUpButton_Items,
+            ],
+
+            LookinAttrGroup_NSComboBox: @[
+                LookinAttrSec_NSComboBox_Items,
+                LookinAttrSec_NSComboBox_Misc,
+            ],
+
+            LookinAttrGroup_NSStepper: @[
+                LookinAttrSec_NSStepper_Range,
+                LookinAttrSec_NSStepper_Misc,
+            ],
+
+            LookinAttrGroup_NSColorWell: @[
+                LookinAttrSec_NSColorWell_Color,
+                LookinAttrSec_NSColorWell_Misc,
+            ],
+
+            LookinAttrGroup_NSSwitch: @[
+                LookinAttrSec_NSSwitch_State,
+            ],
+
+            LookinAttrGroup_NSDatePicker: @[
+                LookinAttrSec_NSDatePicker_Style,
+                LookinAttrSec_NSDatePicker_Range,
+                LookinAttrSec_NSDatePicker_Misc,
+            ],
+
+            LookinAttrGroup_NSLevelIndicator: @[
+                LookinAttrSec_NSLevelIndicator_Style,
+                LookinAttrSec_NSLevelIndicator_Range,
+                LookinAttrSec_NSLevelIndicator_TickMark,
+            ],
+
+            LookinAttrGroup_NSOutlineView: @[
+                LookinAttrSec_NSOutlineView_Indentation,
+                LookinAttrSec_NSOutlineView_Misc,
+            ],
+
+            LookinAttrGroup_NSCollectionView: @[
+                LookinAttrSec_NSCollectionView_Selection,
+                LookinAttrSec_NSCollectionView_Info,
+                LookinAttrSec_NSCollectionView_Colors,
+            ],
+
+            LookinAttrGroup_NSBox: @[
+                LookinAttrSec_NSBox_Type,
+                LookinAttrSec_NSBox_Title,
+                LookinAttrSec_NSBox_Appearance,
+                LookinAttrSec_NSBox_Metrics,
+            ],
+
+            LookinAttrGroup_NSSplitView: @[
+                LookinAttrSec_NSSplitView_Orientation,
+                LookinAttrSec_NSSplitView_Style,
+                LookinAttrSec_NSSplitView_Misc,
+            ],
+
+            LookinAttrGroup_NSTabView: @[
+                LookinAttrSec_NSTabView_Type,
+                LookinAttrSec_NSTabView_Misc,
+                LookinAttrSec_NSTabView_Info,
+            ],
+
+            LookinAttrGroup_NSGridView: @[
+                LookinAttrSec_NSGridView_Dimensions,
+                LookinAttrSec_NSGridView_Spacing,
+                LookinAttrSec_NSGridView_Placement,
             ],
 #endif
             
@@ -449,7 +584,38 @@
             LookinAttrSec_UITextField_CanAdjustFont: @[LookinAttr_UITextField_CanAdjustFont_CanAdjustFont,
                                                        LookinAttr_UITextField_CanAdjustFont_MinSize],
             
-            LookinAttrSec_UITextField_ClearButtonMode: @[LookinAttr_UITextField_ClearButtonMode_Mode]
+            LookinAttrSec_UITextField_ClearButtonMode: @[LookinAttr_UITextField_ClearButtonMode_Mode],
+            LookinAttrSec_UIWindowScene_State: @[
+                LookinAttr_UIWindowScene_State_ActivationState,
+            ],
+            LookinAttrSec_UIWindowScene_Title: @[
+                LookinAttr_UIWindowScene_Title_Title,
+            ],
+            LookinAttrSec_UIWindowScene_Orientation: @[
+                LookinAttr_UIWindowScene_Orientation_InterfaceOrientation,
+            ],
+            LookinAttrSec_UIWindowScene_Windows: @[
+                LookinAttr_UIWindowScene_Windows_WindowCount,
+                LookinAttr_UIWindowScene_Windows_KeyWindowClassName,
+            ],
+            LookinAttrSec_UIWindowScene_Screen: @[
+                LookinAttr_UIWindowScene_Screen_ScreenBounds,
+                LookinAttr_UIWindowScene_Screen_ScreenScale,
+            ],
+            LookinAttrSec_UIWindowScene_StatusBar: @[
+                LookinAttr_UIWindowScene_StatusBar_StatusBarHidden,
+                LookinAttr_UIWindowScene_StatusBar_StatusBarStyle,
+                LookinAttr_UIWindowScene_StatusBar_StatusBarFrame,
+            ],
+            LookinAttrSec_UIWindowScene_Traits: @[
+                LookinAttr_UIWindowScene_Traits_UserInterfaceStyle,
+                LookinAttr_UIWindowScene_Traits_HorizontalSizeClass,
+                LookinAttr_UIWindowScene_Traits_VerticalSizeClass,
+            ],
+            LookinAttrSec_UIWindowScene_Session: @[
+                LookinAttr_UIWindowScene_Session_PersistentIdentifier,
+                LookinAttr_UIWindowScene_Session_SessionRole,
+            ],
 #endif
 #if TARGET_OS_OSX
             LookinAttrSec_NSImageView_Name:@[
@@ -457,6 +623,18 @@
             ],
             LookinAttrSec_NSImageView_Open:@[
                 LookinAttr_NSImageView_Open_Open
+            ],
+            LookinAttrSec_NSImageView_Scaling: @[
+                LookinAttr_NSImageView_Scaling_ImageScaling,
+                LookinAttr_NSImageView_Scaling_ImageAlignment,
+                LookinAttr_NSImageView_Scaling_ImageFrameStyle,
+            ],
+            LookinAttrSec_NSImageView_Behavior: @[
+                LookinAttr_NSImageView_Behavior_Animates,
+                LookinAttr_NSImageView_Behavior_Editable,
+            ],
+            LookinAttrSec_NSImageView_ContentTintColor: @[
+                LookinAttr_NSImageView_ContentTintColor_ContentTintColor,
             ],
             LookinAttrSec_NSControl_State: @[
                 LookinAttr_NSControl_State_Enabled,
@@ -479,8 +657,10 @@
                 LookinAttr_NSControl_Misc_UsesSingleLineMode,
                 LookinAttr_NSControl_Misc_AllowsExpansionToolTips,
             ],
-            LookinAttrSec_NSControl_Value: @[
+            LookinAttrSec_NSControl_StringValue: @[
                 LookinAttr_NSControl_Value_StringValue,
+            ],
+            LookinAttrSec_NSControl_Value: @[
                 LookinAttr_NSControl_Value_IntValue,
                 LookinAttr_NSControl_Value_IntegerValue,
                 LookinAttr_NSControl_Value_FloatValue,
@@ -495,15 +675,19 @@
                 LookinAttr_NSButton_Title_AlernateTitle,
             ],
             LookinAttrSec_NSButton_BezelStyle: @[LookinAttr_NSButton_BezelStyle_BezelStyle],
-            LookinAttrSec_NSButton_Bordered: @[LookinAttr_NSButton_Bordered_Bordered],
-            LookinAttrSec_NSButton_Transparent: @[LookinAttr_NSButton_Transparent_Transparent],
-            LookinAttrSec_NSButton_BezelColor: @[LookinAttr_NSButton_BezelColor_BezelColor],
-            LookinAttrSec_NSButton_ContentTintColor: @[LookinAttr_NSButton_ContentTintColor_ContentTintColor],
-            LookinAttrSec_NSButton_Misc: @[
+            LookinAttrSec_NSButton_Bordered: @[
+                LookinAttr_NSButton_Bordered_Bordered,
+                LookinAttr_NSButton_Transparent_Transparent,
                 LookinAttr_NSButton_Misc_ShowsBorderOnlyWhileMouseInside,
-                LookinAttr_NSButton_Misc_MaxAcceleratorLevel,
                 LookinAttr_NSButton_Misc_SpringLoaded,
                 LookinAttr_NSButton_Misc_HasDestructiveAction,
+            ],
+            LookinAttrSec_NSButton_BezelColor: @[
+                LookinAttr_NSButton_BezelColor_BezelColor,
+                LookinAttr_NSButton_ContentTintColor_ContentTintColor,
+            ],
+            LookinAttrSec_NSButton_Misc: @[
+                LookinAttr_NSButton_Misc_MaxAcceleratorLevel,
             ],
 
 
@@ -673,41 +857,32 @@
                 LookinAttr_NSTextView_Resizable_Vertical,
             ],
 
-            LookinAttrSec_NSTextField_Bordered: @[
-                LookinAttr_NSTextField_Bordered_Bordered
-            ],
-            LookinAttrSec_NSTextField_Bezeled: @[
-                LookinAttr_NSTextField_Bezeled_Bezeled
-            ],
             LookinAttrSec_NSTextField_BezelStyle: @[
                 LookinAttr_NSTextField_BezelStyle_BezelStyle
             ],
-            LookinAttrSec_NSTextField_Editable: @[
-                LookinAttr_NSTextField_Editable_Editable
+            LookinAttrSec_NSTextField_Bordered: @[
+                LookinAttr_NSTextField_Bordered_Bordered,
+                LookinAttr_NSTextField_Bezeled_Bezeled,
+                LookinAttr_NSTextField_Editable_Editable,
+                LookinAttr_NSTextField_Selectable_Selectable,
+                LookinAttr_NSTextField_DrawsBackground_DrawsBackground,
+                LookinAttr_NSTextField_AllowsDefaultTighteningForTruncation_AllowsDefaultTighteningForTruncation,
+                LookinAttr_NSTextField_AllowsEditingTextAttributes_AllowsEditingTextAttributes,
+                LookinAttr_NSTextField_ImportsGraphics_ImportsGraphics,
             ],
-            LookinAttrSec_NSTextField_Selectable: @[
-                LookinAttr_NSTextField_Selectable_Selectable
-            ],
-            LookinAttrSec_NSTextField_DrawsBackground: @[
-                LookinAttr_NSTextField_DrawsBackground_DrawsBackground
-            ],
-            LookinAttrSec_NSTextField_PreferredMaxLayoutWidth: @[
-                LookinAttr_NSTextField_PreferredMaxLayoutWidth_PreferredMaxLayoutWidth
-            ],
-            LookinAttrSec_NSTextField_MaximumNumberOfLines: @[
-                LookinAttr_NSTextField_MaximumNumberOfLines_MaximumNumberOfLines
-            ],
-            LookinAttrSec_NSTextField_AllowsDefaultTighteningForTruncation: @[
-                LookinAttr_NSTextField_AllowsDefaultTighteningForTruncation_AllowsDefaultTighteningForTruncation
-            ],
-            LookinAttrSec_NSTextField_LineBreakStrategy: @[
-                LookinAttr_NSTextField_LineBreakStrategy_LineBreakStrategy
+            LookinAttrSec_NSTextField_TextColor: @[
+                LookinAttr_NSTextField_TextColor_Color,
+                LookinAttr_NSTextField_BackgroundColor_Color,
             ],
             LookinAttrSec_NSTextField_Placeholder: @[
                 LookinAttr_NSTextField_Placeholder_Placeholder
             ],
-            LookinAttrSec_NSTextField_TextColor: @[
-                LookinAttr_NSTextField_TextColor_Color
+            LookinAttrSec_NSTextField_LineBreakStrategy: @[
+                LookinAttr_NSTextField_LineBreakStrategy_LineBreakStrategy,
+            ],
+            LookinAttrSec_NSTextField_PreferredMaxLayoutWidth: @[
+                LookinAttr_NSTextField_PreferredMaxLayoutWidth_PreferredMaxLayoutWidth,
+                LookinAttr_NSTextField_MaximumNumberOfLines_MaximumNumberOfLines,
             ],
 
 
@@ -750,6 +925,284 @@
                 LookinAttr_NSStackView_Spacing_Spacing
             ],
 
+            LookinAttrSec_NSWindow_Title: @[
+                LookinAttr_NSWindow_Title_Title,
+            ],
+            LookinAttrSec_NSWindow_Subtitle: @[
+                LookinAttr_NSWindow_Title_Subtitle,
+            ],
+            LookinAttrSec_NSWindow_State: @[
+                LookinAttr_NSWindow_State_KeyWindow,
+                LookinAttr_NSWindow_State_MainWindow,
+                LookinAttr_NSWindow_State_Visible,
+                LookinAttr_NSWindow_State_CanBecomeKeyWindow,
+                LookinAttr_NSWindow_State_CanBecomeMainWindow,
+            ],
+            LookinAttrSec_NSWindow_Style: @[
+                LookinAttr_NSWindow_Style_Titled,
+                LookinAttr_NSWindow_Style_Closable,
+                LookinAttr_NSWindow_Style_Miniaturizable,
+                LookinAttr_NSWindow_Style_Resizable,
+                LookinAttr_NSWindow_Style_UnifiedTitleAndToolbar,
+                LookinAttr_NSWindow_Style_FullScreen,
+                LookinAttr_NSWindow_Style_FullSizeContentView,
+                LookinAttr_NSWindow_Style_UtilityWindow,
+                LookinAttr_NSWindow_Style_DocModalWindow,
+                LookinAttr_NSWindow_Style_NonactivatingPanel,
+                LookinAttr_NSWindow_Style_HUDWindow,
+            ],
+            LookinAttrSec_NSWindow_CollectionBehavior: @[
+                LookinAttr_NSWindow_CollectionBehavior_CanJoinAllSpaces,
+                LookinAttr_NSWindow_CollectionBehavior_MoveToActiveSpace,
+                LookinAttr_NSWindow_CollectionBehavior_ParticipatesInCycle,
+                LookinAttr_NSWindow_CollectionBehavior_IgnoresCycle,
+                LookinAttr_NSWindow_CollectionBehavior_FullScreenPrimary,
+                LookinAttr_NSWindow_CollectionBehavior_FullScreenAuxiliary,
+                LookinAttr_NSWindow_CollectionBehavior_FullScreenNone,
+                LookinAttr_NSWindow_CollectionBehavior_FullScreenAllowsTiling,
+                LookinAttr_NSWindow_CollectionBehavior_FullScreenDisallowsTiling,
+            ],
+            LookinAttrSec_NSWindow_Appearance: @[
+                LookinAttr_NSWindow_Appearance_TitlebarAppearsTransparent,
+                LookinAttr_NSWindow_Appearance_BackgroundColor,
+                LookinAttr_NSWindow_Appearance_AlphaValue,
+                LookinAttr_NSWindow_Appearance_Opaque,
+                LookinAttr_NSWindow_Appearance_HasShadow,
+            ],
+            LookinAttrSec_NSWindow_TitleVisibility: @[
+                LookinAttr_NSWindow_Appearance_TitleVisibility,
+            ],
+            LookinAttrSec_NSWindow_ToolbarStyle: @[
+                LookinAttr_NSWindow_Appearance_ToolbarStyle,
+            ],
+            LookinAttrSec_NSWindow_TitlebarSeparatorStyle: @[
+                LookinAttr_NSWindow_Appearance_TitlebarSeparatorStyle,
+            ],
+            LookinAttrSec_NSWindow_Behavior: @[
+                LookinAttr_NSWindow_Behavior_Movable,
+                LookinAttr_NSWindow_Behavior_MovableByWindowBackground,
+                LookinAttr_NSWindow_Behavior_HidesOnDeactivate,
+            ],
+            LookinAttrSec_NSWindow_AnimationBehavior: @[
+                LookinAttr_NSWindow_Behavior_AnimationBehavior,
+            ],
+            LookinAttrSec_NSWindow_Level: @[
+                LookinAttr_NSWindow_Behavior_Level,
+            ],
+            LookinAttrSec_NSWindow_TabbingMode: @[
+                LookinAttr_NSWindow_Behavior_TabbingMode,
+            ],
+            LookinAttrSec_NSWindow_Size: @[
+                LookinAttr_NSWindow_Size_MinSize,
+                LookinAttr_NSWindow_Size_MaxSize,
+            ],
+            LookinAttrSec_NSWindow_Info: @[
+                LookinAttr_NSWindow_Info_WindowNumber,
+                LookinAttr_NSWindow_Info_BackingScaleFactor,
+            ],
+
+            LookinAttrSec_NSSlider_SliderType: @[
+                LookinAttr_NSSlider_SliderType_SliderType,
+            ],
+            LookinAttrSec_NSSlider_Range: @[
+                LookinAttr_NSSlider_Range_MinValue,
+                LookinAttr_NSSlider_Range_MaxValue,
+            ],
+            LookinAttrSec_NSSlider_TickMark: @[
+                LookinAttr_NSSlider_TickMark_NumberOfTickMarks,
+                LookinAttr_NSSlider_TickMark_TickMarkPosition,
+                LookinAttr_NSSlider_TickMark_AllowsTickMarkValuesOnly,
+            ],
+            LookinAttrSec_NSSlider_Misc: @[
+                LookinAttr_NSSlider_Misc_Vertical,
+                LookinAttr_NSSlider_Misc_KnobThickness,
+                LookinAttr_NSSlider_Misc_AltIncrementValue,
+                LookinAttr_NSSlider_Misc_TrackFillColor,
+            ],
+
+            LookinAttrSec_NSProgressIndicator_Style: @[
+                LookinAttr_NSProgressIndicator_Style_Style,
+            ],
+            LookinAttrSec_NSProgressIndicator_Range: @[
+                LookinAttr_NSProgressIndicator_Range_MinValue,
+                LookinAttr_NSProgressIndicator_Range_MaxValue,
+                LookinAttr_NSProgressIndicator_Range_DoubleValue,
+            ],
+            LookinAttrSec_NSProgressIndicator_Misc: @[
+                LookinAttr_NSProgressIndicator_Misc_Indeterminate,
+                LookinAttr_NSProgressIndicator_Misc_Bezeled,
+                LookinAttr_NSProgressIndicator_Misc_DisplayedWhenStopped,
+            ],
+
+            LookinAttrSec_NSSegmentedControl_SegmentCount: @[
+                LookinAttr_NSSegmentedControl_SegmentCount_SegmentCount,
+            ],
+            LookinAttrSec_NSSegmentedControl_Selection: @[
+                LookinAttr_NSSegmentedControl_Selection_SelectedSegment,
+            ],
+            LookinAttrSec_NSSegmentedControl_Style: @[
+                LookinAttr_NSSegmentedControl_Style_SegmentStyle,
+                LookinAttr_NSSegmentedControl_Style_TrackingMode,
+            ],
+            LookinAttrSec_NSSegmentedControl_Colors: @[
+                LookinAttr_NSSegmentedControl_Colors_SelectedSegmentBezelColor,
+            ],
+
+            LookinAttrSec_NSPopUpButton_Behavior: @[
+                LookinAttr_NSPopUpButton_Behavior_PullsDown,
+                LookinAttr_NSPopUpButton_Behavior_AutoenablesItems,
+                LookinAttr_NSPopUpButton_Behavior_PreferredEdge,
+            ],
+            LookinAttrSec_NSPopUpButton_Selection: @[
+                LookinAttr_NSPopUpButton_Selection_SelectedTag,
+                LookinAttr_NSPopUpButton_Selection_IndexOfSelectedItem,
+                LookinAttr_NSPopUpButton_Selection_TitleOfSelectedItem,
+            ],
+            LookinAttrSec_NSPopUpButton_Items: @[
+                LookinAttr_NSPopUpButton_Items_NumberOfItems,
+            ],
+
+            LookinAttrSec_NSComboBox_Items: @[
+                LookinAttr_NSComboBox_Items_NumberOfItems,
+                LookinAttr_NSComboBox_Items_HasVerticalScroller,
+                LookinAttr_NSComboBox_Items_NumberOfVisibleItems,
+                LookinAttr_NSComboBox_Items_IntercellSpacing,
+                LookinAttr_NSComboBox_Items_ItemHeight,
+            ],
+            LookinAttrSec_NSComboBox_Misc: @[
+                LookinAttr_NSComboBox_Misc_ButtonBordered,
+                LookinAttr_NSComboBox_Misc_Completes,
+                LookinAttr_NSComboBox_Misc_UsesDataSource,
+            ],
+
+            LookinAttrSec_NSStepper_Range: @[
+                LookinAttr_NSStepper_Range_MinValue,
+                LookinAttr_NSStepper_Range_MaxValue,
+                LookinAttr_NSStepper_Range_Increment,
+            ],
+            LookinAttrSec_NSStepper_Misc: @[
+                LookinAttr_NSStepper_Misc_ValueWraps,
+                LookinAttr_NSStepper_Misc_Autorepeat,
+            ],
+
+            LookinAttrSec_NSColorWell_Color: @[
+                LookinAttr_NSColorWell_Color_Color,
+            ],
+            LookinAttrSec_NSColorWell_Misc: @[
+                LookinAttr_NSColorWell_Misc_Bordered,
+                LookinAttr_NSColorWell_Misc_Active,
+                LookinAttr_NSColorWell_Misc_ColorWellStyle,
+            ],
+
+            LookinAttrSec_NSSwitch_State: @[
+                LookinAttr_NSSwitch_State_State,
+            ],
+
+            LookinAttrSec_NSDatePicker_Style: @[
+                LookinAttr_NSDatePicker_Style_DatePickerStyle,
+                LookinAttr_NSDatePicker_Style_DatePickerMode,
+            ],
+            LookinAttrSec_NSDatePicker_Range: @[
+                LookinAttr_NSDatePicker_Range_DateValue,
+                LookinAttr_NSDatePicker_Range_MinDate,
+                LookinAttr_NSDatePicker_Range_MaxDate,
+            ],
+            LookinAttrSec_NSDatePicker_Misc: @[
+                LookinAttr_NSDatePicker_Misc_Bordered,
+                LookinAttr_NSDatePicker_Misc_Bezeled,
+                LookinAttr_NSDatePicker_Misc_DrawsBackground,
+            ],
+
+            LookinAttrSec_NSLevelIndicator_Style: @[
+                LookinAttr_NSLevelIndicator_Style_Style,
+            ],
+            LookinAttrSec_NSLevelIndicator_Range: @[
+                LookinAttr_NSLevelIndicator_Range_MinValue,
+                LookinAttr_NSLevelIndicator_Range_MaxValue,
+                LookinAttr_NSLevelIndicator_Range_WarningValue,
+                LookinAttr_NSLevelIndicator_Range_CriticalValue,
+            ],
+            LookinAttrSec_NSLevelIndicator_TickMark: @[
+                LookinAttr_NSLevelIndicator_TickMark_NumberOfTickMarks,
+                LookinAttr_NSLevelIndicator_TickMark_NumberOfMajorTickMarks,
+            ],
+
+            LookinAttrSec_NSOutlineView_Indentation: @[
+                LookinAttr_NSOutlineView_Indentation_IndentationPerLevel,
+            ],
+            LookinAttrSec_NSOutlineView_Misc: @[
+                LookinAttr_NSOutlineView_Misc_AutoresizesOutlineColumn,
+                LookinAttr_NSOutlineView_Misc_IndentationMarkerFollowsCell,
+                LookinAttr_NSOutlineView_Misc_AutosaveExpandedItems,
+            ],
+
+            LookinAttrSec_NSCollectionView_Selection: @[
+                LookinAttr_NSCollectionView_Selection_Selectable,
+                LookinAttr_NSCollectionView_Selection_AllowsMultipleSelection,
+                LookinAttr_NSCollectionView_Selection_AllowsEmptySelection,
+            ],
+            LookinAttrSec_NSCollectionView_Info: @[
+                LookinAttr_NSCollectionView_Info_NumberOfSections,
+            ],
+            LookinAttrSec_NSCollectionView_Colors: @[
+                LookinAttr_NSCollectionView_Colors_BackgroundColors,
+            ],
+
+            LookinAttrSec_NSBox_Type: @[
+                LookinAttr_NSBox_Type_BoxType,
+                LookinAttr_NSBox_Type_BorderType,
+            ],
+            LookinAttrSec_NSBox_Title: @[
+                LookinAttr_NSBox_Title_Title,
+                LookinAttr_NSBox_Title_TitlePosition,
+            ],
+            LookinAttrSec_NSBox_Appearance: @[
+                LookinAttr_NSBox_Appearance_Transparent,
+                LookinAttr_NSBox_Appearance_FillColor,
+                LookinAttr_NSBox_Appearance_BorderColor,
+            ],
+            LookinAttrSec_NSBox_Metrics: @[
+                LookinAttr_NSBox_Metrics_BorderWidth,
+                LookinAttr_NSBox_Metrics_CornerRadius,
+                LookinAttr_NSBox_Metrics_ContentViewMargins,
+            ],
+
+            LookinAttrSec_NSSplitView_Orientation: @[
+                LookinAttr_NSSplitView_Orientation_Vertical,
+            ],
+            LookinAttrSec_NSSplitView_Style: @[
+                LookinAttr_NSSplitView_Style_DividerStyle,
+                LookinAttr_NSSplitView_Style_DividerThickness,
+            ],
+            LookinAttrSec_NSSplitView_Misc: @[
+                LookinAttr_NSSplitView_Misc_ArrangesAllSubviews,
+            ],
+
+            LookinAttrSec_NSTabView_Type: @[
+                LookinAttr_NSTabView_Type_TabViewType,
+                LookinAttr_NSTabView_Type_TabPosition,
+                LookinAttr_NSTabView_Type_TabViewBorderType,
+            ],
+            LookinAttrSec_NSTabView_Misc: @[
+                LookinAttr_NSTabView_Misc_AllowsTruncatedLabels,
+                LookinAttr_NSTabView_Misc_DrawsBackground,
+            ],
+            LookinAttrSec_NSTabView_Info: @[
+                LookinAttr_NSTabView_Info_NumberOfTabViewItems,
+            ],
+
+            LookinAttrSec_NSGridView_Dimensions: @[
+                LookinAttr_NSGridView_Dimensions_NumberOfColumns,
+                LookinAttr_NSGridView_Dimensions_NumberOfRows,
+            ],
+            LookinAttrSec_NSGridView_Spacing: @[
+                LookinAttr_NSGridView_Spacing_RowSpacing,
+                LookinAttr_NSGridView_Spacing_ColumnSpacing,
+            ],
+            LookinAttrSec_NSGridView_Placement: @[
+                LookinAttr_NSGridView_Placement_XPlacement,
+                LookinAttr_NSGridView_Placement_YPlacement,
+            ],
 #endif
         };
     });
@@ -790,7 +1243,7 @@
             LookinAttrGroup_Relation: @"Relation",
             LookinAttrGroup_Layout: @"Layout",
             LookinAttrGroup_AutoLayout: @"AutoLayout",
-            LookinAttrGroup_ViewLayer: @"CALayer / UIView",
+            // iOS groups (macOS client displays iOS data, so both platforms need all titles)
             LookinAttrGroup_UIImageView: @"UIImageView",
             LookinAttrGroup_UILabel: @"UILabel",
             LookinAttrGroup_UIControl: @"UIControl",
@@ -801,7 +1254,8 @@
             LookinAttrGroup_UITextField: @"UITextField",
             LookinAttrGroup_UIVisualEffectView: @"UIVisualEffectView",
             LookinAttrGroup_UIStackView: @"UIStackView",
-            LookinAttrGroup_ViewLayer:          @"CALayer / NSView",
+            LookinAttrGroup_UIWindowScene: @"UIWindowScene",
+            // macOS groups
             LookinAttrGroup_NSImageView:        @"NSImageView",
             LookinAttrGroup_NSControl:          @"NSControl",
             LookinAttrGroup_NSButton:           @"NSButton",
@@ -810,7 +1264,29 @@
             LookinAttrGroup_NSTextView:         @"NSTextView",
             LookinAttrGroup_NSTextField:        @"NSTextField",
             LookinAttrGroup_NSVisualEffectView: @"NSVisualEffectView",
-            LookinAttrGroup_NSStackView:        @"NSStackView"
+            LookinAttrGroup_NSStackView:        @"NSStackView",
+            LookinAttrGroup_NSWindow:           @"NSWindow",
+            LookinAttrGroup_NSSlider:           @"NSSlider",
+            LookinAttrGroup_NSProgressIndicator: @"NSProgressIndicator",
+            LookinAttrGroup_NSSegmentedControl: @"NSSegmentedControl",
+            LookinAttrGroup_NSPopUpButton:      @"NSPopUpButton",
+            LookinAttrGroup_NSComboBox:         @"NSComboBox",
+            LookinAttrGroup_NSStepper:          @"NSStepper",
+            LookinAttrGroup_NSColorWell:        @"NSColorWell",
+            LookinAttrGroup_NSSwitch:           @"NSSwitch",
+            LookinAttrGroup_NSDatePicker:       @"NSDatePicker",
+            LookinAttrGroup_NSLevelIndicator:   @"NSLevelIndicator",
+            LookinAttrGroup_NSOutlineView:      @"NSOutlineView",
+            LookinAttrGroup_NSCollectionView:   @"NSCollectionView",
+            LookinAttrGroup_NSBox:              @"NSBox",
+            LookinAttrGroup_NSSplitView:        @"NSSplitView",
+            LookinAttrGroup_NSTabView:          @"NSTabView",
+            LookinAttrGroup_NSGridView:         @"NSGridView",
+#if TARGET_OS_IPHONE
+            LookinAttrGroup_ViewLayer: @"CALayer / UIView",
+#else
+            LookinAttrGroup_ViewLayer: @"CALayer / NSView",
+#endif
         };
     });
     NSString *title = rawInfo[groupID];
@@ -885,19 +1361,20 @@
             LookinAttrSec_UITextField_ClearButtonMode: @"ClearButtonMode",
             LookinAttrSec_NSImageView_Name: @"ImageName",
             LookinAttrSec_NSImageView_Open: @"Open",
+            LookinAttrSec_NSImageView_Scaling: @"Scaling",
+            LookinAttrSec_NSImageView_Behavior: @"Behavior",
+            LookinAttrSec_NSImageView_ContentTintColor: @"ContentTintColor",
             LookinAttrSec_NSControl_State: @"State",
             LookinAttrSec_NSControl_ControlSize: @"ControlSize",
             LookinAttrSec_NSControl_Font: @"Font",
             LookinAttrSec_NSControl_Alignment: @"Alignment",
             LookinAttrSec_NSControl_Misc: @"Misc",
+            LookinAttrSec_NSControl_StringValue: @"StringValue",
             LookinAttrSec_NSControl_Value: @"Value",
             LookinAttrSec_NSButton_ButtonType: @"ButtonType",
             LookinAttrSec_NSButton_Title: @"Title",
             LookinAttrSec_NSButton_BezelStyle: @"BezelStyle",
-            LookinAttrSec_NSButton_Bordered: @"Bordered",
-            LookinAttrSec_NSButton_Transparent: @"Transparent",
-            LookinAttrSec_NSButton_BezelColor: @"BezelColor",
-            LookinAttrSec_NSButton_ContentTintColor: @"ContentTintColor",
+            LookinAttrSec_NSButton_BezelColor: @"Colors",
             LookinAttrSec_NSButton_Misc: @"Misc",
             LookinAttrSec_NSScrollView_ContentOffset: @"ContentOffset",
             LookinAttrSec_NSScrollView_ContentSize: @"ContentSize",
@@ -944,18 +1421,11 @@
             LookinAttrSec_NSTextView_BaseWritingDirection: @"BaseWritingDirection",
             LookinAttrSec_NSTextView_Size: @"Size",
             LookinAttrSec_NSTextView_Resizable: @"Resizable",
-            LookinAttrSec_NSTextField_Bordered: @"Bordered",
-            LookinAttrSec_NSTextField_Bezeled: @"Bezeled",
             LookinAttrSec_NSTextField_BezelStyle: @"BezelStyle",
-            LookinAttrSec_NSTextField_Editable: @"Editable",
-            LookinAttrSec_NSTextField_Selectable: @"Selectable",
-            LookinAttrSec_NSTextField_DrawsBackground: @"DrawsBackground",
-            LookinAttrSec_NSTextField_PreferredMaxLayoutWidth: @"PreferredMaxLayoutWidth",
-            LookinAttrSec_NSTextField_MaximumNumberOfLines: @"MaximumNumberOfLines",
-            LookinAttrSec_NSTextField_AllowsDefaultTighteningForTruncation: @"AllowsDefaultTighteningForTruncation",
             LookinAttrSec_NSTextField_LineBreakStrategy: @"LineBreakStrategy",
+            LookinAttrSec_NSTextField_TextColor: @"Colors",
             LookinAttrSec_NSTextField_Placeholder: @"Placeholder",
-            LookinAttrSec_NSTextField_TextColor: @"TextColor",
+            LookinAttrSec_NSTextField_PreferredMaxLayoutWidth: @"Layout",
             LookinAttrSec_NSVisualEffectView_Material: @"Material",
             LookinAttrSec_NSVisualEffectView_InteriorBackgroundStyle: @"InteriorBackgroundStyle",
             LookinAttrSec_NSVisualEffectView_BlendingMode: @"BlendingMode",
@@ -967,6 +1437,75 @@
             LookinAttrSec_NSStackView_Distribution: @"Distribution",
             LookinAttrSec_NSStackView_Alignment: @"Alignment",
             LookinAttrSec_NSStackView_Spacing: @"Spacing",
+            LookinAttrSec_NSWindow_Title: @"Title",
+            LookinAttrSec_NSWindow_Subtitle: @"Subtitle",
+            LookinAttrSec_NSWindow_State: @"State",
+            LookinAttrSec_NSWindow_Style: @"StyleMask",
+            LookinAttrSec_NSWindow_CollectionBehavior: @"CollectionBehavior",
+            LookinAttrSec_NSWindow_Appearance: @"Appearance",
+            LookinAttrSec_NSWindow_TitleVisibility: @"TitleVisibility",
+            LookinAttrSec_NSWindow_ToolbarStyle: @"ToolbarStyle",
+            LookinAttrSec_NSWindow_TitlebarSeparatorStyle: @"TitlebarSeparatorStyle",
+            LookinAttrSec_NSWindow_Behavior: @"Behavior",
+            LookinAttrSec_NSWindow_AnimationBehavior: @"AnimationBehavior",
+            LookinAttrSec_NSWindow_Level: @"Level",
+            LookinAttrSec_NSWindow_TabbingMode: @"TabbingMode",
+            LookinAttrSec_NSWindow_Size: @"Size",
+            LookinAttrSec_NSWindow_Info: @"Info",
+            LookinAttrSec_NSSlider_SliderType: @"SliderType",
+            LookinAttrSec_NSSlider_Range: @"Range",
+            LookinAttrSec_NSSlider_TickMark: @"TickMark",
+            LookinAttrSec_NSSlider_Misc: @"Misc",
+            LookinAttrSec_NSProgressIndicator_Style: @"Style",
+            LookinAttrSec_NSProgressIndicator_Range: @"Range",
+            LookinAttrSec_NSProgressIndicator_Misc: @"Misc",
+            LookinAttrSec_NSSegmentedControl_SegmentCount: @"SegmentCount",
+            LookinAttrSec_NSSegmentedControl_Selection: @"Selection",
+            LookinAttrSec_NSSegmentedControl_Style: @"Style",
+            LookinAttrSec_NSSegmentedControl_Colors: @"Colors",
+            LookinAttrSec_NSPopUpButton_Behavior: @"Behavior",
+            LookinAttrSec_NSPopUpButton_Selection: @"Selection",
+            LookinAttrSec_NSPopUpButton_Items: @"Items",
+            LookinAttrSec_NSComboBox_Items: @"Items",
+            LookinAttrSec_NSComboBox_Misc: @"Misc",
+            LookinAttrSec_NSStepper_Range: @"Range",
+            LookinAttrSec_NSStepper_Misc: @"Misc",
+            LookinAttrSec_NSColorWell_Color: @"Color",
+            LookinAttrSec_NSColorWell_Misc: @"Misc",
+            LookinAttrSec_NSSwitch_State: @"State",
+            LookinAttrSec_NSDatePicker_Style: @"Style",
+            LookinAttrSec_NSDatePicker_Range: @"Range",
+            LookinAttrSec_NSDatePicker_Misc: @"Misc",
+            LookinAttrSec_NSLevelIndicator_Style: @"Style",
+            LookinAttrSec_NSLevelIndicator_Range: @"Range",
+            LookinAttrSec_NSLevelIndicator_TickMark: @"TickMark",
+            LookinAttrSec_NSOutlineView_Indentation: @"Indentation",
+            LookinAttrSec_NSOutlineView_Misc: @"Misc",
+            LookinAttrSec_NSCollectionView_Selection: @"Selection",
+            LookinAttrSec_NSCollectionView_Info: @"Info",
+            LookinAttrSec_NSCollectionView_Colors: @"Colors",
+            LookinAttrSec_NSBox_Type: @"Type",
+            LookinAttrSec_NSBox_Title: @"Title",
+            LookinAttrSec_NSBox_Appearance: @"Appearance",
+            LookinAttrSec_NSBox_Metrics: @"Metrics",
+            LookinAttrSec_NSSplitView_Orientation: @"Orientation",
+            LookinAttrSec_NSSplitView_Style: @"Style",
+            LookinAttrSec_NSSplitView_Misc: @"Misc",
+            LookinAttrSec_NSTabView_Type: @"Type",
+            LookinAttrSec_NSTabView_Misc: @"Misc",
+            LookinAttrSec_NSTabView_Info: @"Info",
+            LookinAttrSec_NSGridView_Dimensions: @"Dimensions",
+            LookinAttrSec_NSGridView_Spacing: @"Spacing",
+            LookinAttrSec_NSGridView_Placement: @"Placement",
+            // UIWindowScene
+            LookinAttrSec_UIWindowScene_State: @"State",
+            LookinAttrSec_UIWindowScene_Title: @"Title",
+            LookinAttrSec_UIWindowScene_Orientation: @"Orientation",
+            LookinAttrSec_UIWindowScene_Windows: @"Windows",
+            LookinAttrSec_UIWindowScene_Screen: @"Screen",
+            LookinAttrSec_UIWindowScene_StatusBar: @"StatusBar",
+            LookinAttrSec_UIWindowScene_Traits: @"Traits",
+            LookinAttrSec_UIWindowScene_Session: @"Session",
         };
     });
     return rawInfo[secID];
@@ -1691,6 +2230,41 @@
                 @"typeIfObj": @(LookinAttrTypeCustomObj),
                 @"hideIfNil": @(YES)
             },
+            LookinAttr_NSImageView_Scaling_ImageScaling: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"ImageScaling",
+                @"enumList": @"NSImageScaling",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSImageView_Scaling_ImageAlignment: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"ImageAlignment",
+                @"enumList": @"NSImageAlignment",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSImageView_Scaling_ImageFrameStyle: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"ImageFrameStyle",
+                @"enumList": @"NSImageFrameStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSImageView_Behavior_Animates: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"Animates",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSImageView_Behavior_Editable: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"Editable",
+                @"getterString": @"isEditable",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSImageView_ContentTintColor_ContentTintColor: @{
+                @"className": @"NSImageView",
+                @"fullTitle": @"ContentTintColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
             LookinAttr_NSControl_State_Enabled: @{
                 @"className": @"NSControl",
                 @"fullTitle": @"Enabled",
@@ -2292,7 +2866,7 @@
             },
             LookinAttr_NSTextField_Placeholder_Placeholder: @{
                 @"className": @"NSTextField",
-                @"fullTitle": @"Placeholder",
+                @"fullTitle": @"PlaceholderString",
                 @"typeIfObj": @(LookinAttrTypeNSString),
                 @"patch": @(YES)
             },
@@ -2300,6 +2874,22 @@
                 @"className": @"NSTextField",
                 @"fullTitle": @"TextColor",
                 @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTextField_BackgroundColor_Color: @{
+                @"className": @"NSTextField",
+                @"fullTitle": @"BackgroundColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTextField_AllowsEditingTextAttributes_AllowsEditingTextAttributes: @{
+                @"className": @"NSTextField",
+                @"fullTitle": @"AllowsEditingTextAttributes",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTextField_ImportsGraphics_ImportsGraphics: @{
+                @"className": @"NSTextField",
+                @"fullTitle": @"ImportsGraphics",
                 @"patch": @(YES)
             },
             LookinAttr_NSVisualEffectView_Material_Material: @{
@@ -2363,6 +2953,999 @@
             LookinAttr_NSStackView_Spacing_Spacing: @{
                 @"className": @"NSStackView",
                 @"fullTitle": @"Spacing",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSWindow
+            LookinAttr_NSWindow_Title_Title: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Title",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Title_Subtitle: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Subtitle",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(NO),
+                @"osVersion": @(11)
+            },
+            LookinAttr_NSWindow_State_KeyWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"KeyWindow",
+                @"getterString": @"isKeyWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_State_MainWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"MainWindow",
+                @"getterString": @"isMainWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_State_Visible: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Visible",
+                @"getterString": @"isVisible",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_State_CanBecomeKeyWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"CanBecomeKeyWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_State_CanBecomeMainWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"CanBecomeMainWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Style_Titled: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Titled",
+                @"getterString": @"lks_styleMaskTitled",
+                @"setterString": @"setLks_styleMaskTitled:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_Closable: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Closable",
+                @"getterString": @"lks_styleMaskClosable",
+                @"setterString": @"setLks_styleMaskClosable:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_Miniaturizable: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Miniaturizable",
+                @"getterString": @"lks_styleMaskMiniaturizable",
+                @"setterString": @"setLks_styleMaskMiniaturizable:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_Resizable: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Resizable",
+                @"getterString": @"lks_styleMaskResizable",
+                @"setterString": @"setLks_styleMaskResizable:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_UnifiedTitleAndToolbar: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"UnifiedTitleAndToolbar",
+                @"getterString": @"lks_styleMaskUnifiedTitleAndToolbar",
+                @"setterString": @"setLks_styleMaskUnifiedTitleAndToolbar:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_FullScreen: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreen",
+                @"getterString": @"lks_styleMaskFullScreen",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Style_FullSizeContentView: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullSizeContentView",
+                @"getterString": @"lks_styleMaskFullSizeContentView",
+                @"setterString": @"setLks_styleMaskFullSizeContentView:",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Style_UtilityWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"UtilityWindow",
+                @"getterString": @"lks_styleMaskUtilityWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Style_DocModalWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"DocModalWindow",
+                @"getterString": @"lks_styleMaskDocModalWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Style_NonactivatingPanel: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"NonactivatingPanel",
+                @"getterString": @"lks_styleMaskNonactivatingPanel",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Style_HUDWindow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"HUDWindow",
+                @"getterString": @"lks_styleMaskHUDWindow",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_CanJoinAllSpaces: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"CanJoinAllSpaces",
+                @"getterString": @"lks_collectionBehaviorCanJoinAllSpaces",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_MoveToActiveSpace: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"MoveToActiveSpace",
+                @"getterString": @"lks_collectionBehaviorMoveToActiveSpace",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_ParticipatesInCycle: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"ParticipatesInCycle",
+                @"getterString": @"lks_collectionBehaviorParticipatesInCycle",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_IgnoresCycle: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"IgnoresCycle",
+                @"getterString": @"lks_collectionBehaviorIgnoresCycle",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_FullScreenPrimary: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreenPrimary",
+                @"getterString": @"lks_collectionBehaviorFullScreenPrimary",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_FullScreenAuxiliary: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreenAuxiliary",
+                @"getterString": @"lks_collectionBehaviorFullScreenAuxiliary",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_FullScreenNone: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreenNone",
+                @"getterString": @"lks_collectionBehaviorFullScreenNone",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_FullScreenAllowsTiling: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreenAllowsTiling",
+                @"getterString": @"lks_collectionBehaviorFullScreenAllowsTiling",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_CollectionBehavior_FullScreenDisallowsTiling: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"FullScreenDisallowsTiling",
+                @"getterString": @"lks_collectionBehaviorFullScreenDisallowsTiling",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Appearance_TitlebarAppearsTransparent: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"TitlebarAppearsTransparent",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Appearance_TitleVisibility: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"TitleVisibility",
+                @"enumList": @"NSWindowTitleVisibility",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Appearance_ToolbarStyle: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"ToolbarStyle",
+                @"enumList": @"NSWindowToolbarStyle",
+                @"patch": @(YES),
+                @"osVersion": @(11)
+            },
+            LookinAttr_NSWindow_Appearance_TitlebarSeparatorStyle: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"TitlebarSeparatorStyle",
+                @"enumList": @"NSTitlebarSeparatorStyle",
+                @"patch": @(YES),
+                @"osVersion": @(11)
+            },
+            LookinAttr_NSWindow_Appearance_BackgroundColor: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"BackgroundColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Appearance_AlphaValue: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"AlphaValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Appearance_Opaque: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Opaque",
+                @"getterString": @"isOpaque",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Appearance_HasShadow: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"HasShadow",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Behavior_Movable: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Movable",
+                @"getterString": @"isMovable",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Behavior_MovableByWindowBackground: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"MovableByWindowBackground",
+                @"getterString": @"isMovableByWindowBackground",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Behavior_AnimationBehavior: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"AnimationBehavior",
+                @"enumList": @"NSWindowAnimationBehavior",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Behavior_Level: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"Level",
+                @"enumList": @"NSWindowLevel",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Behavior_HidesOnDeactivate: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"HidesOnDeactivate",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Behavior_TabbingMode: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"TabbingMode",
+                @"enumList": @"NSWindowTabbingMode",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Size_MinSize: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"MinSize",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Size_MaxSize: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"MaxSize",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSWindow_Info_WindowNumber: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"WindowNumber",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSWindow_Info_BackingScaleFactor: @{
+                @"className": @"NSWindow",
+                @"fullTitle": @"BackingScaleFactor",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+
+            // MARK: - UIWindowScene
+            LookinAttr_UIWindowScene_State_ActivationState: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"ActivationState",
+                @"getterString": @"activationState",
+                @"setterString": @"",
+                @"enumList": @"UISceneActivationState",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Title_Title: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Title",
+                @"patch": @(YES),
+                @"typeIfObj": @(LookinAttrTypeNSString)
+            },
+            LookinAttr_UIWindowScene_Orientation_InterfaceOrientation: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"InterfaceOrientation",
+                @"setterString": @"",
+                @"enumList": @"UIInterfaceOrientation",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Windows_WindowCount: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"WindowCount",
+                @"getterString": @"lks_windowCount",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Windows_KeyWindowClassName: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"KeyWindowClassName",
+                @"getterString": @"lks_keyWindowClassName",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Screen_ScreenBounds: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"ScreenBounds",
+                @"getterString": @"lks_screenBounds",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Screen_ScreenScale: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"ScreenScale",
+                @"getterString": @"lks_screenScale",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_StatusBar_StatusBarHidden: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"StatusBarHidden",
+                @"getterString": @"lks_statusBarHidden",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_StatusBar_StatusBarStyle: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"StatusBarStyle",
+                @"getterString": @"lks_statusBarStyle",
+                @"setterString": @"",
+                @"enumList": @"UIStatusBarStyle",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_StatusBar_StatusBarFrame: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"StatusBarFrame",
+                @"getterString": @"lks_statusBarFrame",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Traits_UserInterfaceStyle: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"UserInterfaceStyle",
+                @"getterString": @"lks_userInterfaceStyle",
+                @"setterString": @"",
+                @"enumList": @"UIUserInterfaceStyle",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Traits_HorizontalSizeClass: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"HorizontalSizeClass",
+                @"getterString": @"lks_horizontalSizeClass",
+                @"setterString": @"",
+                @"enumList": @"UIUserInterfaceSizeClass",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Traits_VerticalSizeClass: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"VerticalSizeClass",
+                @"getterString": @"lks_verticalSizeClass",
+                @"setterString": @"",
+                @"enumList": @"UIUserInterfaceSizeClass",
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Session_PersistentIdentifier: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"PersistentIdentifier",
+                @"getterString": @"lks_sessionPersistentIdentifier",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Session_SessionRole: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"SessionRole",
+                @"getterString": @"lks_sessionRole",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(NO)
+            },
+
+            // MARK: - NSSlider
+            LookinAttr_NSSlider_SliderType_SliderType: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"SliderType",
+                @"enumList": @"NSSliderType",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_Range_MinValue: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"MinValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_Range_MaxValue: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"MaxValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_TickMark_NumberOfTickMarks: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"NumberOfTickMarks",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_TickMark_TickMarkPosition: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"TickMarkPosition",
+                @"enumList": @"NSTickMarkPosition",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_TickMark_AllowsTickMarkValuesOnly: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"AllowsTickMarkValuesOnly",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_Misc_Vertical: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"Vertical",
+                @"getterString": @"isVertical",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSSlider_Misc_KnobThickness: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"KnobThickness",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSSlider_Misc_AltIncrementValue: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"AltIncrementValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSlider_Misc_TrackFillColor: @{
+                @"className": @"NSSlider",
+                @"fullTitle": @"TrackFillColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES),
+                @"hideIfNil": @(YES)
+            },
+
+            // MARK: - NSProgressIndicator
+            LookinAttr_NSProgressIndicator_Style_Style: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"Style",
+                @"enumList": @"NSProgressIndicatorStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Range_MinValue: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"MinValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Range_MaxValue: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"MaxValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Range_DoubleValue: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"DoubleValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Misc_Indeterminate: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"Indeterminate",
+                @"getterString": @"isIndeterminate",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Misc_Bezeled: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"Bezeled",
+                @"getterString": @"isBezeled",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSProgressIndicator_Misc_DisplayedWhenStopped: @{
+                @"className": @"NSProgressIndicator",
+                @"fullTitle": @"DisplayedWhenStopped",
+                @"getterString": @"isDisplayedWhenStopped",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSSegmentedControl
+            LookinAttr_NSSegmentedControl_SegmentCount_SegmentCount: @{
+                @"className": @"NSSegmentedControl",
+                @"fullTitle": @"SegmentCount",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSegmentedControl_Selection_SelectedSegment: @{
+                @"className": @"NSSegmentedControl",
+                @"fullTitle": @"SelectedSegment",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSegmentedControl_Style_SegmentStyle: @{
+                @"className": @"NSSegmentedControl",
+                @"fullTitle": @"SegmentStyle",
+                @"enumList": @"NSSegmentStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSegmentedControl_Style_TrackingMode: @{
+                @"className": @"NSSegmentedControl",
+                @"fullTitle": @"TrackingMode",
+                @"enumList": @"NSSegmentSwitchTracking",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSegmentedControl_Colors_SelectedSegmentBezelColor: @{
+                @"className": @"NSSegmentedControl",
+                @"fullTitle": @"SelectedSegmentBezelColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES),
+                @"hideIfNil": @(YES)
+            },
+
+            // MARK: - NSPopUpButton
+            LookinAttr_NSPopUpButton_Behavior_PullsDown: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"PullsDown",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSPopUpButton_Behavior_AutoenablesItems: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"AutoenablesItems",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSPopUpButton_Behavior_PreferredEdge: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"PreferredEdge",
+                @"enumList": @"NSRectEdge",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSPopUpButton_Selection_SelectedTag: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"SelectedTag",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSPopUpButton_Selection_IndexOfSelectedItem: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"IndexOfSelectedItem",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSPopUpButton_Selection_TitleOfSelectedItem: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"TitleOfSelectedItem",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_NSPopUpButton_Items_NumberOfItems: @{
+                @"className": @"NSPopUpButton",
+                @"fullTitle": @"NumberOfItems",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+
+            // MARK: - NSComboBox
+            LookinAttr_NSComboBox_Items_NumberOfItems: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"NumberOfItems",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSComboBox_Items_HasVerticalScroller: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"HasVerticalScroller",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Items_NumberOfVisibleItems: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"NumberOfVisibleItems",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Items_IntercellSpacing: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"IntercellSpacing",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Items_ItemHeight: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"ItemHeight",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Misc_ButtonBordered: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"ButtonBordered",
+                @"getterString": @"isButtonBordered",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Misc_Completes: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"Completes",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSComboBox_Misc_UsesDataSource: @{
+                @"className": @"NSComboBox",
+                @"fullTitle": @"UsesDataSource",
+                @"patch": @(NO)
+            },
+
+            // MARK: - NSStepper
+            LookinAttr_NSStepper_Range_MinValue: @{
+                @"className": @"NSStepper",
+                @"fullTitle": @"MinValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSStepper_Range_MaxValue: @{
+                @"className": @"NSStepper",
+                @"fullTitle": @"MaxValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSStepper_Range_Increment: @{
+                @"className": @"NSStepper",
+                @"fullTitle": @"Increment",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSStepper_Misc_ValueWraps: @{
+                @"className": @"NSStepper",
+                @"fullTitle": @"ValueWraps",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSStepper_Misc_Autorepeat: @{
+                @"className": @"NSStepper",
+                @"fullTitle": @"Autorepeat",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSColorWell
+            LookinAttr_NSColorWell_Color_Color: @{
+                @"className": @"NSColorWell",
+                @"fullTitle": @"Color",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSColorWell_Misc_Bordered: @{
+                @"className": @"NSColorWell",
+                @"fullTitle": @"Bordered",
+                @"getterString": @"isBordered",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSColorWell_Misc_Active: @{
+                @"className": @"NSColorWell",
+                @"fullTitle": @"Active",
+                @"getterString": @"isActive",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSColorWell_Misc_ColorWellStyle: @{
+                @"className": @"NSColorWell",
+                @"fullTitle": @"ColorWellStyle",
+                @"enumList": @"NSColorWellStyle",
+                @"patch": @(YES),
+                @"osVersion": @(13)
+            },
+
+            // MARK: - NSSwitch
+            LookinAttr_NSSwitch_State_State: @{
+                @"className": @"NSSwitch",
+                @"fullTitle": @"State",
+                @"enumList": @"NSControlStateValue",
+                @"patch": @(YES),
+                @"osVersion": @(15)
+            },
+
+            // MARK: - NSDatePicker
+            LookinAttr_NSDatePicker_Style_DatePickerStyle: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"DatePickerStyle",
+                @"enumList": @"NSDatePickerStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSDatePicker_Style_DatePickerMode: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"DatePickerMode",
+                @"enumList": @"NSDatePickerMode",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSDatePicker_Range_DateValue: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"DateValue",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCustomObj),
+                @"patch": @(NO)
+            },
+            LookinAttr_NSDatePicker_Range_MinDate: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"MinDate",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCustomObj),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_NSDatePicker_Range_MaxDate: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"MaxDate",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCustomObj),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_NSDatePicker_Misc_Bordered: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"Bordered",
+                @"getterString": @"isBordered",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSDatePicker_Misc_Bezeled: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"Bezeled",
+                @"getterString": @"isBezeled",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSDatePicker_Misc_DrawsBackground: @{
+                @"className": @"NSDatePicker",
+                @"fullTitle": @"DrawsBackground",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSLevelIndicator
+            LookinAttr_NSLevelIndicator_Style_Style: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"LevelIndicatorStyle",
+                @"enumList": @"NSLevelIndicatorStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_Range_MinValue: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"MinValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_Range_MaxValue: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"MaxValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_Range_WarningValue: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"WarningValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_Range_CriticalValue: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"CriticalValue",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_TickMark_NumberOfTickMarks: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"NumberOfTickMarks",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSLevelIndicator_TickMark_NumberOfMajorTickMarks: @{
+                @"className": @"NSLevelIndicator",
+                @"fullTitle": @"NumberOfMajorTickMarks",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSOutlineView
+            LookinAttr_NSOutlineView_Indentation_IndentationPerLevel: @{
+                @"className": @"NSOutlineView",
+                @"fullTitle": @"IndentationPerLevel",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSOutlineView_Misc_AutoresizesOutlineColumn: @{
+                @"className": @"NSOutlineView",
+                @"fullTitle": @"AutoresizesOutlineColumn",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSOutlineView_Misc_IndentationMarkerFollowsCell: @{
+                @"className": @"NSOutlineView",
+                @"fullTitle": @"IndentationMarkerFollowsCell",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSOutlineView_Misc_AutosaveExpandedItems: @{
+                @"className": @"NSOutlineView",
+                @"fullTitle": @"AutosaveExpandedItems",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSCollectionView
+            LookinAttr_NSCollectionView_Selection_Selectable: @{
+                @"className": @"NSCollectionView",
+                @"fullTitle": @"Selectable",
+                @"getterString": @"isSelectable",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSCollectionView_Selection_AllowsMultipleSelection: @{
+                @"className": @"NSCollectionView",
+                @"fullTitle": @"AllowsMultipleSelection",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSCollectionView_Selection_AllowsEmptySelection: @{
+                @"className": @"NSCollectionView",
+                @"fullTitle": @"AllowsEmptySelection",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSCollectionView_Info_NumberOfSections: @{
+                @"className": @"NSCollectionView",
+                @"fullTitle": @"NumberOfSections",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSCollectionView_Colors_BackgroundColors: @{
+                @"className": @"NSCollectionView",
+                @"fullTitle": @"BackgroundColors",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCustomObj),
+                @"patch": @(NO)
+            },
+
+            // MARK: - NSBox
+            LookinAttr_NSBox_Type_BoxType: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"BoxType",
+                @"enumList": @"NSBoxType",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Type_BorderType: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"BorderType",
+                @"enumList": @"NSBorderType",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Title_Title: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"Title",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Title_TitlePosition: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"TitlePosition",
+                @"enumList": @"NSTitlePosition",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Appearance_Transparent: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"Transparent",
+                @"getterString": @"isTransparent",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Appearance_FillColor: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"FillColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Appearance_BorderColor: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"BorderColor",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Metrics_BorderWidth: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"BorderWidth",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Metrics_CornerRadius: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"CornerRadius",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSBox_Metrics_ContentViewMargins: @{
+                @"className": @"NSBox",
+                @"fullTitle": @"ContentViewMargins",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSSplitView
+            LookinAttr_NSSplitView_Orientation_Vertical: @{
+                @"className": @"NSSplitView",
+                @"fullTitle": @"Vertical",
+                @"getterString": @"isVertical",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSplitView_Style_DividerStyle: @{
+                @"className": @"NSSplitView",
+                @"fullTitle": @"DividerStyle",
+                @"enumList": @"NSSplitViewDividerStyle",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSSplitView_Style_DividerThickness: @{
+                @"className": @"NSSplitView",
+                @"fullTitle": @"DividerThickness",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSSplitView_Misc_ArrangesAllSubviews: @{
+                @"className": @"NSSplitView",
+                @"fullTitle": @"ArrangesAllSubviews",
+                @"patch": @(YES)
+            },
+
+            // MARK: - NSTabView
+            LookinAttr_NSTabView_Type_TabViewType: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"TabViewType",
+                @"enumList": @"NSTabViewType",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTabView_Type_TabPosition: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"TabPosition",
+                @"enumList": @"NSTabPosition",
+                @"patch": @(YES),
+                @"osVersion": @(14)
+            },
+            LookinAttr_NSTabView_Type_TabViewBorderType: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"TabViewBorderType",
+                @"enumList": @"NSTabViewBorderType",
+                @"patch": @(YES),
+                @"osVersion": @(14)
+            },
+            LookinAttr_NSTabView_Misc_AllowsTruncatedLabels: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"AllowsTruncatedLabels",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTabView_Misc_DrawsBackground: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"DrawsBackground",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSTabView_Info_NumberOfTabViewItems: @{
+                @"className": @"NSTabView",
+                @"fullTitle": @"NumberOfTabViewItems",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+
+            // MARK: - NSGridView
+            LookinAttr_NSGridView_Dimensions_NumberOfColumns: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"NumberOfColumns",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSGridView_Dimensions_NumberOfRows: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"NumberOfRows",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
+            LookinAttr_NSGridView_Spacing_RowSpacing: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"RowSpacing",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSGridView_Spacing_ColumnSpacing: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"ColumnSpacing",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSGridView_Placement_XPlacement: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"XPlacement",
+                @"enumList": @"NSGridCellPlacement",
+                @"patch": @(YES)
+            },
+            LookinAttr_NSGridView_Placement_YPlacement: @{
+                @"className": @"NSGridView",
+                @"fullTitle": @"YPlacement",
+                @"enumList": @"NSGridCellPlacement",
                 @"patch": @(YES)
             },
         };

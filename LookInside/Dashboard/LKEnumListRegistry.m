@@ -206,6 +206,16 @@
             MakeItem(@"NSBezelStylePushDisclosure", 14),
             MakeItem(@"NSBezelStyleBadge", 15),
         ];
+        mData[@"NSTextFieldBezelStyle"] = @[
+            MakeItem(@"NSTextFieldSquareBezel", 0),
+            MakeItem(@"NSTextFieldRoundedBezel", 1),
+        ];
+        mData[@"NSLineBreakStrategy"] = @[
+            MakeItem(@"NSLineBreakStrategyNone", 0),
+            MakeItem(@"NSLineBreakStrategyPushOut", 1),
+            MakeItem(@"NSLineBreakStrategyHangulWordPriority", 2),
+            MakeItem(@"NSLineBreakStrategyStandard", 0xFFFF),
+        ];
         mData[@"NSCellImagePosition"] = @[
             MakeItem(@"NSNoImage", 0),
             MakeItem(@"NSImageOnly", 1),
@@ -222,6 +232,24 @@
             MakeItem(@"NSImageScaleAxesIndependently", 1),
             MakeItem(@"NSImageScaleNone", 2),
             MakeItem(@"NSImageScaleProportionallyUpOrDown", 3),
+        ];
+        mData[@"NSImageAlignment"] = @[
+            MakeItem(@"NSImageAlignCenter", 0),
+            MakeItem(@"NSImageAlignTop", 1),
+            MakeItem(@"NSImageAlignTopLeft", 2),
+            MakeItem(@"NSImageAlignTopRight", 3),
+            MakeItem(@"NSImageAlignLeft", 4),
+            MakeItem(@"NSImageAlignBottom", 5),
+            MakeItem(@"NSImageAlignBottomLeft", 6),
+            MakeItem(@"NSImageAlignBottomRight", 7),
+            MakeItem(@"NSImageAlignRight", 8),
+        ];
+        mData[@"NSImageFrameStyle"] = @[
+            MakeItem(@"NSImageFrameNone", 0),
+            MakeItem(@"NSImageFramePhoto", 1),
+            MakeItem(@"NSImageFrameGrayBezel", 2),
+            MakeItem(@"NSImageFrameGroove", 3),
+            MakeItem(@"NSImageFrameButton", 4),
         ];
         mData[@"NSControlStateValue"] = @[
             MakeItem(@"NSControlStateValueOff", 0),
@@ -371,6 +399,205 @@
             MakeItem(@"NSLayoutAttributeLastBaseline", 11),
             MakeItem(@"NSLayoutAttributeFirstBaseline", 12),
         ];
+        mData[@"NSWindowTitleVisibility"] = @[
+            MakeItem(@"NSWindowTitleVisible", 0),
+            MakeItem(@"NSWindowTitleHidden", 1),
+        ];
+        mData[@"NSWindowAnimationBehavior"] = @[
+            MakeItem(@"NSWindowAnimationBehaviorDefault", 0),
+            MakeItem(@"NSWindowAnimationBehaviorNone", 2),
+            MakeItem(@"NSWindowAnimationBehaviorDocumentWindow", 3),
+            MakeItem(@"NSWindowAnimationBehaviorUtilityWindow", 4),
+            MakeItem(@"NSWindowAnimationBehaviorAlertPanel", 5),
+        ];
+        mData[@"NSWindowToolbarStyle"] = @[
+            MakeItem(@"NSWindowToolbarStyleAutomatic", 0),
+            MakeItem(@"NSWindowToolbarStyleExpanded", 1),
+            MakeItem(@"NSWindowToolbarStylePreference", 2),
+            MakeItem(@"NSWindowToolbarStyleUnified", 3),
+            MakeItem(@"NSWindowToolbarStyleUnifiedCompact", 4),
+        ];
+        mData[@"NSTitlebarSeparatorStyle"] = @[
+            MakeItem(@"NSTitlebarSeparatorStyleAutomatic", 0),
+            MakeItem(@"NSTitlebarSeparatorStyleNone", 1),
+            MakeItem(@"NSTitlebarSeparatorStyleLine", 2),
+            MakeItem(@"NSTitlebarSeparatorStyleShadow", 3),
+        ];
+        mData[@"NSWindowLevel"] = @[
+            MakeItem(@"NSNormalWindowLevel", 0),
+            MakeItem(@"NSFloatingWindowLevel", 3),
+            MakeItem(@"NSSubmenuWindowLevel", 3),
+            MakeItem(@"NSTornOffMenuWindowLevel", 3),
+            MakeItem(@"NSModalPanelWindowLevel", 8),
+            MakeItem(@"NSMainMenuWindowLevel", 24),
+            MakeItem(@"NSStatusWindowLevel", 25),
+            MakeItem(@"NSPopUpMenuWindowLevel", 101),
+            MakeItem(@"NSScreenSaverWindowLevel", 1000),
+        ];
+        mData[@"NSWindowTabbingMode"] = @[
+            MakeItem(@"NSWindowTabbingModeAutomatic", 0),
+            MakeItem(@"NSWindowTabbingModePreferred", 1),
+            MakeItem(@"NSWindowTabbingModeDisallowed", 2),
+        ];
+
+        // MARK: - UIWindowScene
+        mData[@"UISceneActivationState"] = @[
+            MakeItem(@"UISceneActivationStateUnattached", -1),
+            MakeItem(@"UISceneActivationStateForegroundActive", 0),
+            MakeItem(@"UISceneActivationStateForegroundInactive", 1),
+            MakeItem(@"UISceneActivationStateBackground", 2),
+        ];
+        mData[@"UIInterfaceOrientation"] = @[
+            MakeItem(@"UIInterfaceOrientationUnknown", 0),
+            MakeItem(@"UIInterfaceOrientationPortrait", 1),
+            MakeItem(@"UIInterfaceOrientationPortraitUpsideDown", 2),
+            MakeItem(@"UIInterfaceOrientationLandscapeLeft", 3),
+            MakeItem(@"UIInterfaceOrientationLandscapeRight", 4),
+        ];
+        mData[@"UIStatusBarStyle"] = @[
+            MakeItem(@"UIStatusBarStyleDefault", 0),
+            MakeItem(@"UIStatusBarStyleLightContent", 1),
+            MakeItem(@"UIStatusBarStyleDarkContent", 3),
+        ];
+        mData[@"UIUserInterfaceStyle"] = @[
+            MakeItem(@"UIUserInterfaceStyleUnspecified", 0),
+            MakeItem(@"UIUserInterfaceStyleLight", 1),
+            MakeItem(@"UIUserInterfaceStyleDark", 2),
+        ];
+        mData[@"UIUserInterfaceSizeClass"] = @[
+            MakeItem(@"UIUserInterfaceSizeClassUnspecified", 0),
+            MakeItem(@"UIUserInterfaceSizeClassCompact", 1),
+            MakeItem(@"UIUserInterfaceSizeClassRegular", 2),
+        ];
+
+        // MARK: - NSSlider
+        mData[@"NSSliderType"] = @[
+            MakeItem(@"NSSliderTypeLinear", 0),
+            MakeItem(@"NSSliderTypeCircular", 1),
+        ];
+        mData[@"NSTickMarkPosition"] = @[
+            MakeItem(@"NSTickMarkPositionBelow", 0),
+            MakeItem(@"NSTickMarkPositionAbove", 1),
+            MakeItem(@"NSTickMarkPositionLeading", 0),
+            MakeItem(@"NSTickMarkPositionTrailing", 1),
+        ];
+
+        // MARK: - NSProgressIndicator
+        mData[@"NSProgressIndicatorStyle"] = @[
+            MakeItem(@"NSProgressIndicatorStyleBar", 0),
+            MakeItem(@"NSProgressIndicatorStyleSpinning", 1),
+        ];
+
+        // MARK: - NSSegmentedControl
+        mData[@"NSSegmentStyle"] = @[
+            MakeItem(@"NSSegmentStyleAutomatic", 0),
+            MakeItem(@"NSSegmentStyleRounded", 1),
+            MakeItem(@"NSSegmentStyleRoundRect", 3),
+            MakeItem(@"NSSegmentStyleTexturedSquare", 4),
+            MakeItem(@"NSSegmentStyleSmallSquare", 6),
+            MakeItem(@"NSSegmentStyleSeparated", 8),
+            MakeItem(@"NSSegmentStyleTexturedRounded", 2),
+            MakeItem(@"NSSegmentStyleCapsule", 5),
+        ];
+        mData[@"NSSegmentSwitchTracking"] = @[
+            MakeItem(@"NSSegmentSwitchTrackingSelectOne", 0),
+            MakeItem(@"NSSegmentSwitchTrackingSelectAny", 1),
+            MakeItem(@"NSSegmentSwitchTrackingMomentary", 2),
+            MakeItem(@"NSSegmentSwitchTrackingMomentaryAccelerator", 3),
+        ];
+
+        // MARK: - NSPopUpButton
+        mData[@"NSRectEdge"] = @[
+            MakeItem(@"NSRectEdgeMinX", 0),
+            MakeItem(@"NSRectEdgeMinY", 1),
+            MakeItem(@"NSRectEdgeMaxX", 2),
+            MakeItem(@"NSRectEdgeMaxY", 3),
+        ];
+
+        // MARK: - NSColorWell
+        mData[@"NSColorWellStyle"] = @[
+            MakeItem(@"NSColorWellStyleDefault", 0),
+            MakeItem(@"NSColorWellStyleMinimal", 1),
+            MakeItem(@"NSColorWellStyleExpanded", 2),
+        ];
+
+        // MARK: - NSDatePicker
+        mData[@"NSDatePickerStyle"] = @[
+            MakeItem(@"NSDatePickerStyleTextFieldAndStepper", 0),
+            MakeItem(@"NSDatePickerStyleClockAndCalendar", 1),
+            MakeItem(@"NSDatePickerStyleTextField", 2),
+        ];
+        mData[@"NSDatePickerMode"] = @[
+            MakeItem(@"NSDatePickerModeSingle", 0),
+            MakeItem(@"NSDatePickerModeRange", 1),
+        ];
+
+        // MARK: - NSLevelIndicator
+        mData[@"NSLevelIndicatorStyle"] = @[
+            MakeItem(@"NSLevelIndicatorStyleRelevancy", 0),
+            MakeItem(@"NSLevelIndicatorStyleContinuousCapacity", 1),
+            MakeItem(@"NSLevelIndicatorStyleDiscreteCapacity", 2),
+            MakeItem(@"NSLevelIndicatorStyleRating", 3),
+        ];
+
+        // MARK: - NSBox
+        mData[@"NSBoxType"] = @[
+            MakeItem(@"NSBoxPrimary", 0),
+            MakeItem(@"NSBoxSeparator", 2),
+            MakeItem(@"NSBoxCustom", 4),
+        ];
+        mData[@"NSTitlePosition"] = @[
+            MakeItem(@"NSNoTitle", 0),
+            MakeItem(@"NSAboveTop", 1),
+            MakeItem(@"NSAtTop", 2),
+            MakeItem(@"NSBelowTop", 3),
+            MakeItem(@"NSAboveBottom", 4),
+            MakeItem(@"NSAtBottom", 5),
+            MakeItem(@"NSBelowBottom", 6),
+        ];
+
+        // MARK: - NSSplitView
+        mData[@"NSSplitViewDividerStyle"] = @[
+            MakeItem(@"NSSplitViewDividerStyleThick", 1),
+            MakeItem(@"NSSplitViewDividerStyleThin", 2),
+            MakeItem(@"NSSplitViewDividerStylePaneSplitter", 3),
+        ];
+
+        // MARK: - NSTabView
+        mData[@"NSTabViewType"] = @[
+            MakeItem(@"NSTopTabsBezelBorder", 0),
+            MakeItem(@"NSLeftTabsBezelBorder", 1),
+            MakeItem(@"NSBottomTabsBezelBorder", 2),
+            MakeItem(@"NSRightTabsBezelBorder", 3),
+            MakeItem(@"NSNoTabsBezelBorder", 4),
+            MakeItem(@"NSNoTabsLineBorder", 5),
+            MakeItem(@"NSNoTabsNoBorder", 6),
+        ];
+        mData[@"NSTabPosition"] = @[
+            MakeItem(@"NSTabPositionNone", 0),
+            MakeItem(@"NSTabPositionTop", 1),
+            MakeItem(@"NSTabPositionLeft", 2),
+            MakeItem(@"NSTabPositionBottom", 3),
+            MakeItem(@"NSTabPositionRight", 4),
+        ];
+        mData[@"NSTabViewBorderType"] = @[
+            MakeItem(@"NSTabViewBorderTypeNone", 0),
+            MakeItem(@"NSTabViewBorderTypeLine", 1),
+            MakeItem(@"NSTabViewBorderTypeBezel", 2),
+        ];
+
+        // MARK: - NSGridView
+        mData[@"NSGridCellPlacement"] = @[
+            MakeItem(@"NSGridCellPlacementInherited", 0),
+            MakeItem(@"NSGridCellPlacementNone", 1),
+            MakeItem(@"NSGridCellPlacementLeading", 2),
+            MakeItem(@"NSGridCellPlacementTop", 2),
+            MakeItem(@"NSGridCellPlacementTrailing", 3),
+            MakeItem(@"NSGridCellPlacementBottom", 3),
+            MakeItem(@"NSGridCellPlacementCenter", 4),
+            MakeItem(@"NSGridCellPlacementFill", 5),
+        ];
+
         self.data = mData;
     }
     return self;

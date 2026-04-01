@@ -355,7 +355,7 @@
             }];
             if (keyWindowRootItem) {
                 [[LookinDisplayItem flatItemsFromHierarchicalItems:@[keyWindowRootItem]] enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                    if (!!obj.hostViewControllerObject) {
+                    if (obj.hostViewControllerObject || obj.hostWindowControllerObject) {
                         preferedSelectedItem = obj;
                         *stop = YES;
                     }
@@ -405,7 +405,7 @@
         
         NSMutableArray<LookinDisplayItem *> *viewControllerItems = [NSMutableArray array];
         [[LookinDisplayItem flatItemsFromHierarchicalItems:@[keyWindowItem]] enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-            if (!!obj.hostViewControllerObject) {
+            if (obj.hostViewControllerObject || obj.hostWindowControllerObject) {
                 [viewControllerItems addObject:obj];
                 return;
             }

@@ -301,6 +301,7 @@
     dispatch_once(&viewOnceToken,^{
         viewsList = @[
                       @{@"UIWindow": @"hierarchy_window"},
+                      @{@"UIWindowScene": @"hierarchy_window"},
                       @{@"UINavigationBar": @"hierarchy_navigationbar"},
                       @{@"UITabBar": @"hierarchy_tabbar"},
                       @{@"UITextView": @"hierarchy_textview"},
@@ -351,7 +352,7 @@
     if (item.isUserCustom) {
         imageName = @"hierarchy_custom";
         
-    } else if (item.hostViewControllerObject) {
+    } else if (item.hostViewControllerObject || item.hostWindowControllerObject) {
         imageName = @"hierarchy_controller";
         
     } else if (item.viewObject) {
