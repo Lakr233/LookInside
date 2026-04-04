@@ -86,6 +86,14 @@
                 }
             }
 
+            // 如果 scene 包含 key window，则将 scene 也标记为 key
+            for (LookinDisplayItem *windowItem in windowItems) {
+                if (windowItem.representedAsKeyWindow) {
+                    sceneItem.representedAsKeyWindow = YES;
+                    break;
+                }
+            }
+
             sceneItem.subitems = windowItems;
             [resultArray addObject:sceneItem];
         }

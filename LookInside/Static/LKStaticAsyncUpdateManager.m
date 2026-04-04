@@ -229,6 +229,7 @@
     task.oid = oid;
     task.frameSize = item.frame.size;
     task.taskType = type;
+    task.needBasisVisualInfo = YES;
     task.clientReadableVersion = [LKHelper lookinReadableVersion];
     return task;
 }
