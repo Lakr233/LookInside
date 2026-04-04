@@ -61,16 +61,23 @@
     if (self.titleLabel.isHidden) {
         $(self.textLabel).x(_labelX).toRight(_labelRight).heightToFit.verAlign;
     } else {
-        CGFloat titleWidth = [self.titleLabel sizeThatFits:NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX)].width;
-        $(self.titleLabel).x(_labelX).width(titleWidth).heightToFit.verAlign;
-        CGFloat valueX = _labelX + titleWidth + 4;
-        $(self.textLabel).x(valueX).toRight(_labelRight).heightToFit.verAlign;
+        CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX)].height;
+        CGFloat titleY = 3;
+        $(self.titleLabel).x(_labelX).toRight(_labelRight).height(titleHeight).y(titleY);
+        CGFloat valueY = titleY + titleHeight + 1;
+        $(self.textLabel).x(_labelX).toRight(_labelRight).heightToFit.y(valueY);
     }
 }
 
 - (NSSize)sizeThatFits:(NSSize)limitedSize {
-    CGFloat height = [self.textLabel sizeThatFits:NSMakeSize(limitedSize.width - _labelRight - _labelX, CGFLOAT_MAX)].height;
-    limitedSize.height = height + 10;
+    CGFloat contentWidth = limitedSize.width - _labelRight - _labelX;
+    CGFloat textHeight = [self.textLabel sizeThatFits:NSMakeSize(contentWidth, CGFLOAT_MAX)].height;
+    if (self.titleLabel.isHidden) {
+        limitedSize.height = textHeight + 10;
+    } else {
+        CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(contentWidth, CGFLOAT_MAX)].height;
+        limitedSize.height = 3 + titleHeight + 1 + textHeight + 4;
+    }
     return limitedSize;
 }
 
