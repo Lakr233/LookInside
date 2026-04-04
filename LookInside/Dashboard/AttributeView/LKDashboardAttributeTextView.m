@@ -26,6 +26,8 @@
     if (self = [super initWithFrame:frameRect]) {
         self.initialText = @"";
 
+        self.layer.cornerRadius = DashboardCardControlCornerRadius;
+
         self.titleLabel = [LKLabel new];
         self.titleLabel.textColor = [NSColor colorNamed:@"DashboardInputAccessoryColor"];
         self.titleLabel.font = NSFontMake(10);
@@ -34,13 +36,12 @@
         [self addSubview:self.titleLabel];
 
         self.scrollView = [LKHelper scrollableTextView];
-        self.scrollView.wantsLayer = YES;
-        self.scrollView.layer.cornerRadius = DashboardCardControlCornerRadius;
+        self.scrollView.drawsBackground = NO;
         self.scrollView.hasVerticalScroller = NO;
         self.scrollView.hasHorizontalScroller = NO;
         self.textView = self.scrollView.documentView;
         self.textView.font = NSFontMake(12);
-        self.textView.backgroundColor = [NSColor colorNamed:@"DashboardCardValueBGColor"];
+        self.textView.drawsBackground = NO;
         self.textView.textContainerInset = NSMakeSize(2, 4);
         self.textView.delegate = self;
         [self addSubview:self.scrollView];
@@ -54,9 +55,8 @@
         $(self.scrollView).fullFrame;
     } else {
         CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX)].height;
-        CGFloat titleY = 3;
-        $(self.titleLabel).x(5).toRight(5).height(titleHeight).y(titleY);
-        CGFloat scrollY = titleY + titleHeight + 1;
+        $(self.titleLabel).x(7).toRight(7).heightToFit.y(4);
+        CGFloat scrollY = 4 + titleHeight + 1;
         $(self.scrollView).x(0).toRight(0).y(scrollY).toBottom(0);
     }
 }
@@ -99,6 +99,11 @@
 
     limitedSize.height = textHeight;
     return limitedSize;
+}
+
+- (void)setDashboardViewController:(LKDashboardViewController *)dashboardViewController {
+    [super setDashboardViewController:dashboardViewController];
+    self.backgroundColorName = @"DashboardCardValueBGColor";
 }
 
 #pragma mark - <NSTextViewDelegate>
