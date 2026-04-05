@@ -3,6 +3,7 @@
 ## Overview
 
 Add comprehensive UITraitCollection inspection at two levels:
+
 1. **Per-UIView** — new `LookinAttrGroup_UITraitCollection` group showing all standard trait properties for any UIView
 2. **UIWindowScene** — expand the existing `LookinAttrSec_UIWindowScene_Traits` section with additional trait properties and scene-specific traits
 
@@ -14,14 +15,14 @@ Add comprehensive UITraitCollection inspection at two levels:
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Architecture approach | Two separate groups (B) | UIWindowScene already has its own group; UIView traits get a new group; avoids overloading either; `isKindOfClass:` matches precisely |
-| UIView trait className | `UIView` | All UIView subclasses inherit `traitCollection`; walks existing `isUIViewPropertyWithAttrID:` path |
-| Scene-only traits | `sceneCaptureState` | Only meaningful at scene level; not added to per-view group |
-| `forceTouchCapability` | View-level only | Deprecated in iOS 17, nearly unused on scenes |
-| Getter pattern | `lks_traitCollection_*` prefix | Avoids name collisions with existing `lks_*` methods; clear that these read from `traitCollection` |
-| All properties read-only | `setterString = @""` | Trait values are derived from the environment; direct mutation not supported |
+| Decision                 | Choice                         | Rationale                                                                                                                             |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture approach    | Two separate groups (B)        | UIWindowScene already has its own group; UIView traits get a new group; avoids overloading either; `isKindOfClass:` matches precisely |
+| UIView trait className   | `UIView`                       | All UIView subclasses inherit `traitCollection`; walks existing `isUIViewPropertyWithAttrID:` path                                    |
+| Scene-only traits        | `sceneCaptureState`            | Only meaningful at scene level; not added to per-view group                                                                           |
+| `forceTouchCapability`   | View-level only                | Deprecated in iOS 17, nearly unused on scenes                                                                                         |
+| Getter pattern           | `lks_traitCollection_*` prefix | Avoids name collisions with existing `lks_*` methods; clear that these read from `traitCollection`                                    |
+| All properties read-only | `setterString = @""`           | Trait values are derived from the environment; direct mutation not supported                                                          |
 
 ## UIView Level — `LookinAttrGroup_UITraitCollection`
 
@@ -29,67 +30,67 @@ Add comprehensive UITraitCollection inspection at two levels:
 
 #### Appearance (`LookinAttrSec_UITraitCollection_Appearance`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| UserInterfaceStyle | `traitCollection.userInterfaceStyle` | enum | UIUserInterfaceStyle | 12 |
-| UserInterfaceLevel | `traitCollection.userInterfaceLevel` | enum | UIUserInterfaceLevel | 13 |
-| ActiveAppearance | `traitCollection.activeAppearance` | enum | UIUserInterfaceActiveAppearance | 14 |
-| AccessibilityContrast | `traitCollection.accessibilityContrast` | enum | UIAccessibilityContrast | 13 |
-| LegibilityWeight | `traitCollection.legibilityWeight` | enum | UILegibilityWeight | 13 |
+| Attr ID Suffix        | Property                                | Type | Enum                            | Min iOS |
+| --------------------- | --------------------------------------- | ---- | ------------------------------- | ------- |
+| UserInterfaceStyle    | `traitCollection.userInterfaceStyle`    | enum | UIUserInterfaceStyle            | 12      |
+| UserInterfaceLevel    | `traitCollection.userInterfaceLevel`    | enum | UIUserInterfaceLevel            | 13      |
+| ActiveAppearance      | `traitCollection.activeAppearance`      | enum | UIUserInterfaceActiveAppearance | 14      |
+| AccessibilityContrast | `traitCollection.accessibilityContrast` | enum | UIAccessibilityContrast         | 13      |
+| LegibilityWeight      | `traitCollection.legibilityWeight`      | enum | UILegibilityWeight              | 13      |
 
 #### Size Class (`LookinAttrSec_UITraitCollection_SizeClass`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| HorizontalSizeClass | `traitCollection.horizontalSizeClass` | enum | UIUserInterfaceSizeClass | 8 |
-| VerticalSizeClass | `traitCollection.verticalSizeClass` | enum | UIUserInterfaceSizeClass | 8 |
+| Attr ID Suffix      | Property                              | Type | Enum                     | Min iOS |
+| ------------------- | ------------------------------------- | ---- | ------------------------ | ------- |
+| HorizontalSizeClass | `traitCollection.horizontalSizeClass` | enum | UIUserInterfaceSizeClass | 8       |
+| VerticalSizeClass   | `traitCollection.verticalSizeClass`   | enum | UIUserInterfaceSizeClass | 8       |
 
 #### Display (`LookinAttrSec_UITraitCollection_Display`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| DisplayScale | `traitCollection.displayScale` | CGFloat | — | 8 |
-| DisplayGamut | `traitCollection.displayGamut` | enum | UIDisplayGamut | 10 |
-| ImageDynamicRange | `traitCollection.imageDynamicRange` | enum | UIImageDynamicRange | 17 |
+| Attr ID Suffix    | Property                            | Type    | Enum                | Min iOS |
+| ----------------- | ----------------------------------- | ------- | ------------------- | ------- |
+| DisplayScale      | `traitCollection.displayScale`      | CGFloat | —                   | 8       |
+| DisplayGamut      | `traitCollection.displayGamut`      | enum    | UIDisplayGamut      | 10      |
+| ImageDynamicRange | `traitCollection.imageDynamicRange` | enum    | UIImageDynamicRange | 17      |
 
 #### Device (`LookinAttrSec_UITraitCollection_Device`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| UserInterfaceIdiom | `traitCollection.userInterfaceIdiom` | enum | UIUserInterfaceIdiom | 8 |
-| ForceTouchCapability | `traitCollection.forceTouchCapability` | enum | UIForceTouchCapability | 9 |
+| Attr ID Suffix       | Property                               | Type | Enum                   | Min iOS |
+| -------------------- | -------------------------------------- | ---- | ---------------------- | ------- |
+| UserInterfaceIdiom   | `traitCollection.userInterfaceIdiom`   | enum | UIUserInterfaceIdiom   | 8       |
+| ForceTouchCapability | `traitCollection.forceTouchCapability` | enum | UIForceTouchCapability | 9       |
 
 #### Layout (`LookinAttrSec_UITraitCollection_Layout`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| LayoutDirection | `traitCollection.layoutDirection` | enum | UITraitEnvironmentLayoutDirection | 10 |
+| Attr ID Suffix  | Property                          | Type | Enum                              | Min iOS |
+| --------------- | --------------------------------- | ---- | --------------------------------- | ------- |
+| LayoutDirection | `traitCollection.layoutDirection` | enum | UITraitEnvironmentLayoutDirection | 10      |
 
 #### Content (`LookinAttrSec_UITraitCollection_Content`)
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| PreferredContentSizeCategory | `traitCollection.preferredContentSizeCategory` | NSString | — | 10 |
-| TypesettingLanguage | `traitCollection.typesettingLanguage` | NSString | — | 17 |
+| Attr ID Suffix               | Property                                       | Type     | Enum | Min iOS |
+| ---------------------------- | ---------------------------------------------- | -------- | ---- | ------- |
+| PreferredContentSizeCategory | `traitCollection.preferredContentSizeCategory` | NSString | —    | 10      |
+| TypesettingLanguage          | `traitCollection.typesettingLanguage`          | NSString | —    | 17      |
 
 ## UIWindowScene Level — Expanding `LookinAttrSec_UIWindowScene_Traits`
 
 Existing 3 attributes retained. New attributes added:
 
-| Attr ID Suffix | Property | Type | Enum | Min iOS |
-|----------------|----------|------|------|---------|
-| UserInterfaceLevel | `traitCollection.userInterfaceLevel` | enum | UIUserInterfaceLevel | 13 |
-| ActiveAppearance | `traitCollection.activeAppearance` | enum | UIUserInterfaceActiveAppearance | 14 |
-| AccessibilityContrast | `traitCollection.accessibilityContrast` | enum | UIAccessibilityContrast | 13 |
-| LegibilityWeight | `traitCollection.legibilityWeight` | enum | UILegibilityWeight | 13 |
-| DisplayScale | `traitCollection.displayScale` | CGFloat | — | 13 |
-| DisplayGamut | `traitCollection.displayGamut` | enum | UIDisplayGamut | 13 |
-| UserInterfaceIdiom | `traitCollection.userInterfaceIdiom` | enum | UIUserInterfaceIdiom | 13 |
-| LayoutDirection | `traitCollection.layoutDirection` | enum | UITraitEnvironmentLayoutDirection | 13 |
-| PreferredContentSizeCategory | `traitCollection.preferredContentSizeCategory` | NSString | — | 13 |
-| SceneCaptureState | `traitCollection.sceneCaptureState` | enum | UISceneCaptureState | 17 |
-| ImageDynamicRange | `traitCollection.imageDynamicRange` | enum | UIImageDynamicRange | 17 |
-| TypesettingLanguage | `traitCollection.typesettingLanguage` | NSString | — | 17 |
+| Attr ID Suffix               | Property                                       | Type     | Enum                              | Min iOS |
+| ---------------------------- | ---------------------------------------------- | -------- | --------------------------------- | ------- |
+| UserInterfaceLevel           | `traitCollection.userInterfaceLevel`           | enum     | UIUserInterfaceLevel              | 13      |
+| ActiveAppearance             | `traitCollection.activeAppearance`             | enum     | UIUserInterfaceActiveAppearance   | 14      |
+| AccessibilityContrast        | `traitCollection.accessibilityContrast`        | enum     | UIAccessibilityContrast           | 13      |
+| LegibilityWeight             | `traitCollection.legibilityWeight`             | enum     | UILegibilityWeight                | 13      |
+| DisplayScale                 | `traitCollection.displayScale`                 | CGFloat  | —                                 | 13      |
+| DisplayGamut                 | `traitCollection.displayGamut`                 | enum     | UIDisplayGamut                    | 13      |
+| UserInterfaceIdiom           | `traitCollection.userInterfaceIdiom`           | enum     | UIUserInterfaceIdiom              | 13      |
+| LayoutDirection              | `traitCollection.layoutDirection`              | enum     | UITraitEnvironmentLayoutDirection | 13      |
+| PreferredContentSizeCategory | `traitCollection.preferredContentSizeCategory` | NSString | —                                 | 13      |
+| SceneCaptureState            | `traitCollection.sceneCaptureState`            | enum     | UISceneCaptureState               | 17      |
+| ImageDynamicRange            | `traitCollection.imageDynamicRange`            | enum     | UIImageDynamicRange               | 17      |
+| TypesettingLanguage          | `traitCollection.typesettingLanguage`          | NSString | —                                 | 17      |
 
 ## Identifier Naming Convention
 
@@ -143,18 +144,18 @@ Attributes:
 
 ## New Enum Lists (LKEnumListRegistry)
 
-| Enum Name | Values |
-|-----------|--------|
-| `UIUserInterfaceIdiom` | Unspecified(-1), Phone(0), Pad(1), TV(2), CarPlay(3), Mac(5), Vision(6) |
-| `UIUserInterfaceLevel` | Unspecified(-1), Base(0), Elevated(1) |
-| `UIUserInterfaceActiveAppearance` | Unspecified(-1), Inactive(0), Active(1) |
-| `UIAccessibilityContrast` | Unspecified(-1), Normal(0), High(1) |
-| `UILegibilityWeight` | Unspecified(-1), Regular(0), Bold(1) |
-| `UIForceTouchCapability` | Unknown(0), Unavailable(1), Available(2) |
-| `UIDisplayGamut` | Unspecified(-1), SRGB(0), P3(1) |
-| `UITraitEnvironmentLayoutDirection` | Unspecified(-1), LeftToRight(0), RightToLeft(1) |
-| `UIImageDynamicRange` | Unspecified(-1), Standard(0), ConstrainedHigh(1), High(2) |
-| `UISceneCaptureState` | Unspecified(-1), Inactive(0), Active(1) |
+| Enum Name                           | Values                                                                  |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| `UIUserInterfaceIdiom`              | Unspecified(-1), Phone(0), Pad(1), TV(2), CarPlay(3), Mac(5), Vision(6) |
+| `UIUserInterfaceLevel`              | Unspecified(-1), Base(0), Elevated(1)                                   |
+| `UIUserInterfaceActiveAppearance`   | Unspecified(-1), Inactive(0), Active(1)                                 |
+| `UIAccessibilityContrast`           | Unspecified(-1), Normal(0), High(1)                                     |
+| `UILegibilityWeight`                | Unspecified(-1), Regular(0), Bold(1)                                    |
+| `UIForceTouchCapability`            | Unknown(0), Unavailable(1), Available(2)                                |
+| `UIDisplayGamut`                    | Unspecified(-1), SRGB(0), P3(1)                                         |
+| `UITraitEnvironmentLayoutDirection` | Unspecified(-1), LeftToRight(0), RightToLeft(1)                         |
+| `UIImageDynamicRange`               | Unspecified(-1), Standard(0), ConstrainedHigh(1), High(2)               |
+| `UISceneCaptureState`               | Unspecified(-1), Inactive(0), Active(1)                                 |
 
 Existing `UIUserInterfaceStyle` and `UIUserInterfaceSizeClass` are already registered.
 
@@ -163,6 +164,7 @@ Existing `UIUserInterfaceStyle` and `UIUserInterfaceSizeClass` are already regis
 ### UIView+LookinServer (new methods)
 
 All methods follow the pattern:
+
 ```objc
 - (NSInteger)lks_traitCollection_userInterfaceStyle {
     return (NSInteger)self.traitCollection.userInterfaceStyle;
@@ -170,6 +172,7 @@ All methods follow the pattern:
 ```
 
 For iOS version-gated properties, use `@available`:
+
 ```objc
 - (NSInteger)lks_traitCollection_activeAppearance {
     if (@available(iOS 14.0, *)) {
@@ -180,6 +183,7 @@ For iOS version-gated properties, use `@available`:
 ```
 
 For CGFloat properties (`displayScale`):
+
 ```objc
 - (CGFloat)lks_traitCollection_displayScale {
     return self.traitCollection.displayScale;
@@ -187,6 +191,7 @@ For CGFloat properties (`displayScale`):
 ```
 
 For NSString properties (`preferredContentSizeCategory`, `typesettingLanguage`):
+
 ```objc
 - (NSString *)lks_traitCollection_preferredContentSizeCategory {
     return self.traitCollection.preferredContentSizeCategory;
@@ -196,6 +201,7 @@ For NSString properties (`preferredContentSizeCategory`, `typesettingLanguage`):
 ### UIWindowScene+LookinServer (new methods)
 
 Same pattern, reading from `self.traitCollection`:
+
 ```objc
 - (NSInteger)lks_userInterfaceLevel {
     return (NSInteger)self.traitCollection.userInterfaceLevel;
@@ -206,31 +212,31 @@ Same pattern, reading from `self.traitCollection`:
 
 ### Server/Core — dual copies synced
 
-| # | File | Changes |
-|---|------|---------|
-| 1 | `Sources/LookinCore/LookinAttrIdentifiers.h` | Add 1 group + 6 section + 15 attr externs (UIView); 12 attr externs (UIWindowScene) |
-| 2 | `Sources/LookinCore/LookinAttrIdentifiers.m` | String value definitions |
-| 3 | `Sources/LookinServer/Shared/LookinAttrIdentifiers.h` | Sync with #1 |
-| 4 | `Sources/LookinServer/Shared/LookinAttrIdentifiers.m` | Sync with #2 |
-| 5 | `Sources/LookinCore/LookinDashboardBlueprint.m` | Register group/sections/attrs, metadata, section titles |
-| 6 | `Sources/LookinServer/Shared/LookinDashboardBlueprint.m` | Sync with #5 |
+| #   | File                                                     | Changes                                                                             |
+| --- | -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 1   | `Sources/LookinCore/LookinAttrIdentifiers.h`             | Add 1 group + 6 section + 15 attr externs (UIView); 12 attr externs (UIWindowScene) |
+| 2   | `Sources/LookinCore/LookinAttrIdentifiers.m`             | String value definitions                                                            |
+| 3   | `Sources/LookinServer/Shared/LookinAttrIdentifiers.h`    | Sync with #1                                                                        |
+| 4   | `Sources/LookinServer/Shared/LookinAttrIdentifiers.m`    | Sync with #2                                                                        |
+| 5   | `Sources/LookinCore/LookinDashboardBlueprint.m`          | Register group/sections/attrs, metadata, section titles                             |
+| 6   | `Sources/LookinServer/Shared/LookinDashboardBlueprint.m` | Sync with #5                                                                        |
 
 ### Server Category
 
-| # | File | Changes |
-|---|------|---------|
-| 7 | `Sources/LookinServer/Server/Category/UIView+LookinServer.h` | Declare 15 `lks_traitCollection_*` methods |
-| 8 | `Sources/LookinServer/Server/Category/UIView+LookinServer.m` | Implement methods |
-| 9 | `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.h` | Declare 12 new `lks_*` methods |
-| 10 | `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.m` | Implement methods |
+| #   | File                                                                | Changes                                    |
+| --- | ------------------------------------------------------------------- | ------------------------------------------ |
+| 7   | `Sources/LookinServer/Server/Category/UIView+LookinServer.h`        | Declare 15 `lks_traitCollection_*` methods |
+| 8   | `Sources/LookinServer/Server/Category/UIView+LookinServer.m`        | Implement methods                          |
+| 9   | `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.h` | Declare 12 new `lks_*` methods             |
+| 10  | `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.m` | Implement methods                          |
 
 ### macOS Client
 
-| # | File | Changes |
-|---|------|---------|
-| 11 | `LookInside/Dashboard/LKEnumListRegistry.m` | Add 10 new enum tables |
-| 12 | `LookInside/Manager/LKPreferenceManager.m` | Register new sections for preference tracking |
-| 13 | `LookInside/Dashboard/LKDashboardCardView.m` | Add UITraitCollection group icon (if icon mapping exists) |
+| #   | File                                         | Changes                                                   |
+| --- | -------------------------------------------- | --------------------------------------------------------- |
+| 11  | `LookInside/Dashboard/LKEnumListRegistry.m`  | Add 10 new enum tables                                    |
+| 12  | `LookInside/Manager/LKPreferenceManager.m`   | Register new sections for preference tracking             |
+| 13  | `LookInside/Dashboard/LKDashboardCardView.m` | Add UITraitCollection group icon (if icon mapping exists) |
 
 ### No Changes Needed
 

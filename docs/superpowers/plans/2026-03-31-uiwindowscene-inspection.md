@@ -13,6 +13,7 @@
 ### Task 1: Create UIWindowScene+LookinServer Category
 
 **Files:**
+
 - Create: `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.h`
 - Create: `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.m`
 
@@ -182,6 +183,7 @@ git commit -m "feat: add UIWindowScene+LookinServer category with pass-through g
 ### Task 2: Add UIWindowScene Attribute Identifiers (LookinCore copy)
 
 **Files:**
+
 - Modify: `Sources/LookinCore/LookinAttrIdentifiers.h` (add after NSWindow identifiers)
 - Modify: `Sources/LookinCore/LookinAttrIdentifiers.m` (add after NSWindow definitions)
 
@@ -265,6 +267,7 @@ git commit -m "feat: add UIWindowScene attribute identifiers to LookinCore"
 ### Task 3: Add UIWindowScene Attribute Identifiers (LookinServer/Shared copy)
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Shared/LookinAttrIdentifiers.h` (NSWindow group at line 46, sections at lines 244–259, attrs at lines 512–556)
 - Modify: `Sources/LookinServer/Shared/LookinAttrIdentifiers.m` (NSWindow group at line 48, sections at lines 234–248, attrs at lines 496–540)
 
@@ -288,6 +291,7 @@ git commit -m "feat: add UIWindowScene attribute identifiers to LookinServer/Sha
 ### Task 4: Register UIWindowScene in LookinDashboardBlueprint (LookinCore copy)
 
 **Files:**
+
 - Modify: `Sources/LookinCore/LookinDashboardBlueprint.m`
 
 Four locations to edit within this file.
@@ -301,6 +305,7 @@ At line 37 (after `LookinAttrGroup_UITextField`), before the `#endif` on line 38
 ```
 
 The result should be:
+
 ```objc
             LookinAttrGroup_UITextField,
             LookinAttrGroup_UIWindowScene
@@ -496,6 +501,7 @@ git commit -m "feat: register UIWindowScene blueprint entries in LookinCore"
 ### Task 5: Register UIWindowScene in LookinDashboardBlueprint (LookinServer/Shared copy)
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Shared/LookinDashboardBlueprint.m`
 
 Apply the **exact same four changes** as Task 4, but at the Shared copy's line numbers:
@@ -528,6 +534,7 @@ git commit -m "feat: register UIWindowScene blueprint entries in LookinServer/Sh
 ### Task 6: Add `attrGroupsForWindowScene:` to LKS_AttrGroupsMaker
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Server/Others/LKS_AttrGroupsMaker.m`
 
 - [ ] **Step 1: Add import for UIWindowScene+LookinServer.h**
@@ -668,6 +675,7 @@ git commit -m "feat: add attrGroupsForWindowScene method to LKS_AttrGroupsMaker"
 ### Task 7: Modify LKS_HierarchyDisplayItemsMaker for Scene Hierarchy
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Server/Others/LKS_HierarchyDisplayItemsMaker.m`
 
 This is the most critical change — the iOS path switches from flat window iteration to scene-grouped hierarchy.
@@ -804,6 +812,7 @@ git commit -m "feat: restructure iOS hierarchy to use UIWindowScene as container
 ### Task 8: Add Enum Lists to LKEnumListRegistry
 
 **Files:**
+
 - Modify: `LookInside/Dashboard/LKEnumListRegistry.m`
 
 - [ ] **Step 1: Add 5 UIWindowScene-related enum tables**
@@ -854,6 +863,7 @@ git commit -m "feat: add UIWindowScene-related enum lists to LKEnumListRegistry"
 ### Task 9: Add UIWindowScene Icon Mapping to LKHierarchyRowView
 
 **Files:**
+
 - Modify: `LookInside/Hierarchy/LKHierarchyRowView.m`
 
 - [ ] **Step 1: Add UIWindowScene to the class-to-icon mapping dictionary**
@@ -876,6 +886,7 @@ git commit -m "feat: add UIWindowScene icon mapping to hierarchy row view"
 ### Task 10: Sync DerivedSource and Build Verification
 
 **Files:**
+
 - Run: `Scripts/sync-derived-source.sh`
 
 - [ ] **Step 1: Run sync script**

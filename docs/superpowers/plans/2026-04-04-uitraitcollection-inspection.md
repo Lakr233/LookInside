@@ -15,6 +15,7 @@
 ### Task 1: Add UITraitCollection identifiers to LookinCore
 
 **Files:**
+
 - Modify: `Sources/LookinCore/LookinAttrIdentifiers.h:63-64` (after `LookinAttrGroup_NSGridView`, before `LookinAttrGroup_UserCustom`)
 - Modify: `Sources/LookinCore/LookinAttrIdentifiers.h:397-407` (section area, after NSGridView sections, before UIWindowScene sections)
 - Modify: `Sources/LookinCore/LookinAttrIdentifiers.h:722-726` (attr area, after existing UIWindowScene traits, before Session)
@@ -138,6 +139,7 @@ git commit -m "feat: add UITraitCollection identifier declarations (LookinCore)"
 ### Task 2: Sync identifiers to LookinServer/Shared
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Shared/LookinAttrIdentifiers.h:591-594`
 - Modify: `Sources/LookinServer/Shared/LookinAttrIdentifiers.m:575-579`
 
@@ -165,6 +167,7 @@ git commit -m "feat: sync UITraitCollection identifiers to LookinServer/Shared"
 ### Task 3: Register UITraitCollection in LookinCore DashboardBlueprint
 
 **Files:**
+
 - Modify: `Sources/LookinCore/LookinDashboardBlueprint.m`
 
 This file has four methods to update: `groupIDs`, `sectionIDsForGroupID:`, `attrIDsForSectionID:`, `groupTitleWithGroupID:`, `sectionTitleWithSectionID:`, and `_infoForAttrID:`.
@@ -537,9 +540,11 @@ git commit -m "feat: register UITraitCollection group and expanded UIWindowScene
 ### Task 4: Sync DashboardBlueprint to LookinServer/Shared
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Shared/LookinDashboardBlueprint.m`
 
 Apply the same changes as Task 3, with the following differences:
+
 - The Shared copy does **not** have `groupTitleWithGroupID:` entries for UIWindowScene (those are only in the LookinCore copy which has all group titles without `#if` guards). The Shared copy uses `#if TARGET_OS_IPHONE` / `#else` guards for group titles. Add `LookinAttrGroup_UITraitCollection: @"UITraitCollection",` in the `#if TARGET_OS_IPHONE` block after `LookinAttrGroup_UIStackView: @"UIStackView",` (line 911).
 - The Shared copy does **not** have UIWindowScene section titles (they are only in Core). Add them to the Shared copy in the `sectionTitleWithSectionID:` dict — but note the Shared copy ends its dict at line 1090 without UIWindowScene entries. Add the UITraitCollection section titles before the closing `};`.
 
@@ -571,6 +576,7 @@ After the `LookinAttrGroup_UIWindowScene` entry (lines 160-169) and before `#end
 - [ ] **Step 3: Expand UIWindowScene Traits and add UITraitCollection to `attrIDsForSectionID:` method**
 
 Same as Task 3 Step 3, but at the Shared copy's line numbers:
+
 - Replace `LookinAttrSec_UIWindowScene_Traits` entry (lines 501-505) with the expanded 15-attr version
 - After `LookinAttrSec_UIWindowScene_Session` entry (lines 506-509) and before `#endif` (line 510), add UITraitCollection section entries
 
@@ -626,6 +632,7 @@ git commit -m "feat: sync UITraitCollection blueprint to LookinServer/Shared"
 ### Task 5: Add UIView category getter methods
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Server/Category/UIView+LookinServer.h`
 - Modify: `Sources/LookinServer/Server/Category/UIView+LookinServer.m`
 
@@ -768,6 +775,7 @@ git commit -m "feat: add UITraitCollection getter methods to UIView+LookinServer
 ### Task 6: Add UIWindowScene category getter methods
 
 **Files:**
+
 - Modify: `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.h`
 - Modify: `Sources/LookinServer/Server/Category/UIWindowScene+LookinServer.m`
 
@@ -873,6 +881,7 @@ git commit -m "feat: add additional trait getter methods to UIWindowScene+Lookin
 ### Task 7: Add enum lists to LKEnumListRegistry
 
 **Files:**
+
 - Modify: `LookInside/Dashboard/LKEnumListRegistry.m`
 
 - [ ] **Step 1: Add 10 new enum tables**
@@ -950,6 +959,7 @@ git commit -m "feat: add UITraitCollection enum lists to LKEnumListRegistry"
 ### Task 8: Register UITraitCollection sections in LKPreferenceManager
 
 **Files:**
+
 - Modify: `LookInside/Manager/LKPreferenceManager.m:596-605`
 
 - [ ] **Step 1: Add UITraitCollection section identifiers to the preference tracking set**
@@ -978,6 +988,7 @@ git commit -m "feat: register UITraitCollection sections in LKPreferenceManager"
 ### Task 9: Add UITraitCollection group icon mapping
 
 **Files:**
+
 - Modify: `LookInside/Dashboard/LKDashboardCardView.m` (if icon mapping exists for groups)
 
 - [ ] **Step 1: Check if icon mapping is needed**
