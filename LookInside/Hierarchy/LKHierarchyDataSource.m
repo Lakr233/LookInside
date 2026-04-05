@@ -164,7 +164,8 @@
             }];
         }
         
-        if (obj.indentLevel == 0) {
+        // 在 indentLevel 0（iOS 13 之前的 window 或 macOS）和 indentLevel 1（iOS 13+ scene 下的 window）都检查
+        if (obj.indentLevel <= 1) {
             if ([obj itemIsKindOfClassesWithNames:classesWithNoPreview]) {
                 obj.noPreview = YES;
             }
@@ -372,21 +373,36 @@
             keyWindowItem = self.rawHierarchyInfo.displayItems.firstObject;
         }
         if (keyWindowItem) {
+
+        // 如果 keyWindowItem 是 scene 容器（只有 windowObject，没有 layer/view），
+        // 在其子项中找到实际的 key window，用于 UITransitionView 搜索
+        LookinDisplayItem *actualKeyWindow = keyWindowItem;
+        if (keyWindowItem.windowObject && !keyWindowItem.layerObject && !keyWindowItem.viewObject) {
+            for (LookinDisplayItem *child in keyWindowItem.subitems) {
+                if (child.representedAsKeyWindow) {
+                    actualKeyWindow = child;
+                    break;
+                }
+            }
+            if (actualKeyWindow == keyWindowItem) {
+                actualKeyWindow = keyWindowItem.subitems.firstObject;
+            }
+        }
+
         [self.rawHierarchyInfo.displayItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull windowItem, NSUInteger idx, BOOL * _Nonnull stop) {
             if (windowItem == keyWindowItem) {
                 return;
             }
             // 非 keyWindow 上的都折叠起来
-            [[LookinDisplayItem flatItemsFromHierarchicalItems:@[windowItem]] enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                if (obj.hasDeterminedExpansion) {
-                    return;
-                }
+            // 强制折叠：覆盖 referenceDict 的旧展开状态，防止非 key scene 保持展开
+            NSArray<LookinDisplayItem *> *flatNonKey = [LookinDisplayItem flatItemsFromHierarchicalItems:@[windowItem]];
+            for (LookinDisplayItem *obj in flatNonKey) {
                 obj.isExpanded = NO;
                 obj.hasDeterminedExpansion = YES;
-            }];
+            }
         }];
-        
-        NSArray<LookinDisplayItem *> *UITransitionViewItems = [keyWindowItem.subitems lookin_filter:^BOOL(LookinDisplayItem *obj) {
+
+        NSArray<LookinDisplayItem *> *UITransitionViewItems = [actualKeyWindow.subitems lookin_filter:^BOOL(LookinDisplayItem *obj) {
             return [obj.title isEqualToString:@"UITransitionView"];
         }];
         [UITransitionViewItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {

@@ -49,6 +49,23 @@
             sceneItem.shouldCaptureImage = YES;
             sceneItem.alpha = 1.0;
 
+            // Build display title: "UIWindowScene – Title (State)"
+            NSString *sceneTitle = windowScene.title.length > 0 ? windowScene.title : nil;
+            NSString *stateString = nil;
+            switch (windowScene.activationState) {
+                case UISceneActivationStateForegroundActive: stateString = @"Foreground Active"; break;
+                case UISceneActivationStateForegroundInactive: stateString = @"Foreground Inactive"; break;
+                case UISceneActivationStateBackground: stateString = @"Background"; break;
+                case UISceneActivationStateUnattached: stateString = @"Unattached"; break;
+                default: stateString = @"Unknown"; break;
+            }
+            NSMutableString *displayTitle = [NSMutableString stringWithString:@"UIWindowScene"];
+            if (sceneTitle) {
+                [displayTitle appendFormat:@" – %@", sceneTitle];
+            }
+            [displayTitle appendFormat:@" (%@)", stateString];
+            sceneItem.customDisplayTitle = displayTitle;
+
             if (hasAttrList) {
                 sceneItem.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindowScene:windowScene];
             }
@@ -83,6 +100,14 @@
                         keyWindowItem.representedAsKeyWindow = YES;
                         [windowItems addObject:keyWindowItem];
                     }
+                }
+            }
+
+            // 如果 scene 包含 key window，则将 scene 也标记为 key
+            for (LookinDisplayItem *windowItem in windowItems) {
+                if (windowItem.representedAsKeyWindow) {
+                    sceneItem.representedAsKeyWindow = YES;
+                    break;
                 }
             }
 

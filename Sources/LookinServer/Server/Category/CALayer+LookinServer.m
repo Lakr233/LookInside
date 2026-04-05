@@ -132,8 +132,23 @@
 #if TARGET_OS_IPHONE
     UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
     CGContextRef context = UIGraphicsGetCurrentContext();
-    if (self.lks_hostView && !self.lks_hostView.lks_isChildrenViewOfTabBar) {
-        [self.lks_hostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
+    // drawViewHierarchyInRect: 从屏幕合成结果渲染，对后台 UIWindowScene 中的 view 会产生错误截图。
+    // 当 hostView 所属的 scene 不在前台时，改用 renderInContext:（直接从 layer model tree 渲染）。
+    BOOL useDrawHierarchy = NO;
+    LookinView *hostView = self.lks_hostView;
+    if (hostView && !hostView.lks_isChildrenViewOfTabBar) {
+        useDrawHierarchy = YES;
+        if (@available(iOS 13.0, *)) {
+            UIWindowScene *scene = hostView.window.windowScene;
+            if (scene &&
+                scene.activationState != UISceneActivationStateForegroundActive &&
+                scene.activationState != UISceneActivationStateForegroundInactive) {
+                useDrawHierarchy = NO;
+            }
+        }
+    }
+    if (useDrawHierarchy) {
+        [hostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
     } else {
         [self renderInContext:context];
     }
@@ -193,15 +208,27 @@
     }];
 #if TARGET_OS_IPHONE
         UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        if (self.lks_hostView && !self.lks_hostView.lks_isChildrenViewOfTabBar) {
-            [self.lks_hostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
+        CGContextRef soloContext = UIGraphicsGetCurrentContext();
+        BOOL useSoloDrawHierarchy = NO;
+        LookinView *soloHostView = self.lks_hostView;
+        if (soloHostView && !soloHostView.lks_isChildrenViewOfTabBar) {
+            useSoloDrawHierarchy = YES;
+            if (@available(iOS 13.0, *)) {
+                UIWindowScene *soloScene = soloHostView.window.windowScene;
+                if (soloScene &&
+                    soloScene.activationState != UISceneActivationStateForegroundActive &&
+                    soloScene.activationState != UISceneActivationStateForegroundInactive) {
+                    useSoloDrawHierarchy = NO;
+                }
+            }
+        }
+        if (useSoloDrawHierarchy) {
+            [soloHostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
         } else {
-            [self renderInContext:context];
+            [self renderInContext:soloContext];
         }
         UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
-
 
 #elif TARGET_OS_OSX
         NSImage *image = [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {

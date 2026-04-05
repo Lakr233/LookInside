@@ -18,6 +18,7 @@
 @interface LKDashboardAttributeEnumsView ()
 
 @property(nonatomic, strong) NSImageView *iconImageView;
+@property(nonatomic, strong) LKLabel *titleLabel;
 @property(nonatomic, strong) LKLabel *textLabel;
 
 @end
@@ -31,19 +32,22 @@
     if (self = [super initWithFrame:frameRect]) {
         _labelX = 5;
         _labelRight = 20;
-        
-        
-//        self.layer.borderWidth = 1;
-//        self.layer.borderColor = DashboardCardControlBorderColor.CGColor;
+
         self.layer.cornerRadius = DashboardCardControlCornerRadius;
-        
+
+        self.titleLabel = [LKLabel new];
+        self.titleLabel.textColor = [NSColor colorNamed:@"DashboardInputAccessoryColor"];
+        self.titleLabel.font = NSFontMake(10);
+        self.titleLabel.maximumNumberOfLines = 1;
+        [self addSubview:self.titleLabel];
+
         self.textLabel = [LKLabel new];
         self.textLabel.textColor = [NSColor colorNamed:@"DashboardCardValueColor"];
         self.textLabel.maximumNumberOfLines = 0;
         self.textLabel.font = NSFontMake(12);
 
         [self addSubview:self.textLabel];
-        
+
         self.iconImageView = [NSImageView new];
         self.iconImageView.image = NSImageMake(@"Icon_ArrowUpDown");
         [self addSubview:self.iconImageView];
@@ -54,16 +58,43 @@
 - (void)layout {
     [super layout];
     $(self.iconImageView).sizeToFit.verAlign.right(9);
-    $(self.textLabel).x(_labelX).toRight(_labelRight).heightToFit.verAlign;
+    if (self.titleLabel.isHidden) {
+        $(self.textLabel).x(_labelX).toRight(_labelRight).heightToFit.verAlign;
+    } else {
+        CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX)].height;
+        CGFloat titleY = 3;
+        $(self.titleLabel).x(_labelX).toRight(_labelRight).height(titleHeight).y(titleY);
+        CGFloat valueY = titleY + titleHeight + 1;
+        $(self.textLabel).x(_labelX).toRight(_labelRight).heightToFit.y(valueY);
+    }
 }
 
 - (NSSize)sizeThatFits:(NSSize)limitedSize {
-    CGFloat height = [self.textLabel sizeThatFits:NSMakeSize(limitedSize.width - _labelRight - _labelX, CGFLOAT_MAX)].height;
-    limitedSize.height = height + 10;
+    CGFloat contentWidth = limitedSize.width - _labelRight - _labelX;
+    CGFloat textHeight = [self.textLabel sizeThatFits:NSMakeSize(contentWidth, CGFLOAT_MAX)].height;
+    if (self.titleLabel.isHidden) {
+        limitedSize.height = textHeight + 10;
+    } else {
+        CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(contentWidth, CGFLOAT_MAX)].height;
+        limitedSize.height = 3 + titleHeight + 1 + textHeight + 4;
+    }
     return limitedSize;
 }
 
 - (void)renderWithAttribute {
+    // Show title label for non-custom attributes
+    if (!self.attribute.isUserCustom) {
+        NSString *briefTitle = [LookinDashboardBlueprint briefTitleWithAttrID:self.attribute.identifier];
+        if (briefTitle.length > 0) {
+            self.titleLabel.stringValue = briefTitle;
+            self.titleLabel.hidden = NO;
+        } else {
+            self.titleLabel.hidden = YES;
+        }
+    } else {
+        self.titleLabel.hidden = YES;
+    }
+
     if (self.attribute.attrType == LookinAttrTypeEnumString) {
         NSString *text = self.attribute.value;
         if (![text isKindOfClass:[NSString class]]) {
@@ -71,7 +102,7 @@
             return;
         }
         self.textLabel.stringValue = text;
-        
+
     } else {
         NSInteger enumValue = [self.attribute.value integerValue];
         NSString *enumListName = [LookinDashboardBlueprint enumListNameWithAttrID:self.attribute.identifier];

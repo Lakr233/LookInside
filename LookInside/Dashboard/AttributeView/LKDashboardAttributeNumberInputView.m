@@ -86,7 +86,11 @@
                                 LookinAttr_NSControl_Value_FloatValue,
                                 LookinAttr_NSControl_Value_DoubleValue,
                                 LookinAttr_NSTextField_PreferredMaxLayoutWidth_PreferredMaxLayoutWidth,
-                                LookinAttr_NSTextField_MaximumNumberOfLines_MaximumNumberOfLines];
+                                LookinAttr_NSTextField_MaximumNumberOfLines_MaximumNumberOfLines,
+                                LookinAttr_UITraitCollection_Display_DisplayScale,
+                                LookinAttr_UIWindowScene_Traits_DisplayScale,
+                                LookinAttr_UIWindowScene_Windows_WindowCount,
+                                LookinAttr_UIWindowScene_Screen_ScreenScale];
         });
         if ([horizontalAttrs containsObject:self.attribute.identifier]) {
             self.inputView.viewStyle = LKNumberInputViewStyleHorizontal;
@@ -135,6 +139,11 @@
                     LookinAttr_UIScrollView_Zoom_Scale: @3,
                     LookinAttr_UIScrollView_Zoom_MinScale: @3,
                     LookinAttr_UIScrollView_Zoom_MaxScale: @3,
+
+                    LookinAttr_UITraitCollection_Display_DisplayScale: @1,
+                    LookinAttr_UIWindowScene_Traits_DisplayScale: @1,
+                    LookinAttr_UIWindowScene_Windows_WindowCount: @1,
+                    LookinAttr_UIWindowScene_Screen_ScreenScale: @1,
                     };
     });
     

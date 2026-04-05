@@ -209,7 +209,8 @@ const CGFloat LookinPreviewMaxZInterspace = 1;
         if (item.superItem) {
             item.previewZIndex = item.superItem.previewZIndex;
         } else {
-            NSAssert(NO, @"");
+            // 没有 superItem 的顶层 item（如折叠的 UIWindowScene）
+            item.previewZIndex = 0;
         }
     }
     
