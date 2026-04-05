@@ -49,6 +49,23 @@
             sceneItem.shouldCaptureImage = YES;
             sceneItem.alpha = 1.0;
 
+            // Build display title: "UIWindowScene – Title (State)"
+            NSString *sceneTitle = windowScene.title.length > 0 ? windowScene.title : nil;
+            NSString *stateString = nil;
+            switch (windowScene.activationState) {
+                case UISceneActivationStateForegroundActive: stateString = @"Foreground Active"; break;
+                case UISceneActivationStateForegroundInactive: stateString = @"Foreground Inactive"; break;
+                case UISceneActivationStateBackground: stateString = @"Background"; break;
+                case UISceneActivationStateUnattached: stateString = @"Unattached"; break;
+                default: stateString = @"Unknown"; break;
+            }
+            NSMutableString *displayTitle = [NSMutableString stringWithString:@"UIWindowScene"];
+            if (sceneTitle) {
+                [displayTitle appendFormat:@" – %@", sceneTitle];
+            }
+            [displayTitle appendFormat:@" (%@)", stateString];
+            sceneItem.customDisplayTitle = displayTitle;
+
             if (hasAttrList) {
                 sceneItem.attributesGroupList = [LKS_AttrGroupsMaker attrGroupsForWindowScene:windowScene];
             }
