@@ -211,7 +211,64 @@
 #endif
 }
 
+#if TARGET_OS_IPHONE
+/// Solo screenshot for _UIMultiLayer: hide subviews via layer opacity
+/// (matching Xcode's __dbg_snapshotImage approach), render the inner
+/// view.layer via renderInContext:.
+- (LookinImage *)_lks_multiLayerSoloScreenshotWithLowQuality:(BOOL)lowQuality {
+    CALayer *innerLayer = self.lks_multiLayerInnerLayer;
+    LookinView *hostView = self.lks_hostView;
+    if (!innerLayer || !hostView) {
+        return nil;
+    }
+
+    CGFloat screenScale = [LKS_MultiplatformAdapter mainScreenScale];
+    CGFloat pixelWidth = self.frame.size.width * screenScale;
+    CGFloat pixelHeight = self.frame.size.height * screenScale;
+    if (pixelWidth <= 0 || pixelHeight <= 0) {
+        return nil;
+    }
+
+    CGFloat renderScale = lowQuality ? 1 : 0;
+    CGFloat maxLength = MAX(pixelWidth, pixelHeight);
+    if (maxLength > LookinNodeImageMaxLengthInPx) {
+        renderScale = MIN(screenScale * LookinNodeImageMaxLengthInPx / maxLength, 1);
+    }
+    CGSize contextSize = self.frame.size;
+    if (contextSize.width <= 0 || contextSize.height <= 0 || contextSize.width > 20000 || contextSize.height > 20000) {
+        NSLog(@"LookinServer - Failed to capture MultiLayer solo screenshot. Invalid context size: %@ x %@", @(contextSize.width), @(contextSize.height));
+        return nil;
+    }
+
+    // Save subview layer opacities and set to 0 (Xcode's approach)
+    NSArray<UIView *> *subviews = [hostView.subviews copy];
+    NSMutableArray<NSNumber *> *savedOpacities = [NSMutableArray arrayWithCapacity:subviews.count];
+    for (UIView *subview in subviews) {
+        [savedOpacities addObject:@(subview.layer.opacity)];
+        subview.layer.opacity = 0;
+    }
+
+    UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [innerLayer renderInContext:context];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+
+    // Restore opacities
+    [subviews enumerateObjectsUsingBlock:^(UIView * _Nonnull subview, NSUInteger index, BOOL * _Nonnull stop) {
+        subview.layer.opacity = savedOpacities[index].floatValue;
+    }];
+
+    return image;
+}
+#endif
+
 - (LookinImage *)lks_soloScreenshotWithLowQuality:(BOOL)lowQuality {
+#if TARGET_OS_IPHONE
+    if (self.lks_isMultiLayerContainer) {
+        return [self _lks_multiLayerSoloScreenshotWithLowQuality:lowQuality];
+    }
+#endif
     if (!self.sublayers.count) {
         return nil;
     }
