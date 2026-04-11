@@ -61,8 +61,46 @@
         if (view.layer == self) {
             return view;
         }
+#if TARGET_OS_IPHONE
+        // MultiLayer: _outermostLayer is the view's outermost rendering layer,
+        // but view.layer points to the inner backing layer.
+        if ([view respondsToSelector:@selector(_outermostLayer)]
+            && [view performSelector:@selector(_outermostLayer)] == self) {
+            return view;
+        }
+#endif
     }
     return nil;
+}
+
+#pragma mark - MultiLayer Detection
+
+- (BOOL)lks_isMultiLayerContainer {
+#if TARGET_OS_IPHONE
+    if (!self.delegate || ![self.delegate isKindOfClass:UIView.class]) {
+        return NO;
+    }
+    UIView *view = (UIView *)self.delegate;
+    if (![view respondsToSelector:@selector(_outermostLayer)]) {
+        return NO;
+    }
+    CALayer *outermostLayer = [view performSelector:@selector(_outermostLayer)];
+    return (outermostLayer == self && view.layer != self);
+#else
+    return NO;
+#endif
+}
+
+- (CALayer *)lks_multiLayerInnerLayer {
+#if TARGET_OS_IPHONE
+    if (!self.lks_isMultiLayerContainer) {
+        return nil;
+    }
+    UIView *view = (UIView *)self.delegate;
+    return view.layer;
+#else
+    return nil;
+#endif
 }
 
 #pragma mark - Screenshot

@@ -14,6 +14,16 @@
 /// 如果 myView.layer == myLayer，则 myLayer.lks_hostView 会返回 myView
 @property(nonatomic, readonly, weak) LookinView *lks_hostView;
 
+/// Returns YES when this layer is a _UIMultiLayer wrapping a UIView.
+/// Detection: delegate is a UIView that responds to _outermostLayer, and
+/// [delegate _outermostLayer] == self && [delegate layer] != self.
+/// Always returns NO on iOS < 26 (no _outermostLayer selector).
+@property(nonatomic, readonly) BOOL lks_isMultiLayerContainer;
+
+/// When lks_isMultiLayerContainer is YES, returns the inner backing layer
+/// (i.e. [hostView layer]). Returns nil otherwise.
+@property(nonatomic, readonly) CALayer *lks_multiLayerInnerLayer;
+
 - (LookinWindow *)lks_window;
 
 - (CGRect)lks_frameInWindow:(LookinWindow *)window;
