@@ -103,6 +103,24 @@
 #endif
 }
 
+- (BOOL)lks_isInsideMultiLayerStructure {
+#if TARGET_OS_IPHONE
+    if (self.lks_isMultiLayerContainer) {
+        return YES;
+    }
+    CALayer *current = self.superlayer;
+    for (NSUInteger depth = 0; current && depth < 8; depth++) {
+        if (current.lks_isMultiLayerContainer) {
+            return YES;
+        }
+        current = current.superlayer;
+    }
+    return NO;
+#else
+    return NO;
+#endif
+}
+
 #pragma mark - Screenshot
 
 #if TARGET_OS_OSX
@@ -153,7 +171,9 @@
     // bounds.size. Apple's __dbg_snapshotImage also uses bounds, not frame.
     CGSize renderSize;
 #if TARGET_OS_IPHONE
-    if (self.lks_isMultiLayerContainer) {
+    if (self.lks_isInsideMultiLayerStructure) {
+        // Use bounds.size for layers inside _UIMultiLayer — the outermost
+        // layer inherits the original transform, making frame.size unreliable.
         renderSize = self.bounds.size;
     } else {
         renderSize = self.frame.size;
@@ -183,6 +203,18 @@
     return nil;
 }
 #if TARGET_OS_IPHONE
+    // Layers inside a _UIMultiLayer structure must use renderInContext:
+    // because drawViewHierarchyInRect: does not work correctly for views
+    // whose rendering is managed by the _UIMultiLayer compositor on iOS 26.
+    if (self.lks_isInsideMultiLayerStructure) {
+        UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        [self renderInContext:context];
+        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        return image;
+    }
+
     UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
     CGContextRef context = UIGraphicsGetCurrentContext();
     // drawViewHierarchyInRect: 从屏幕合成结果渲染，对后台 UIWindowScene 中的 view 会产生错误截图。
@@ -312,46 +344,33 @@
     if (self.sublayers.count) {
         NSArray<CALayer *> *sublayers = [self.sublayers copy];
         NSMutableArray<CALayer *> *visibleSublayers = [NSMutableArray arrayWithCapacity:sublayers.count];
-        [sublayers enumerateObjectsUsingBlock:^(__kindof CALayer * _Nonnull sublayer, NSUInteger idx, BOOL * _Nonnull stop) {
-        if (!sublayer.hidden) {
-            sublayer.hidden = YES;
-            [visibleSublayers addObject:sublayer];
-        }
-    }];
-#if TARGET_OS_IPHONE
-        UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
-        CGContextRef soloContext = UIGraphicsGetCurrentContext();
-        BOOL useSoloDrawHierarchy = NO;
-        LookinView *soloHostView = self.lks_hostView;
-        if (soloHostView && !soloHostView.lks_isChildrenViewOfTabBar) {
-            useSoloDrawHierarchy = YES;
-            if (@available(iOS 13.0, *)) {
-                UIWindowScene *soloScene = soloHostView.window.windowScene;
-                if (soloScene &&
-                    soloScene.activationState != UISceneActivationStateForegroundActive &&
-                    soloScene.activationState != UISceneActivationStateForegroundInactive) {
-                    useSoloDrawHierarchy = NO;
+        LookinImage *image = nil;
+        @try {
+            [sublayers enumerateObjectsUsingBlock:^(__kindof CALayer * _Nonnull sublayer, NSUInteger idx, BOOL * _Nonnull stop) {
+                if (!sublayer.hidden) {
+                    sublayer.hidden = YES;
+                    [visibleSublayers addObject:sublayer];
                 }
-            }
-        }
-        if (useSoloDrawHierarchy) {
-            [soloHostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
-        } else {
+            }];
+#if TARGET_OS_IPHONE
+            UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
+            CGContextRef soloContext = UIGraphicsGetCurrentContext();
             [self renderInContext:soloContext];
-        }
-        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
+            image = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
 
 #elif TARGET_OS_OSX
-        NSImage *image = [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {
-            [self renderInContext:context];
-        }];
+            image = [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {
+                [self renderInContext:context];
+            }];
 #endif
-    [visibleSublayers enumerateObjectsUsingBlock:^(CALayer * _Nonnull sublayer, NSUInteger idx, BOOL * _Nonnull stop) {
-        sublayer.hidden = NO;
-    }];
-    return image;
-}
+        } @finally {
+            [visibleSublayers enumerateObjectsUsingBlock:^(CALayer * _Nonnull sublayer, NSUInteger idx, BOOL * _Nonnull stop) {
+                sublayer.hidden = NO;
+            }];
+        }
+        return image;
+    }
     return nil;
 }
 
