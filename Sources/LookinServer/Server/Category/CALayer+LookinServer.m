@@ -147,9 +147,24 @@
 
 - (LookinImage *)lks_groupScreenshotWithLowQuality:(BOOL)lowQuality {
 
+    // For _UIMultiLayer, use bounds.size (the natural layer size) instead of
+    // frame.size, because _UIMultiLayer inherits the original transform from
+    // view.layer — frame.size includes transform effects and may differ from
+    // bounds.size. Apple's __dbg_snapshotImage also uses bounds, not frame.
+    CGSize renderSize;
+#if TARGET_OS_IPHONE
+    if (self.lks_isMultiLayerContainer) {
+        renderSize = self.bounds.size;
+    } else {
+        renderSize = self.frame.size;
+    }
+#else
+    renderSize = self.frame.size;
+#endif
+
     CGFloat screenScale = [LKS_MultiplatformAdapter mainScreenScale];
-    CGFloat pixelWidth = self.frame.size.width * screenScale;
-    CGFloat pixelHeight = self.frame.size.height * screenScale;
+    CGFloat pixelWidth = renderSize.width * screenScale;
+    CGFloat pixelHeight = renderSize.height * screenScale;
     if (pixelWidth <= 0 || pixelHeight <= 0) {
         return nil;
     }
@@ -162,7 +177,7 @@
         renderScale = MIN(screenScale * LookinNodeImageMaxLengthInPx / maxLength, 1);
 }
 
-    CGSize contextSize = self.frame.size;
+    CGSize contextSize = renderSize;
     if (contextSize.width <= 0 || contextSize.height <= 0 || contextSize.width > 20000 || contextSize.height > 20000) {
         NSLog(@"LookinServer - Failed to capture screenshot. Invalid context size: %@ x %@", @(contextSize.width), @(contextSize.height));
     return nil;
@@ -186,7 +201,7 @@
         }
     }
     if (useDrawHierarchy) {
-        [hostView drawViewHierarchyInRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) afterScreenUpdates:YES];
+        [hostView drawViewHierarchyInRect:CGRectMake(0, 0, renderSize.width, renderSize.height) afterScreenUpdates:YES];
     } else {
         [self renderInContext:context];
     }
@@ -222,9 +237,11 @@
         return nil;
     }
 
+    // Use bounds.size — _UIMultiLayer.frame includes transform effects
+    CGSize renderSize = self.bounds.size;
     CGFloat screenScale = [LKS_MultiplatformAdapter mainScreenScale];
-    CGFloat pixelWidth = self.frame.size.width * screenScale;
-    CGFloat pixelHeight = self.frame.size.height * screenScale;
+    CGFloat pixelWidth = renderSize.width * screenScale;
+    CGFloat pixelHeight = renderSize.height * screenScale;
     if (pixelWidth <= 0 || pixelHeight <= 0) {
         return nil;
     }
@@ -234,7 +251,7 @@
     if (maxLength > LookinNodeImageMaxLengthInPx) {
         renderScale = MIN(screenScale * LookinNodeImageMaxLengthInPx / maxLength, 1);
     }
-    CGSize contextSize = self.frame.size;
+    CGSize contextSize = renderSize;
     if (contextSize.width <= 0 || contextSize.height <= 0 || contextSize.width > 20000 || contextSize.height > 20000) {
         NSLog(@"LookinServer - Failed to capture MultiLayer solo screenshot. Invalid context size: %@ x %@", @(contextSize.width), @(contextSize.height));
         return nil;

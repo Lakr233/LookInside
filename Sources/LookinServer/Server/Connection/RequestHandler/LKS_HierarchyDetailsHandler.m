@@ -19,6 +19,10 @@
 #import "NSValue+Lookin.h"
 #import "NSObject+LookinServer.h"
 #import "CALayer+LookinServer.h"
+#import "LookinAttributesGroup.h"
+#import "LookinAttributesSection.h"
+#import "LookinAttribute.h"
+#import "LookinAttrIdentifiers.h"
 #if TARGET_OS_IPHONE
 #import "UIWindowScene+LookinServer.h"
 #endif
@@ -212,6 +216,33 @@
                     itemDetail.customAttrGroupList = [maker getGroups];
                     itemDetail.customDisplayTitle = [maker getCustomDisplayTitle];
                     itemDetail.danceUISource = [maker getDanceUISource];
+
+#if TARGET_OS_IPHONE
+                    // Re-add MultiLayer annotation (initial hierarchy sets it,
+                    // but detail handler overwrites customAttrGroupList above)
+                    if (layer.lks_isMultiLayerContainer) {
+                        LookinAttribute *multiLayerAttr = [LookinAttribute new];
+                        multiLayerAttr.identifier = LookinAttr_UserCustom;
+                        multiLayerAttr.displayTitle = @"MultiLayer";
+                        multiLayerAttr.attrType = LookinAttrTypeBOOL;
+                        multiLayerAttr.value = @(YES);
+
+                        LookinAttributesSection *renderingSection = [LookinAttributesSection new];
+                        renderingSection.identifier = LookinAttrSec_UserCustom;
+                        renderingSection.attributes = @[multiLayerAttr];
+
+                        LookinAttributesGroup *renderingGroup = [LookinAttributesGroup new];
+                        renderingGroup.identifier = LookinAttrGroup_UserCustom;
+                        renderingGroup.userCustomTitle = @"Rendering";
+                        renderingGroup.attrSections = @[renderingSection];
+
+                        if (itemDetail.customAttrGroupList) {
+                            itemDetail.customAttrGroupList = [itemDetail.customAttrGroupList arrayByAddingObject:renderingGroup];
+                        } else {
+                            itemDetail.customAttrGroupList = @[renderingGroup];
+                        }
+                    }
+#endif
                 }
                 [self.attrGroupsSyncedOids addObject:@(task.oid)];
             }
