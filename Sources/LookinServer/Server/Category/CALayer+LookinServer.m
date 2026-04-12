@@ -19,6 +19,329 @@
 #import "LKS_MultiplatformAdapter.h"
 #import "NSWindow+LookinServer.h"
 
+#if TARGET_OS_IPHONE
+
+#pragma mark - MultiLayer Snapshot Mode (debug switch)
+
+/// Snapshot rendering strategy for views living inside a MultiLayer
+/// `_UIVisualEffectContentView` subtree. Selected at runtime from an env var
+/// or NSUserDefaults key so we can A/B different implementations without
+/// rebuilding. See `LKSMultiLayerSnapshotModeValue` for the keys.
+typedef NS_ENUM(NSInteger, LKSMultiLayerSnapshotMode) {
+    /// Current baseline: `UIScrollView` subclasses use a simple window crop,
+    /// everything else falls back to `renderInContext:`.
+    LKSMultiLayerSnapshotModeDefault = 0,
+    /// B — Xcode-style window crop. Render the whole window via
+    /// `drawViewHierarchyInRect:` and crop to the target view, honoring
+    /// `clipsToBounds` on ancestors and temporarily clearing the alpha of
+    /// views that overlap the target (later siblings on the ancestor chain).
+    LKSMultiLayerSnapshotModeWindowCropXcode,
+    /// C — Render from the nearest non-MultiLayer ancestor via
+    /// `drawViewHierarchyInRect:` and crop. Cheaper than window crop when
+    /// the ancestor is local, relies on the ancestor's subtree having no
+    /// overlapping siblings.
+    LKSMultiLayerSnapshotModeNearestAncestorCrop,
+};
+
+static LKSMultiLayerSnapshotMode LKSMultiLayerSnapshotModeValue(void) {
+    static LKSMultiLayerSnapshotMode mode;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        mode = LKSMultiLayerSnapshotModeWindowCropXcode;
+//        NSString *envValue = NSProcessInfo.processInfo.environment[@"LOOKIN_MULTILAYER_SNAPSHOT_MODE"];
+//        NSString *defaultsValue = [NSUserDefaults.standardUserDefaults stringForKey:@"LookinServerMultiLayerSnapshotMode"];
+//        NSString *rawValue = envValue.length > 0 ? envValue : defaultsValue;
+//        NSString *value = [[rawValue lowercaseString] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+//        if ([value isEqualToString:@"b"]
+//            || [value isEqualToString:@"windowcrop"]
+//            || [value isEqualToString:@"xcode"]) {
+//            mode = LKSMultiLayerSnapshotModeWindowCropXcode;
+//        } else if ([value isEqualToString:@"c"]
+//                   || [value isEqualToString:@"nearest"]
+//                   || [value isEqualToString:@"nearestancestor"]) {
+//            mode = LKSMultiLayerSnapshotModeNearestAncestorCrop;
+//        }
+        NSString *name = (mode == LKSMultiLayerSnapshotModeWindowCropXcode) ? @"windowCropXcode(B)"
+                       : (mode == LKSMultiLayerSnapshotModeNearestAncestorCrop) ? @"nearestAncestorCrop(C)"
+                       : @"default";
+        NSLog(@"LookinServer MultiLayer snapshot mode = %@", name);
+    });
+    return mode;
+}
+
+#pragma mark - MultiLayer Detection
+
+static BOOL LKSMultiLayerHostViewIsVisualEffectContentView(UIView *hostView) {
+    if (!hostView) {
+        return NO;
+    }
+
+    NSString *hostViewClassName = NSStringFromClass(hostView.class);
+    return [hostViewClassName isEqualToString:@"_UIVisualEffectContentView"];
+}
+
+static BOOL LKSMultiLayerHostViewIsTextLeaf(UIView *hostView) {
+    if (!hostView) {
+        return NO;
+    }
+
+    if ([hostView isKindOfClass:UILabel.class]) {
+        return YES;
+    }
+
+    NSString *hostViewClassName = NSStringFromClass(hostView.class);
+    return [hostViewClassName rangeOfString:@"Label" options:NSCaseInsensitiveSearch].location != NSNotFound;
+}
+
+static BOOL LKSMultiLayerHostViewHasMultiLayerSuperview(UIView *hostView) {
+    UIView *superview = hostView.superview;
+    if (!superview || ![superview respondsToSelector:@selector(_outermostLayer)]) {
+        return NO;
+    }
+
+    CALayer *outermostLayer = [superview performSelector:@selector(_outermostLayer)];
+    return outermostLayer.lks_isMultiLayerContainer;
+}
+
+static BOOL LKSMultiLayerHostViewCanUseDrawHierarchy(UIView *hostView) {
+    if (!hostView || hostView.lks_isChildrenViewOfTabBar) {
+        return NO;
+    }
+
+    if (@available(iOS 13.0, *)) {
+        UIWindowScene *scene = hostView.window.windowScene;
+        if (scene &&
+            scene.activationState != UISceneActivationStateForegroundActive &&
+            scene.activationState != UISceneActivationStateForegroundInactive) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+/// Returns YES when `hostView` or any of its ancestors is a
+/// `_UIVisualEffectContentView` whose superview is a `_UIMultiLayer`.
+/// drawViewHierarchyInRect: returns blank images for views living inside
+/// such a subtree on iOS 26, so callers use this to switch to renderInContext:.
+static BOOL LKSMultiLayerHostViewIsInsideMultiLayerVisualEffectSubtree(UIView *hostView) {
+    for (UIView *current = hostView; current; current = current.superview) {
+        if (LKSMultiLayerHostViewIsVisualEffectContentView(current)
+            && LKSMultiLayerHostViewHasMultiLayerSuperview(current)) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+static BOOL LKSMultiLayerShouldRenderGroupWithLayerTree(CALayer *layer, UIView *hostView) {
+    if (!hostView || hostView.layer != layer) {
+        return NO;
+    }
+    return LKSMultiLayerHostViewIsInsideMultiLayerVisualEffectSubtree(hostView);
+}
+
+/// UIScrollView subclasses inside a MultiLayer visual effect subtree need
+/// a different path: renderInContext: produces blank output (the scroll
+/// view's sublayers live in content coords offset by contentOffset that
+/// the recursive CA renderer does not map back to the captured context),
+/// and drawViewHierarchyInRect: on the scroll view itself is also blank
+/// because it is nested inside the MultiLayer. The only reliable path is
+/// to render the full window snapshot and crop to the scroll view rect.
+static BOOL LKSMultiLayerShouldUseWindowCropForScrollView(UIView *hostView) {
+    if (!hostView || ![hostView isKindOfClass:UIScrollView.class]) {
+        return NO;
+    }
+    return LKSMultiLayerHostViewIsInsideMultiLayerVisualEffectSubtree(hostView);
+}
+
+/// Returns YES when `view` itself is wrapped by a `_UIMultiLayer` (i.e.
+/// `view._outermostLayer != view.layer`).
+static BOOL LKSMultiLayerViewIsMultiLayerWrapped(UIView *view) {
+    if (!view || ![view respondsToSelector:@selector(_outermostLayer)]) {
+        return NO;
+    }
+    CALayer *outer = [view performSelector:@selector(_outermostLayer)];
+    return outer != view.layer;
+}
+
+/// Walks up the superview chain to find the nearest ancestor whose layer is
+/// NOT MultiLayer-wrapped. The result is a safe root to call
+/// `drawViewHierarchyInRect:` on, because it lives outside the MultiLayer
+/// tree that would otherwise produce blank output. Returns nil if every
+/// ancestor is wrapped (unusual — window cannot be wrapped).
+static UIView *LKSMultiLayerNearestNonMultiLayerAncestor(UIView *hostView) {
+    for (UIView *current = hostView.superview; current; current = current.superview) {
+        if (!LKSMultiLayerViewIsMultiLayerWrapped(current)) {
+            return current;
+        }
+    }
+    return nil;
+}
+
+#pragma mark - MultiLayer Snapshot Render Helpers
+
+/// Default mode helper: window-level draw with a single offset, no sibling
+/// alpha handling. Works for isolated scroll views in an effect subtree but
+/// may leak sibling content through overlap.
+static BOOL LKSDrawHostViewUsingWindowCrop(UIView *hostView) {
+    UIWindow *window = hostView.window;
+    if (!window) {
+        return NO;
+    }
+    CGRect rectInWindow = [hostView convertRect:hostView.bounds toView:window];
+    if (rectInWindow.size.width <= 0 || rectInWindow.size.height <= 0) {
+        return NO;
+    }
+    [window drawViewHierarchyInRect:CGRectMake(-rectInWindow.origin.x,
+                                               -rectInWindow.origin.y,
+                                               window.bounds.size.width,
+                                               window.bounds.size.height)
+                 afterScreenUpdates:YES];
+    return YES;
+}
+
+/// Mode B helper: faithful port of
+/// `-[DBGViewDebuggerSupport_iOS _renderEffectViewUsingDrawHierarchyInRect:]`
+/// for the "self + children" case (we skip Xcode's subview-alpha clearing
+/// because Lookin wants the children in the snapshot). Climbs the superview
+/// chain to:
+///   1. Zero out siblings above (after) the current view on each level.
+///   2. Intersect the crop rect with every `clipsToBounds` ancestor.
+/// Then draws the window once. When the final clip rect differs from the
+/// full view bounds we run a second pass into a temporary image context and
+/// `drawInRect:` it back into the caller context at the view-local rect,
+/// preserving Lookin's expected `contextSize == hostView.bounds.size`.
+static BOOL LKSDrawHostViewUsingXcodeWindowCrop(UIView *hostView, CGSize contextSize, CGFloat renderScale) {
+    UIWindow *window = hostView.window;
+    if (!window) {
+        return NO;
+    }
+    CGRect rectInWindow = [window convertRect:hostView.bounds fromView:hostView];
+    if (CGRectIsEmpty(rectInWindow) || CGRectIsNull(rectInWindow)) {
+        return NO;
+    }
+
+    NSMutableArray<NSValue *> *alphaViewRefs = [NSMutableArray array];
+    NSMutableArray<NSNumber *> *savedAlphas = [NSMutableArray array];
+    CGRect clippedRect = rectInWindow;
+
+    @try {
+        UIView *current = hostView;
+        while (current != window) {
+            UIView *parent = current.superview;
+            if (!parent) {
+                break;
+            }
+            NSUInteger currentIdx = [parent.subviews indexOfObject:current];
+            if (currentIdx != NSNotFound) {
+                for (NSUInteger i = currentIdx + 1; i < parent.subviews.count; i++) {
+                    UIView *sibling = parent.subviews[i];
+                    [alphaViewRefs addObject:[NSValue valueWithNonretainedObject:sibling]];
+                    [savedAlphas addObject:@(sibling.alpha)];
+                    sibling.alpha = 0.0;
+                }
+            }
+            if (parent.clipsToBounds) {
+                CGRect parentRectInWindow = [window convertRect:parent.bounds fromView:parent];
+                clippedRect = CGRectIntersection(clippedRect, parentRectInWindow);
+            }
+            current = parent;
+        }
+
+        if (CGRectIsEmpty(clippedRect) || CGRectIsNull(clippedRect)) {
+            return NO;
+        }
+
+        if (CGSizeEqualToSize(clippedRect.size, contextSize)) {
+            // No clipping took effect — draw straight into the caller context.
+            [window drawViewHierarchyInRect:CGRectMake(-clippedRect.origin.x,
+                                                       -clippedRect.origin.y,
+                                                       window.bounds.size.width,
+                                                       window.bounds.size.height)
+                         afterScreenUpdates:YES];
+        } else {
+            // Clipping shrank the rect. Render into a temporary context sized
+            // to the clip, then drop it back into the caller context at the
+            // clip's position in view-local coords.
+            UIGraphicsBeginImageContextWithOptions(clippedRect.size, NO, renderScale);
+            [window drawViewHierarchyInRect:CGRectMake(-clippedRect.origin.x,
+                                                       -clippedRect.origin.y,
+                                                       window.bounds.size.width,
+                                                       window.bounds.size.height)
+                         afterScreenUpdates:YES];
+            UIImage *clippedImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+
+            CGRect rectInHostView = [hostView convertRect:clippedRect fromView:window];
+            [clippedImage drawInRect:rectInHostView];
+        }
+        return YES;
+    } @finally {
+        for (NSUInteger i = 0; i < alphaViewRefs.count; i++) {
+            UIView *view = [alphaViewRefs[i] nonretainedObjectValue];
+            view.alpha = savedAlphas[i].floatValue;
+        }
+    }
+}
+
+/// Mode C helper: draw from the nearest non-MultiLayer ancestor and crop.
+/// Cheaper than Xcode's window crop when the ancestor is local. Assumes the
+/// ancestor's own subtree does not produce overlapping siblings that need
+/// alpha zeroing.
+static BOOL LKSDrawHostViewUsingNearestAncestorCrop(UIView *hostView) {
+    UIView *root = LKSMultiLayerNearestNonMultiLayerAncestor(hostView);
+    if (!root) {
+        return NO;
+    }
+    CGRect rectInRoot = [root convertRect:hostView.bounds fromView:hostView];
+    if (CGRectIsEmpty(rectInRoot) || CGRectIsNull(rectInRoot)) {
+        return NO;
+    }
+    [root drawViewHierarchyInRect:CGRectMake(-rectInRoot.origin.x,
+                                             -rectInRoot.origin.y,
+                                             root.bounds.size.width,
+                                             root.bounds.size.height)
+               afterScreenUpdates:YES];
+    return YES;
+}
+
+/// Dispatch to the configured helper. Returns YES if the helper successfully
+/// drew into the current UIGraphicsContext. Caller must fall back to
+/// `renderInContext:` when NO is returned.
+static BOOL LKSDrawHostViewForMultiLayerEffectSubtree(UIView *hostView, CGSize contextSize, CGFloat renderScale) {
+    switch (LKSMultiLayerSnapshotModeValue()) {
+        case LKSMultiLayerSnapshotModeWindowCropXcode:
+            return LKSDrawHostViewUsingXcodeWindowCrop(hostView, contextSize, renderScale);
+        case LKSMultiLayerSnapshotModeNearestAncestorCrop:
+            return LKSDrawHostViewUsingNearestAncestorCrop(hostView);
+        case LKSMultiLayerSnapshotModeDefault:
+        default:
+            if (LKSMultiLayerShouldUseWindowCropForScrollView(hostView)) {
+                return LKSDrawHostViewUsingWindowCrop(hostView);
+            }
+            return NO;
+    }
+}
+
+static BOOL LKSMultiLayerShouldRenderTextWithViewHierarchy(CALayer *layer, UIView *hostView) {
+    if (!layer.lks_isMultiLayerContainer || !LKSMultiLayerHostViewIsTextLeaf(hostView)) {
+        return NO;
+    }
+
+    return LKSMultiLayerHostViewCanUseDrawHierarchy(hostView);
+}
+
+static BOOL LKSMultiLayerShouldExposeTextInnerSublayers(CALayer *layer, UIView *hostView) {
+    if (!layer.lks_isMultiLayerContainer || !LKSMultiLayerHostViewIsTextLeaf(hostView)) {
+        return NO;
+    }
+
+    CALayer *innerLayer = layer.lks_multiLayerInnerLayer;
+    return innerLayer.sublayers.count > 0;
+}
+#endif
+
 @implementation CALayer (LookinServer)
 
 - (LookinWindow *)lks_window {
@@ -189,9 +512,17 @@
     // cannot capture — e.g. _UIVisualEffectContentView children with adapted
     // text colors would appear invisible without the blur backdrop.
     if (self.lks_isMultiLayerContainer) {
+        LookinView *hostView = self.lks_hostView;
+        BOOL useViewHierarchyForText = LKSMultiLayerShouldRenderTextWithViewHierarchy(self, hostView);
         UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
         CGContextRef context = UIGraphicsGetCurrentContext();
-        [self renderInContext:context];
+        if (useViewHierarchyForText) {
+            [hostView drawViewHierarchyInRect:CGRectMake(0, 0, renderSize.width, renderSize.height) afterScreenUpdates:YES];
+        } else if (LKSDrawHostViewForMultiLayerEffectSubtree(hostView, contextSize, renderScale)) {
+            // Configured snapshot helper already drew into the current context.
+        } else {
+            [self renderInContext:context];
+        }
         UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
         return image;
@@ -201,20 +532,15 @@
     CGContextRef context = UIGraphicsGetCurrentContext();
     // drawViewHierarchyInRect: 从屏幕合成结果渲染，对后台 UIWindowScene 中的 view 会产生错误截图。
     // 当 hostView 所属的 scene 不在前台时，改用 renderInContext:（直接从 layer model tree 渲染）。
-    BOOL useDrawHierarchy = NO;
+    // 对 MultiLayer _UIVisualEffectContentView 子树内的 view，drawViewHierarchyInRect: 会返回空白，
+    // 此时走 `LKSDrawHostViewForMultiLayerEffectSubtree` 按当前 snapshot mode 选择不同 crop 策略。
     LookinView *hostView = self.lks_hostView;
-    if (hostView && !hostView.lks_isChildrenViewOfTabBar) {
-        useDrawHierarchy = YES;
-        if (@available(iOS 13.0, *)) {
-            UIWindowScene *scene = hostView.window.windowScene;
-            if (scene &&
-                scene.activationState != UISceneActivationStateForegroundActive &&
-                scene.activationState != UISceneActivationStateForegroundInactive) {
-                useDrawHierarchy = NO;
-            }
+    BOOL inMultiLayerEffectSubtree = LKSMultiLayerShouldRenderGroupWithLayerTree(self, hostView);
+    if (inMultiLayerEffectSubtree) {
+        if (!LKSDrawHostViewForMultiLayerEffectSubtree(hostView, contextSize, renderScale)) {
+            [self renderInContext:context];
         }
-    }
-    if (useDrawHierarchy) {
+    } else if (LKSMultiLayerHostViewCanUseDrawHierarchy(hostView)) {
         [hostView drawViewHierarchyInRect:CGRectMake(0, 0, renderSize.width, renderSize.height) afterScreenUpdates:YES];
     } else {
         [self renderInContext:context];
@@ -241,9 +567,9 @@
 }
 
 #if TARGET_OS_IPHONE
-/// Solo screenshot for _UIMultiLayer: hide subviews via layer opacity
-/// (matching Xcode's __dbg_snapshotImage approach), render the inner
-/// view.layer via renderInContext:.
+/// Solo screenshot for _UIMultiLayer: hide host subviews via layer opacity
+/// (matching Xcode's __dbg_snapshotImage approach) and render the inner
+/// backing layer. Outer effect siblings are exposed as child display items.
 - (LookinImage *)_lks_multiLayerSoloScreenshotWithLowQuality:(BOOL)lowQuality {
     CALayer *innerLayer = self.lks_multiLayerInnerLayer;
     LookinView *hostView = self.lks_hostView;
@@ -273,22 +599,42 @@
 
     // Save subview layer opacities and set to 0 (Xcode's approach)
     NSArray<UIView *> *subviews = [hostView.subviews copy];
+    BOOL exposeTextInnerSublayers = LKSMultiLayerShouldExposeTextInnerSublayers(self, hostView);
+    BOOL useViewHierarchyForText = !exposeTextInnerSublayers && LKSMultiLayerShouldRenderTextWithViewHierarchy(self, hostView);
+    CALayer *captureTargetLayer = (exposeTextInnerSublayers || useViewHierarchyForText) ? self : innerLayer;
     NSMutableArray<NSNumber *> *savedOpacities = [NSMutableArray arrayWithCapacity:subviews.count];
-    for (UIView *subview in subviews) {
-        [savedOpacities addObject:@(subview.layer.opacity)];
-        subview.layer.opacity = 0;
+    BOOL savedInnerLayerHidden = innerLayer.hidden;
+    if (!useViewHierarchyForText) {
+        for (UIView *subview in subviews) {
+            [savedOpacities addObject:@(subview.layer.opacity)];
+            subview.layer.opacity = 0;
+        }
+        if (exposeTextInnerSublayers) {
+            innerLayer.hidden = YES;
+        }
     }
 
-    UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    [innerLayer renderInContext:context];
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-
-    // Restore opacities
-    [subviews enumerateObjectsUsingBlock:^(UIView * _Nonnull subview, NSUInteger index, BOOL * _Nonnull stop) {
-        subview.layer.opacity = savedOpacities[index].floatValue;
-    }];
+    UIImage *image = nil;
+    @try {
+        UIGraphicsBeginImageContextWithOptions(contextSize, NO, renderScale);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        if (useViewHierarchyForText) {
+            [hostView drawViewHierarchyInRect:CGRectMake(0, 0, renderSize.width, renderSize.height) afterScreenUpdates:YES];
+        } else {
+            [captureTargetLayer renderInContext:context];
+        }
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    } @finally {
+        if (!useViewHierarchyForText) {
+            [subviews enumerateObjectsUsingBlock:^(UIView * _Nonnull subview, NSUInteger index, BOOL * _Nonnull stop) {
+                subview.layer.opacity = savedOpacities[index].floatValue;
+            }];
+            if (exposeTextInnerSublayers) {
+                innerLayer.hidden = savedInnerLayerHidden;
+            }
+        }
+    }
 
     return image;
 }
@@ -340,7 +686,6 @@
             [self renderInContext:soloContext];
             image = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
-
 #elif TARGET_OS_OSX
             image = [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {
                 [self renderInContext:context];

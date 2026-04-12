@@ -46,19 +46,16 @@ static NSArray<CALayer *> *LKSOrderedSublayersForDisplay(CALayer *layer) {
     }
     NSArray<CALayer *> *innerSublayers = [innerLayer.sublayers copy];
 
+    // MultiLayer effect siblings (e.g. UIKit._GlassGroupView) must appear
+    // behind content when Lookin splits them into separate preview planes,
+    // so they come first followed by the inner layer's own sublayers.
     NSMutableArray<CALayer *> *orderedSublayers = [NSMutableArray array];
-    BOOL insertedInnerSublayers = NO;
     for (CALayer *sublayer in sublayers) {
-        if (sublayer == innerLayer) {
-            [orderedSublayers addObjectsFromArray:innerSublayers ?: @[]];
-            insertedInnerSublayers = YES;
-        } else {
+        if (sublayer != innerLayer) {
             [orderedSublayers addObject:sublayer];
         }
     }
-    if (!insertedInnerSublayers) {
-        [orderedSublayers addObjectsFromArray:innerSublayers ?: @[]];
-    }
+    [orderedSublayers addObjectsFromArray:innerSublayers ?: @[]];
     return orderedSublayers.copy;
 }
 #endif
