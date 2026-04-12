@@ -34,6 +34,26 @@
 #endif
 
 #if TARGET_OS_IPHONE
+
+#define LKSHierLog(fmt, ...) NSLog(@"[LKS-Hierarchy] " fmt, ##__VA_ARGS__)
+
+static NSString *LKSHierDescribeLayer(CALayer *layer) {
+    if (!layer) {
+        return @"<nil>";
+    }
+    return [NSString stringWithFormat:@"<%@:%p bounds=(%.1f,%.1f,%.1f,%.1f)>",
+            NSStringFromClass(layer.class), (void *)layer,
+            layer.bounds.origin.x, layer.bounds.origin.y,
+            layer.bounds.size.width, layer.bounds.size.height];
+}
+
+static NSString *LKSHierDescribeView(UIView *view) {
+    if (!view) {
+        return @"<nil>";
+    }
+    return [NSString stringWithFormat:@"<%@:%p>", NSStringFromClass(view.class), (void *)view];
+}
+
 static NSArray<CALayer *> *LKSOrderedSublayersForDisplay(CALayer *layer) {
     NSArray<CALayer *> *sublayers = [layer.sublayers copy];
     if (!layer.lks_isMultiLayerContainer) {
@@ -204,6 +224,14 @@ static NSArray<CALayer *> *LKSOrderedSublayersForDisplay(CALayer *layer) {
     if (!layer) {
         return nil;
     }
+
+#if TARGET_OS_IPHONE
+    LKSHierLog(@"visit layer=%@ host=%@ isContainer=%d screenshots=%d",
+               LKSHierDescribeLayer(layer),
+               LKSHierDescribeView(layer.lks_hostView),
+               layer.lks_isMultiLayerContainer,
+               hasScreenshots);
+#endif
 
 #if TARGET_OS_OSX
     // macOS: if this layer has a host view, delegate to the view-based path
