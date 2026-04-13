@@ -44,3 +44,4 @@ LookInside/DerivedSource/*
 *.swp
 *.swo
 *~
+*.resolved
