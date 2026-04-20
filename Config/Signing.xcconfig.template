@@ -1,0 +1,4 @@
+// Copy this file to Signing.xcconfig and set your Apple Developer team ID.
+// Signing.xcconfig is intentionally ignored so local signing settings do not get committed.
+
+DEVELOPMENT_TEAM =

@@ -25,6 +25,7 @@ xcuserdata/
 *.moved-aside
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+Config/Signing.xcconfig
 
 # Apple app artifacts
 *.app

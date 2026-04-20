@@ -16,6 +16,8 @@
 /* Begin PBXFileReference section */
 		AA1CAA3D22E471EC006D9285 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		AA48F29B21CC0CA50032EC2C /* LookInside.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LookInside.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA5100012F8F000100000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		AA5100022F8F000100000001 /* Signing.xcconfig.template */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig.template; sourceTree = "<group>"; };
 		AAB9517A22C3AECA00A5F958 /* Quartz.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Quartz.framework; path = System/Library/Frameworks/Quartz.framework; sourceTree = SDKROOT; };
 		AAB9519122C3BDC900A5F958 /* QuickLookThumbnailing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickLookThumbnailing.framework; path = System/Library/Frameworks/QuickLookThumbnailing.framework; sourceTree = SDKROOT; };
 		E9B0016B2F7C263E0073073B /* Example-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -651,6 +653,7 @@
 		AA48F29221CC0CA50032EC2C = {
 			isa = PBXGroup;
 			children = (
+				AA5100002F8F000100000001 /* Config */,
 				50EADFB32F71BFF200EBE063 /* LookInside */,
 				E9B0016C2F7C263E0073073B /* Example-iOS */,
 				AA48F29C21CC0CA50032EC2C /* Products */,
@@ -665,6 +668,15 @@
 				E9B0016B2F7C263E0073073B /* Example-iOS.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AA5100002F8F000100000001 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				AA5100012F8F000100000001 /* Signing.xcconfig */,
+				AA5100022F8F000100000001 /* Signing.xcconfig.template */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -798,6 +810,7 @@
 /* Begin XCBuildConfiguration section */
 		AA48F2AA21CC0CA60032EC2C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -836,7 +849,6 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = 964G86XT2P;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -873,6 +885,7 @@
 		};
 		AA48F2AB21CC0CA60032EC2C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -911,7 +924,6 @@
 				CURRENT_PROJECT_VERSION = 7;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 964G86XT2P;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -941,6 +953,7 @@
 		};
 		AA48F2AD21CC0CA60032EC2C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -954,7 +967,6 @@
 				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_ENHANCED_SECURITY = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -993,7 +1005,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 2.2.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
-				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.look.inside;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lookinside-app.lookinside";
 				PRODUCT_NAME = LookInside;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = YES;
@@ -1014,6 +1026,7 @@
 		};
 		AA48F2AE21CC0CA60032EC2C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -1027,7 +1040,6 @@
 				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_ENHANCED_SECURITY = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1066,7 +1078,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 2.2.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
-				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.look.inside;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lookinside-app.lookinside";
 				PRODUCT_NAME = LookInside;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = YES;
@@ -1086,13 +1098,13 @@
 		};
 		E9B0017C2F7C263F0073073B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = D5Q73692VW;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Example-iOS/Info.plist";
@@ -1108,7 +1120,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mxiris.Example-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lookinside-app.lookinside.Example-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -1125,13 +1137,13 @@
 		};
 		E9B0017D2F7C263F0073073B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA5100012F8F000100000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = D5Q73692VW;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Example-iOS/Info.plist";
@@ -1147,7 +1159,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mxiris.Example-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lookinside-app.lookinside.Example-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

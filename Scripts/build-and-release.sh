@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 PROJECT_ROOT="$PWD"
 PROJECT_FILE="$PROJECT_ROOT/LookInside.xcodeproj"
 PBXPROJ_FILE="$PROJECT_FILE/project.pbxproj"
+SIGNING_XCCONFIG="$PROJECT_ROOT/Config/Signing.xcconfig"
 SCHEME="LookInside"
 CONFIGURATION="Release"
 REMOTE="origin"
@@ -15,6 +16,7 @@ RELEASE_TITLE="${RELEASE_TITLE:-automatic release}"
 SKIP_TESTS=false
 SKIP_NOTARIZE=false
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
+DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
 REQUESTED_VERSION=""
 REQUESTED_BUILD_NUMBER=""
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-/tmp/LookInsideReleaseDerivedData}"
@@ -141,6 +143,24 @@ detect_signing_identity() {
     echo "$identity"
 }
 
+read_development_team_from_xcconfig() {
+    [[ -f "$SIGNING_XCCONFIG" ]] || return 0
+
+    sed -n 's/^[[:space:]]*DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*\([^[:space:]].*\)$/\1/p' "$SIGNING_XCCONFIG" | head -n 1
+}
+
+detect_development_team() {
+    if [[ -n "$DEVELOPMENT_TEAM" ]]; then
+        echo "$DEVELOPMENT_TEAM"
+        return
+    fi
+
+    local team
+    team="$(read_development_team_from_xcconfig)"
+    [[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Config/Signing.xcconfig or export DEVELOPMENT_TEAM before building a signed release."
+    echo "$team"
+}
+
 update_target_versions() {
     local version="$1"
     local build_number="$2"
@@ -226,6 +246,8 @@ run_preflight() {
 create_archive() {
     local archive_path="$1"
     local identity="$2"
+    local development_team
+    development_team="$(detect_development_team)"
 
     rm -rf "$archive_path"
     rm -rf "$DERIVED_DATA_PATH"
@@ -240,7 +262,7 @@ create_archive() {
         -archivePath "$archive_path" \
         CODE_SIGN_STYLE=Automatic \
         CODE_SIGN_IDENTITY="$identity" \
-        DEVELOPMENT_TEAM=964G86XT2P \
+        DEVELOPMENT_TEAM="$development_team" \
         archive
 }
 
