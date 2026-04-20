@@ -80,12 +80,16 @@ jobs:
             --tag "${{ needs.prepare.outputs.build_version }}" \
             --stage archive-app
 
+      - name: Pack Unsigned xcarchive
+        run: |
+          cd build/releases/${{ needs.prepare.outputs.build_version }}
+          ditto -c -k --keepParent LookInside.xcarchive LookInside.xcarchive.zip
+
       - name: Upload Unsigned Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
-          path: |
-            build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive
+          path: build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -107,6 +111,12 @@ jobs:
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
           path: build/releases/${{ needs.prepare.outputs.build_version }}
+
+      - name: Unpack Unsigned xcarchive
+        run: |
+          cd build/releases/${{ needs.prepare.outputs.build_version }}
+          ditto -x -k LookInside.xcarchive.zip .
+          rm -f LookInside.xcarchive.zip
 
       - name: Setup Keychain and Signing Env
         id: setup_keychain
