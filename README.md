@@ -27,7 +27,7 @@ LookInside can:
 
 ### Requirements
 
-- macOS
+- macOS 14 or later
 - Xcode and command line tools
 - a debuggable macOS or iOS app running locally, in Simulator, or on a connected device if you want to inspect something live
 
@@ -158,7 +158,7 @@ Example mac target output:
 [
   {
     "appInfoIdentifier": 7268387651031256382,
-    "appName": "lookinside-mac-swift-host",
+    "appName": "ExampleHost",
     "bundleIdentifier": "",
     "deviceDescription": "Managed's Virtual Machine",
     "osDescription": "macOS 26.2.0",
@@ -259,22 +259,6 @@ Example `hierarchy --format json` shape:
 ```
 
 The JSON hierarchy is recursive. Each item includes geometry (`frame`, `bounds`), visibility (`alpha`, `isHidden`), identity (`className`, `memoryAddress`, `oid`), and nested `children`.
-
-## Validation Hosts
-
-SwiftPM builds two embedded macOS validation hosts for local end-to-end checks:
-
-```bash
-swift build -c debug --product lookinside-mac-swift-host
-swift build -c debug --product lookinside-mac-objc-host
-```
-
-Run them from the repository root:
-
-```bash
-.build/debug/lookinside-mac-swift-host
-.build/debug/lookinside-mac-objc-host
-```
 
 ## Codex Skill
 

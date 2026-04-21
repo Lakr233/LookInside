@@ -13,6 +13,7 @@
 #import "LKAppMenuManager.h"
 #import "LKLaunchWindowController.h"
 #import "LookinDocument.h"
+#import "LookInside-Swift.h"
 #import "NSString+Score.h"
 #import "LookinDashboardBlueprint.h"
 #import "LKPreferenceManager.h"
@@ -45,6 +46,7 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {    
+    [[LKSwiftUISupportGatekeeper sharedInstance] preloadRuntime];
     [LKConnectionManager sharedInstance];
     if (!self.launchedToOpenFile) {
         [[LKNavigationManager sharedInstance] showLaunch];
@@ -67,6 +69,8 @@
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    [[LKSwiftUISupportGatekeeper sharedInstance] shutdownRuntime];
+
     // 清理打开 UIImageView 的图片时创建的临时文件
     NSArray<NSString *> *tempImageFilesToDelete = [LKHelper sharedInstance].tempImageFiles;
     if (tempImageFilesToDelete.count == 0) {

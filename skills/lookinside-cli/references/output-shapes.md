@@ -37,7 +37,7 @@ Example mac target:
 [
   {
     "appInfoIdentifier": 7268387651031256382,
-    "appName": "lookinside-mac-swift-host",
+    "appName": "ExampleHost",
     "bundleIdentifier": "",
     "deviceDescription": "Managed's Virtual Machine",
     "osDescription": "macOS 26.2.0",

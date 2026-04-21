@@ -1,0 +1,7 @@
+//
+//  Version.xcconfig
+//  LookInside
+//
+
+MARKETING_VERSION = 2.2.0
+CURRENT_PROJECT_VERSION = 3

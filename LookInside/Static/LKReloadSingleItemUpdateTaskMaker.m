@@ -11,6 +11,7 @@
 #import "LKAppsManager.h"
 #import "LKVersionComparer.h"
 #import "LookinDisplayItem+LookinClient.h"
+#import "LookInside-Swift.h"
 
 @implementation LKReloadSingleItemUpdateTaskMaker
 
@@ -23,6 +24,11 @@
     BOOL supported = [LKVersionComparer compareWithExpectedVersion:@"1.2.7" realVersion:serverVersion];
     if (!supported) {
         AlertErrorText(NSLocalizedString(@"Operation failed.", nil), NSLocalizedString(@"Please upgrade the LookinServer SDK version in your iOS project to 1.2.7 or higher.", nil), CurrentKeyWindow);
+        return nil;
+    }
+    if ([LKHelper appInfoLooksLikeMacTarget:[LKAppsManager sharedInstance].inspectingApp.appInfo] &&
+        [item lk_isSwiftUISupportRelated] &&
+        ![[LKSwiftUISupportGatekeeper sharedInstance] allowProtectedFeatureAccessForWindow:CurrentKeyWindow]) {
         return nil;
     }
     NSMutableArray<LookinStaticAsyncUpdateTask *> *tasks = [NSMutableArray array];

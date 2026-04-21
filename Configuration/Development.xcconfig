@@ -1,0 +1,10 @@
+//
+//  Development.xcconfig
+//  LookInside
+//
+
+#include "Base.xcconfig"
+
+#include? "Developer.xcconfig"
+#include? "DevelopmentDeveloper.xcconfig"
+#include? "GitHubAction.xcconfig"

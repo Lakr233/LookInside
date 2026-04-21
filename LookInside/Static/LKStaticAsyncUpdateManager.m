@@ -22,6 +22,7 @@
 #import "LKVersionComparer.h"
 #import "LKReloadSingleItemUpdateTaskMaker.h"
 #import "LKReloadItemAndChildrenUpdateTaskMaker.h"
+#import "LookInside-Swift.h"
 
 @interface LKDetailUpdateRequest : NSObject
 
@@ -78,6 +79,16 @@
 @end
 
 @implementation LKStaticAsyncUpdateManager
+
+static BOOL LKAllowSwiftUISupportAccessForDisplayItem(LookinDisplayItem *item, LookinAppInfo *appInfo) {
+    if (![LKHelper appInfoLooksLikeMacTarget:appInfo]) {
+        return YES;
+    }
+    if (![item lk_isSwiftUISupportRelated]) {
+        return YES;
+    }
+    return [[LKSwiftUISupportGatekeeper sharedInstance] allowProtectedFeatureAccessForWindow:CurrentKeyWindow];
+}
 
 + (instancetype)sharedInstance {
     static dispatch_once_t onceToken;
@@ -207,6 +218,10 @@
 }
 
 - (LookinStaticAsyncUpdateTask *)_taskFromDisplayItem:(LookinDisplayItem *)item type:(LookinStaticAsyncUpdateTaskType)type {
+    if (!LKAllowSwiftUISupportAccessForDisplayItem(item, self.dataSource.rawHierarchyInfo.appInfo)) {
+        return nil;
+    }
+
     // macOS 上优先使用 viewObject.oid，因为服务端的 detail handler 能为所有 NSView 对象
     // （包括 layer-backed 的 SwiftUI 视图）截图。使用 layerObject.oid 可能访问到已释放的 layer。
     // iOS 上优先使用 layerObject.oid，以匹配上游行为。

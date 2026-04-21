@@ -10,10 +10,14 @@
 #import "LKNavigationManager.h"
 #import "LKPreferenceManager.h"
 #import "LKWindowController.h"
+#import "LookInside-Swift.h"
 
 static NSUInteger const kTag_About = 11;
 static NSUInteger const kTag_Preferences = 12;
 static NSUInteger const kTag_CheckUpdates = 13;
+static NSUInteger const kTag_ActivateSwiftUISupport = 14;
+static NSUInteger const kTag_SwiftUISupportLicense = 15;
+static NSUInteger const kTag_RefreshSwiftUISupportLicense = 16;
 
 static NSUInteger const kTag_Reload = 21;
 static NSUInteger const kTag_Dimension = 22;
@@ -179,6 +183,20 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     return menu;
 }
 
+- (NSMenu *)_buildSwiftUIPluginSubmenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"SwiftUI"];
+    [menu addItem:LKMenuItem(@"Activate SwiftUI Support…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
+    [menu addItem:LKMenuItem(@"SwiftUI Support License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
+    [menu addItem:LKMenuItem(@"Refresh License Status", nil, @"", 0, kTag_RefreshSwiftUISupportLicense)];
+    return menu;
+}
+
+- (NSMenu *)_buildPluginsMenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Plugins"];
+    [menu addItem:LKSubmenuItem(@"SwiftUI", [self _buildSwiftUIPluginSubmenu], 0)];
+    return menu;
+}
+
 - (NSMenu *)_buildWindowMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Window"];
     [menu addItem:LKMenuItem(@"Close", @selector(performClose:), @"w", NSEventModifierFlagCommand, 0)];
@@ -204,6 +222,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     [mainMenu addItem:LKSubmenuItem(@"File", [self _buildFileMenu], 0)];
     [mainMenu addItem:LKSubmenuItem(@"Edit", [self _buildEditMenu], 0)];
     [mainMenu addItem:LKSubmenuItem(@"View", [self _buildViewMenu], 0)];
+    [mainMenu addItem:LKSubmenuItem(@"Plugins", [self _buildPluginsMenu], 0)];
     [mainMenu addItem:LKSubmenuItem(@"Window", windowMenu, 0)];
     [mainMenu addItem:LKSubmenuItem(@"Help", helpMenu, 0)];
 
@@ -256,7 +275,24 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     menu_view.autoenablesItems = NO;
     menu_view.delegate = self;
 
-    NSMenu *menu_help = [menu itemAtIndex:5].submenu;
+    NSMenu *menu_plugins = [menu itemAtIndex:4].submenu;
+    menu_plugins.autoenablesItems = NO;
+    NSMenu *menu_plugins_swiftUI = [menu_plugins itemAtIndex:0].submenu;
+    menu_plugins_swiftUI.autoenablesItems = NO;
+
+    NSMenuItem *menuItem_activateSwiftUISupport = [menu_plugins_swiftUI itemWithTag:kTag_ActivateSwiftUISupport];
+    menuItem_activateSwiftUISupport.target = self;
+    menuItem_activateSwiftUISupport.action = @selector(_handleActivateSwiftUISupport);
+
+    NSMenuItem *menuItem_swiftUISupportLicense = [menu_plugins_swiftUI itemWithTag:kTag_SwiftUISupportLicense];
+    menuItem_swiftUISupportLicense.target = self;
+    menuItem_swiftUISupportLicense.action = @selector(_handleSwiftUISupportLicense);
+
+    NSMenuItem *menuItem_refreshSwiftUISupportLicense = [menu_plugins_swiftUI itemWithTag:kTag_RefreshSwiftUISupportLicense];
+    menuItem_refreshSwiftUISupportLicense.target = self;
+    menuItem_refreshSwiftUISupportLicense.action = @selector(_handleRefreshSwiftUISupportLicense);
+
+    NSMenu *menu_help = [menu itemAtIndex:6].submenu;
     menu_help.autoenablesItems = YES;
     menu_help.delegate = self;
 
@@ -366,6 +402,18 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 - (void)_handleAbout {
     [[LKNavigationManager sharedInstance] showAbout];
+}
+
+- (void)_handleActivateSwiftUISupport {
+    [[LKSwiftUISupportGatekeeper sharedInstance] showActivationWindow];
+}
+
+- (void)_handleSwiftUISupportLicense {
+    [[LKSwiftUISupportGatekeeper sharedInstance] showLicenseWindow];
+}
+
+- (void)_handleRefreshSwiftUISupportLicense {
+    [[LKSwiftUISupportGatekeeper sharedInstance] refreshLicenseStatus];
 }
 
 - (void)_handleShowGitHub {

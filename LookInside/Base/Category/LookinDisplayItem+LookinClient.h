@@ -58,6 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)itemIsKindOfClassWithName:(NSString *)className;
 - (BOOL)itemIsKindOfClassesWithNames:(NSSet<NSString *> *)classNames;
 
+- (BOOL)lk_isSwiftUISupportRelated;
+
 @end
 
 NS_ASSUME_NONNULL_END

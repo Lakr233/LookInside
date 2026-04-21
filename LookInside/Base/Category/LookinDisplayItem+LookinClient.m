@@ -79,6 +79,51 @@ static BOOL LKShouldFallbackToGroupScreenshot(NSImage *soloScreenshot, NSImage *
     return groupVisibleRatio > MAX(0.05, soloVisibleRatio * 4.0);
 }
 
+static BOOL LKClassNameLooksLikeSwiftUISupport(NSString *className) {
+    if (className.length == 0) {
+        return NO;
+    }
+
+    static NSArray<NSString *> *markers;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        markers = @[
+            @"SwiftUI",
+            @"HostingView",
+            @"UIHosting",
+            @"NSHosting",
+            @"ViewRendererHost",
+            @"PlatformViewHost",
+            @"_UIHosting",
+            @"_NSHosting",
+        ];
+    });
+
+    for (NSString *marker in markers) {
+        if ([className containsString:marker]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+static BOOL LKObjectLooksLikeSwiftUISupport(LookinObject *object) {
+    if (!object) {
+        return NO;
+    }
+
+    if (LKClassNameLooksLikeSwiftUISupport(object.rawClassName)) {
+        return YES;
+    }
+
+    for (NSString *className in object.classChainList) {
+        if (LKClassNameLooksLikeSwiftUISupport(className)) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 @implementation LookinDisplayItem (LookinClient)
 
 - (BOOL)_lk_usesAbsoluteRootCoordinates {
@@ -368,6 +413,20 @@ static BOOL LKShouldFallbackToGroupScreenshot(NSImage *soloScreenshot, NSImage *
     }];
     
     return boolValue;
+}
+
+- (BOOL)lk_isSwiftUISupportRelated {
+    if (LKObjectLooksLikeSwiftUISupport(self.viewObject) ||
+        LKObjectLooksLikeSwiftUISupport(self.layerObject) ||
+        LKObjectLooksLikeSwiftUISupport(self.windowObject)) {
+        return YES;
+    }
+
+    if (LKClassNameLooksLikeSwiftUISupport(self.title) ||
+        LKClassNameLooksLikeSwiftUISupport(self.subtitle)) {
+        return YES;
+    }
+    return NO;
 }
 
 @end

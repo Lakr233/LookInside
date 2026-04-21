@@ -6,8 +6,7 @@ cd "$(dirname "$0")/.."
 
 PROJECT_ROOT="$PWD"
 PROJECT_FILE="$PROJECT_ROOT/LookInside.xcodeproj"
-PBXPROJ_FILE="$PROJECT_FILE/project.pbxproj"
-SIGNING_XCCONFIG="$PROJECT_ROOT/Config/Signing.xcconfig"
+VERSION_XCCONFIG="$PROJECT_ROOT/Configuration/Version.xcconfig"
 SCHEME="LookInside"
 CONFIGURATION="Release"
 REMOTE="origin"
@@ -143,12 +142,6 @@ detect_signing_identity() {
     echo "$identity"
 }
 
-read_development_team_from_xcconfig() {
-    [[ -f "$SIGNING_XCCONFIG" ]] || return 0
-
-    sed -n 's/^[[:space:]]*DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*\([^[:space:]].*\)$/\1/p' "$SIGNING_XCCONFIG" | head -n 1
-}
-
 detect_development_team() {
     if [[ -n "$DEVELOPMENT_TEAM" ]]; then
         echo "$DEVELOPMENT_TEAM"
@@ -156,8 +149,8 @@ detect_development_team() {
     fi
 
     local team
-    team="$(read_development_team_from_xcconfig)"
-    [[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Config/Signing.xcconfig or export DEVELOPMENT_TEAM before building a signed release."
+    team="$(build_setting DEVELOPMENT_TEAM)"
+    [[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Configuration/Base.xcconfig, a local Developer*.xcconfig override, or export DEVELOPMENT_TEAM before building a signed release."
     echo "$team"
 }
 
@@ -165,54 +158,16 @@ update_target_versions() {
     local version="$1"
     local build_number="$2"
 
-    /usr/bin/ruby - "$PBXPROJ_FILE" "$version" "$build_number" <<'RUBY'
-pbxproj_path, version, build_number = ARGV
-text = File.read(pbxproj_path)
+    mkdir -p "$(dirname "$VERSION_XCCONFIG")"
+    cat > "$VERSION_XCCONFIG" <<EOF
+//
+//  Version.xcconfig
+//  LookInside
+//
 
-list_match = text.match(%r{
-  ([A-F0-9]+)\s/\*\sBuild\ configuration\ list\ for\ PBXNativeTarget\ "LookInside"\s\*/\s=\s\{
-  .*?
-  buildConfigurations\s=\s\(
-  (.*?)
-  \n\t\t\t\);
-  .*?
-  \n\t\t\};
-}mx)
-
-abort "Could not locate LookInside target configuration list\n" unless list_match
-
-config_ids = list_match[2].scan(/([A-F0-9]+)\s\/\*\s(?:Debug|Release)\s\*\//).flatten
-abort "Expected 2 target configurations for LookInside, found #{config_ids.size}\n" unless config_ids.size == 2
-
-config_ids.each do |config_id|
-  block_pattern = %r{
-    (#{Regexp.escape(config_id)}\s/\*\s(?:Debug|Release)\s\*/\s=\s\{
-    .*?
-    buildSettings\s=\s\{
-    )
-    (.*?)
-    (\n\t\t\t\};
-    \n\t\t\tname\s=\s(?:Debug|Release);
-    \n\t\t\};)
-  }mx
-
-  match = text.match(block_pattern)
-  abort "Could not locate configuration block #{config_id}\n" unless match
-
-  settings = match[2]
-  updated_settings = settings.sub(/CURRENT_PROJECT_VERSION = [^;]+;/, "CURRENT_PROJECT_VERSION = #{build_number};")
-  abort "Could not update CURRENT_PROJECT_VERSION for #{config_id}\n" if updated_settings == settings
-  settings = updated_settings
-
-  updated_settings = settings.sub(/MARKETING_VERSION = [^;]+;/, "MARKETING_VERSION = #{version};")
-  abort "Could not update MARKETING_VERSION for #{config_id}\n" if updated_settings == settings
-  settings = updated_settings
-
-  text.sub!(block_pattern, "#{match[1]}#{settings}#{match[3]}")
-end
-
-File.write(pbxproj_path, text)
-RUBY
+MARKETING_VERSION = $version
+CURRENT_PROJECT_VERSION = $build_number
+EOF
 }
 
 ensure_tag_absent() {
@@ -229,7 +184,7 @@ ensure_tag_absent() {
 commit_version_bump() {
     local version="$1"
     local build_number="$2"
-    git add "$PBXPROJ_FILE"
+    git add "$VERSION_XCCONFIG"
     git commit -m "Release ${version} (${build_number})"
 }
 
@@ -253,6 +208,12 @@ create_archive() {
     rm -rf "$DERIVED_DATA_PATH"
 
     log "Archiving signed app"
+    bash Scripts/write-github-action-xcconfig.sh \
+        --version "$NEXT_VERSION" \
+        --build-number "$NEXT_BUILD_NUMBER" \
+        --development-team "$development_team" \
+        --signing-identity "$identity"
+
     xcodebuild \
         -project "$PROJECT_FILE" \
         -scheme "$SCHEME" \
@@ -260,9 +221,6 @@ create_archive() {
         -destination "generic/platform=macOS" \
         -derivedDataPath "$DERIVED_DATA_PATH" \
         -archivePath "$archive_path" \
-        CODE_SIGN_STYLE=Automatic \
-        CODE_SIGN_IDENTITY="$identity" \
-        DEVELOPMENT_TEAM="$development_team" \
         archive
 }
 
@@ -388,8 +346,8 @@ log "Next version: $NEXT_VERSION ($NEXT_BUILD_NUMBER)"
 
 update_target_versions "$NEXT_VERSION" "$NEXT_BUILD_NUMBER"
 
-if git diff --quiet -- "$PBXPROJ_FILE"; then
-    fail "Version update did not modify $PBXPROJ_FILE."
+if git diff --quiet -- "$VERSION_XCCONFIG"; then
+    fail "Version update did not modify $VERSION_XCCONFIG."
 fi
 
 commit_version_bump "$NEXT_VERSION" "$NEXT_BUILD_NUMBER"

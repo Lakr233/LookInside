@@ -102,17 +102,9 @@ Format rules:
 - archive exports must use `.archive`, `.lookin`, or `.lookinside`
 - archive output with no extension becomes `.lookinside`
 
-### 5. Validate against local host samples
+### 5. Validate against a running host app
 
-The repository ships two macOS sample hosts that embed `LookinServer` and are useful for smoke tests or docs work:
-
-```bash
-swift build -c debug --product lookinside-mac-swift-host
-swift build -c debug --product lookinside-mac-objc-host
-.build/debug/lookinside-mac-swift-host
-```
-
-After launching one of them, use `list`, `inspect`, `hierarchy`, or `export` from the CLI to validate the end-to-end flow.
+After launching a host app that embeds `LookinServer`, use `list`, `inspect`, `hierarchy`, or `export` from the CLI to validate the end-to-end flow.
 
 ## Embedding and Porting `LookinServer`
 

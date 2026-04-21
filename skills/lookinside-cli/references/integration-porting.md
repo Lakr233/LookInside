@@ -8,9 +8,7 @@ Use this reference when the task is about embedding `LookinServer`, packaging th
 - Compatibility runtime names intentionally preserved: `LookinServer`, `LookinShared`, `LookinCore`
 - Public C entry point for host startup: `LookinServerStart()`
 - Dynamic packaging script: `bash Scripts/package-lookinserver.sh`
-- Minimal Apple host samples:
-  - `Samples/MacSwiftHost`
-  - `Samples/MacObjCHost`
+- Minimal Apple host samples were removed from this repository.
 
 ## Integration Modes
 
@@ -67,7 +65,7 @@ func applicationDidFinishLaunching(_ notification: Notification) {
 }
 ```
 
-See the macOS samples in `Samples/MacSwiftHost` and `Samples/MacObjCHost` for concrete usage.
+Use the startup snippets above as the minimal host pattern.
 
 ## What Is Portable vs. What Must Be Rebuilt
 

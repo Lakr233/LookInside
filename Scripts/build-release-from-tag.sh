@@ -9,6 +9,7 @@ PROJECT_FILE="$PROJECT_ROOT/LookInside.xcodeproj"
 SCHEME="LookInside"
 CONFIGURATION="Release"
 KEYCHAIN_PROFILE="${KEYCHAIN_PROFILE:-}"
+RELEASE_BUILD_NUMBER="${RELEASE_BUILD_NUMBER:-0}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${RUNNER_TEMP:-/tmp}/LookInsideReleaseDerivedData}"
 ARCHIVE_ROOT=""
 RAW_TAG=""
@@ -172,6 +173,20 @@ build_setting() {
         -showBuildSettings 2>/dev/null \
         | awk -F' = ' -v search_key="$key" '$1 ~ search_key"$" { print $2; exit }'
 }
+
+write_release_xcconfig() {
+    local args=(
+        --version "$RELEASE_VERSION"
+        --build-number "$RELEASE_BUILD_NUMBER"
+    )
+
+    [[ -n "${DEVELOPMENT_TEAM:-}" ]] && args+=(--development-team "$DEVELOPMENT_TEAM")
+    [[ -n "${SIGNING_IDENTITY:-}" ]] && args+=(--signing-identity "$SIGNING_IDENTITY")
+    [[ -n "${PRODUCT_BUNDLE_IDENTIFIER:-}" ]] && args+=(--bundle-id "$PRODUCT_BUNDLE_IDENTIFIER")
+
+    bash Scripts/write-github-action-xcconfig.sh "${args[@]}"
+}
+
 run_preflight() {
     if [[ "$SKIP_TESTS" == "true" ]]; then
         log "Skipping preflight checks"
@@ -267,8 +282,6 @@ archive_app_unsigned() {
         -destination "generic/platform=macOS" \
         -derivedDataPath "$DERIVED_DATA_PATH" \
         -archivePath "$archive_path" \
-        MARKETING_VERSION="$RELEASE_VERSION" \
-        CURRENT_PROJECT_VERSION=0 \
         CODE_SIGNING_ALLOWED=NO \
         archive 2>&1 | format_output
 }
@@ -363,7 +376,8 @@ run_stage() {
     case "$STAGE" in
         build-cli)
             run_preflight
-            log "Release version override: MARKETING_VERSION=$RELEASE_VERSION CURRENT_PROJECT_VERSION=0"
+            write_release_xcconfig
+            log "Release version override: MARKETING_VERSION=$RELEASE_VERSION CURRENT_PROJECT_VERSION=$RELEASE_BUILD_NUMBER"
             log "Building CLI release binary"
             swift build -c release --product lookinside
             [[ -f "$CLI_BINARY" ]] || fail "CLI binary not found at $CLI_BINARY"
@@ -389,7 +403,8 @@ run_stage() {
             notarize_file "$CLI_ZIP" "CLI archive"
             ;;
         archive-app)
-            log "Release version override: MARKETING_VERSION=$RELEASE_VERSION CURRENT_PROJECT_VERSION=0"
+            write_release_xcconfig
+            log "Release version override: MARKETING_VERSION=$RELEASE_VERSION CURRENT_PROJECT_VERSION=$RELEASE_BUILD_NUMBER"
             archive_app_unsigned "$APP_ARCHIVE_PATH"
             [[ -d "$APP_PATH" ]] || fail "Archived app not found at $APP_PATH"
             ;;
