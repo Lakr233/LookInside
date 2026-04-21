@@ -15,10 +15,6 @@
 /* Begin PBXFileReference section */
 		AA1CAA3D22E471EC006D9285 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		AA48F29B21CC0CA50032EC2C /* LookInside.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LookInside.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA5100042F98000100000004 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
-		AA5100052F98000100000005 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
-		AA5100062F98000100000006 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		AA5100072F98000100000007 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		AAB9517A22C3AECA00A5F958 /* Quartz.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Quartz.framework; path = System/Library/Frameworks/Quartz.framework; sourceTree = SDKROOT; };
 		AAB9519122C3BDC900A5F958 /* QuickLookThumbnailing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickLookThumbnailing.framework; path = System/Library/Frameworks/QuickLookThumbnailing.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -609,6 +605,7 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		5011BBAE2F9754F0002DA475 /* Configuration */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Configuration; sourceTree = "<group>"; };
 		50EADFB32F71BFF200EBE063 /* LookInside */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (50EAE1F32F71C01A00EBE063 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 50EAE1F42F71C01A00EBE063 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LookInside; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -639,7 +636,7 @@
 		AA48F29221CC0CA50032EC2C = {
 			isa = PBXGroup;
 			children = (
-				AA5100002F8F000100000001 /* Configuration */,
+				5011BBAE2F9754F0002DA475 /* Configuration */,
 				50EADFB32F71BFF200EBE063 /* LookInside */,
 				AA48F29C21CC0CA50032EC2C /* Products */,
 				0A9FB6E904476A1F9D0BB82E /* Frameworks */,
@@ -652,17 +649,6 @@
 				AA48F29B21CC0CA50032EC2C /* LookInside.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		AA5100002F8F000100000001 /* Configuration */ = {
-			isa = PBXGroup;
-			children = (
-				AA5100042F98000100000004 /* Base.xcconfig */,
-				AA5100052F98000100000005 /* Development.xcconfig */,
-				AA5100062F98000100000006 /* Release.xcconfig */,
-				AA5100072F98000100000007 /* Version.xcconfig */,
-			);
-			path = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -754,7 +740,7 @@
 /* Begin XCBuildConfiguration section */
 		AA48F2AA21CC0CA60032EC2C /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = AA5100002F8F000100000001 /* Configuration */;
+			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Development.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -829,7 +815,7 @@
 		};
 		AA48F2AB21CC0CA60032EC2C /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = AA5100002F8F000100000001 /* Configuration */;
+			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Release.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -897,7 +883,7 @@
 		};
 		AA48F2AD21CC0CA60032EC2C /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = AA5100002F8F000100000001 /* Configuration */;
+			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Development.xcconfig;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
@@ -971,7 +957,7 @@
 		};
 		AA48F2AE21CC0CA60032EC2C /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = AA5100002F8F000100000001 /* Configuration */;
+			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Release.xcconfig;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
