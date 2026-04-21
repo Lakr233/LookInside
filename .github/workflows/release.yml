@@ -73,6 +73,12 @@ jobs:
       - name: Install xcbeautify
         run: brew install xcbeautify
 
+      - name: Generate Xcode Configuration
+        run: |
+          bash Scripts/write-github-action-xcconfig.sh \
+            --version "${{ needs.prepare.outputs.build_version }}" \
+            --build-number 0
+
       - name: Build CLI
         timeout-minutes: 20
         run: |

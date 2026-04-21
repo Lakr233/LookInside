@@ -7,3 +7,4 @@
 
 #include? "Developer.xcconfig"
 #include? "DeveloperRelease.xcconfig"
+#include? "GitHubAction.xcconfig"
