@@ -13,22 +13,8 @@ public class LKSwiftDemangler: NSObject {
     private static var simpleCache: [String: String] = [:]
     private static var completedCache: [String: String] = [:]
 
-    private static func demangle(_ input: String) -> String? {
-        guard input.isSwiftSymbol else {
-            return nil
-        }
-        return try? demangleAsNode(input).print(using: .default)
-    }
-
-    private static func simplify(_ demangled: String) -> String {
-        guard let firstDot = demangled.firstIndex(of: ".") else {
-            return demangled
-        }
-        let moduleName = demangled[..<firstDot]
-        guard moduleName.range(of: #"^[A-Za-z_][A-Za-z0-9_]*$"#, options: .regularExpression) != nil else {
-            return demangled
-        }
-        return String(demangled[demangled.index(after: firstDot)...])
+    private static func demangle(_ input: String, options: DemangleOptions) -> String? {
+        return try? demangleAsNode(input).print(using: options)
     }
 
     /// 这里返回的结果会尽可能地短，去除了很多信息
@@ -36,7 +22,7 @@ public class LKSwiftDemangler: NSObject {
         if let cachedResult = simpleCache[input] {
             return cachedResult
         }
-        let result = demangle(input).map(simplify) ?? input
+        let result = demangle(input, options: .interfaceType) ?? input
         simpleCache[input] = result
         return result
     }
@@ -46,7 +32,7 @@ public class LKSwiftDemangler: NSObject {
         if let cachedResult = completedCache[input] {
             return cachedResult
         }
-        let result = demangle(input) ?? input
+        let result = demangle(input, options: .default) ?? input
         completedCache[input] = result
         return result
     }
