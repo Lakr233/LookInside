@@ -25,7 +25,8 @@ xcuserdata/
 *.moved-aside
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
-Config/Signing.xcconfig
+Configuration/*Developer*.xcconfig
+Configuration/GitHubAction.xcconfig
 
 # Apple app artifacts
 *.app
