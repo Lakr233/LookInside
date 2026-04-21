@@ -45,16 +45,40 @@
     }];
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {    
-    [[LKSwiftUISupportGatekeeper sharedInstance] preloadRuntime];
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     [LKConnectionManager sharedInstance];
     if (!self.launchedToOpenFile) {
         [[LKNavigationManager sharedInstance] showLaunch];
     }
-    
+
+    [self _lk_installActivationStateObserverExample];
+
 #ifdef DEBUG
     [self _runTests];
 #endif
+}
+
+- (void)_lk_installActivationStateObserverExample {
+    LKSwiftUISupportGatekeeper *gatekeeper = [LKSwiftUISupportGatekeeper sharedInstance];
+    NSLog(@"[LK-Activation] initial state=%ld (polling every 5s; waits for auth server)",
+          (long)gatekeeper.activationState);
+
+    [NSNotificationCenter.defaultCenter
+        addObserver:self
+           selector:@selector(_lk_activationStateDidChange:)
+               name:LKSwiftUISupportGatekeeper.activationStateDidChangeNotificationName
+             object:nil];
+}
+
+- (void)_lk_activationStateDidChange:(NSNotification *)note {
+    NSNumber *state = note.userInfo[@"activationState"];
+    NSString *label;
+    switch ((LKSwiftUISupportActivationState)state.integerValue) {
+        case LKSwiftUISupportActivationStateUnknown:      label = @"unknown"; break;
+        case LKSwiftUISupportActivationStateNotActivated: label = @"notActivated"; break;
+        case LKSwiftUISupportActivationStateActivated:    label = @"activated"; break;
+    }
+    NSLog(@"[LK-Activation] state changed -> %@ (raw=%@)", label, state);
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
