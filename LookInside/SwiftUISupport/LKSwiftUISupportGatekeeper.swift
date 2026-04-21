@@ -13,6 +13,9 @@ private enum LKSwiftUISupportAuthServerConstants {
     static let relaunchHealthTimeout: TimeInterval = 3.0
     static let helperHealthPollInterval: useconds_t = 100_000
     static let helperShutdownTimeout: TimeInterval = 3
+
+    static let activationStatePollingInterval: DispatchTimeInterval = .seconds(5)
+    static let activationStatePollingLeeway: DispatchTimeInterval = .milliseconds(500)
 }
 
 private enum LKSwiftUISupportHelperPresence {
@@ -24,6 +27,14 @@ private enum LKSwiftUISupportHelperPresence {
     case unknown
     case notActivated
     case activated
+
+    var lkDebugDescription: String {
+        switch self {
+        case .unknown: return "unknown"
+        case .notActivated: return "notActivated"
+        case .activated: return "activated"
+        }
+    }
 }
 
 private struct LKSwiftUISupportAuthServerInstallation {
@@ -150,20 +161,66 @@ private final class LKSwiftUISupportAuthServerBridge {
     private var helperPresence: LKSwiftUISupportHelperPresence = .notDetermined
     private var activationState: LKSwiftUISupportActivationState = .unknown
     private var activationStateRefreshInFlight = false
+    private var activationStatePollingStarted = false
+    private var activationStatePollingTimer: DispatchSourceTimer?
 
     var currentActivationState: LKSwiftUISupportActivationState {
         lock.withLock { activationState }
     }
 
     private func recordDecision(_ decision: LKSwiftUISupportAuthServerAccessDecisionPayload.Decision) {
-        let state: LKSwiftUISupportActivationState
+        let newState: LKSwiftUISupportActivationState
         switch decision {
         case .allow, .allowWithWarning:
-            state = .activated
+            newState = .activated
         case .block:
-            state = .notActivated
+            newState = .notActivated
         }
-        lock.withLock { activationState = state }
+        var previousState: LKSwiftUISupportActivationState = .unknown
+        let changed: Bool = lock.withLock {
+            guard activationState != newState else { return false }
+            previousState = activationState
+            activationState = newState
+            return true
+        }
+        if changed {
+            LKSwiftUISupportLogger.authServer.info(
+                "activation state changed: \(previousState.lkDebugDescription, privacy: .public) -> \(newState.lkDebugDescription, privacy: .public) (decision=\(decision.rawValue, privacy: .public))"
+            )
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: LKSwiftUISupportGatekeeper.activationStateDidChangeNotification,
+                    object: LKSwiftUISupportGatekeeper.sharedInstance(),
+                    userInfo: ["activationState": NSNumber(value: newState.rawValue)]
+                )
+            }
+        }
+    }
+
+    func startActivationStatePolling() {
+        let shouldStart: Bool = lock.withLock {
+            guard !activationStatePollingStarted else { return false }
+            activationStatePollingStarted = true
+            return true
+        }
+        guard shouldStart else { return }
+
+        let interval = LKSwiftUISupportAuthServerConstants.activationStatePollingInterval
+        LKSwiftUISupportLogger.authServer.info(
+            "activation state polling started (interval=\(String(describing: interval), privacy: .public))"
+        )
+
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        timer.schedule(
+            deadline: .now(),
+            repeating: interval,
+            leeway: LKSwiftUISupportAuthServerConstants.activationStatePollingLeeway
+        )
+        timer.setEventHandler { [weak self] in
+            self?.refreshActivationStateInBackground()
+        }
+        lock.withLock { activationStatePollingTimer = timer }
+        timer.resume()
     }
 
     func refreshActivationStateInBackground() {
@@ -773,6 +830,19 @@ private extension NSLock {
 public final class LKSwiftUISupportGatekeeper: NSObject {
     private static let shared = LKSwiftUISupportGatekeeper()
     private let runtimeBridge = LKSwiftUISupportAuthServerBridge()
+
+    public static let activationStateDidChangeNotification = Notification.Name(
+        "LKSwiftUISupportActivationStateDidChangeNotification"
+    )
+
+    @objc public static var activationStateDidChangeNotificationName: NSString {
+        activationStateDidChangeNotification.rawValue as NSString
+    }
+
+    override private init() {
+        super.init()
+        runtimeBridge.startActivationStatePolling()
+    }
 
     @objc public class func sharedInstance() -> LKSwiftUISupportGatekeeper {
         shared
