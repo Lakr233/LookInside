@@ -7,9 +7,23 @@ private enum LKSwiftUISupportAuthServerConstants {
 
     static let helperPathEnvironmentKey = "LOOKINSIDE_AUTH_SERVER_PATH"
     static let helperSocketPathEnvironmentKey = "LOOKINSIDE_AUTH_SERVER_SOCKET_PATH"
+    static let helperClientProcessIDEnvironmentKey = "LOOKINSIDE_AUTH_SERVER_CLIENT_PID"
 
-    static let helperLaunchTimeout: TimeInterval = 8
+    static let firstLaunchHealthTimeout: TimeInterval = 1.0
+    static let relaunchHealthTimeout: TimeInterval = 3.0
+    static let helperHealthPollInterval: useconds_t = 100_000
     static let helperShutdownTimeout: TimeInterval = 3
+}
+
+private enum LKSwiftUISupportHelperPresence {
+    case notDetermined
+    case spawned
+}
+
+@objc public enum LKSwiftUISupportActivationState: Int {
+    case unknown
+    case notActivated
+    case activated
 }
 
 private struct LKSwiftUISupportAuthServerInstallation {
@@ -18,6 +32,14 @@ private struct LKSwiftUISupportAuthServerInstallation {
 }
 
 private struct LKSwiftUISupportEmptyPayload: Codable {}
+
+private struct LKSwiftUISupportClientProcessPayload: Encodable {
+    let lookInsideProcessID: Int32
+
+    private enum CodingKeys: String, CodingKey {
+        case lookInsideProcessID = "lookinside_pid"
+    }
+}
 
 private struct LKSwiftUISupportAuthServerRequestEnvelope<Payload: Encodable>: Encodable {
     let protocolVersion: Int
@@ -125,43 +147,78 @@ private final class LKSwiftUISupportAuthServerBridge {
     private let lock = NSLock()
     private var launchedProcess: Process?
     private var lastPresentedErrorDescription: String?
+    private var helperPresence: LKSwiftUISupportHelperPresence = .notDetermined
+    private var activationState: LKSwiftUISupportActivationState = .unknown
+    private var activationStateRefreshInFlight = false
 
-    func preloadRuntime() {
-        guard LKSwiftUISupportInstallerLayout.isInstalled else {
+    var currentActivationState: LKSwiftUISupportActivationState {
+        lock.withLock { activationState }
+    }
+
+    private func recordDecision(_ decision: LKSwiftUISupportAuthServerAccessDecisionPayload.Decision) {
+        let state: LKSwiftUISupportActivationState
+        switch decision {
+        case .allow, .allowWithWarning:
+            state = .activated
+        case .block:
+            state = .notActivated
+        }
+        lock.withLock { activationState = state }
+    }
+
+    func refreshActivationStateInBackground() {
+        let shouldStart: Bool = lock.withLock {
+            if activationStateRefreshInFlight {
+                return false
+            }
+            activationStateRefreshInFlight = true
+            return true
+        }
+        guard shouldStart else {
             return
         }
-        do {
-            let installation = try resolveInstallation()
-            _ = try ensureServerAvailable(using: installation)
-        } catch {
-            LKSwiftUISupportLogger.authServer.error(
-                "preload failed: \(error.localizedDescription, privacy: .public)"
-            )
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            defer {
+                self?.lock.withLock { self?.activationStateRefreshInFlight = false }
+            }
+            guard let self else { return }
+            guard let installation = try? self.resolveInstallation() else {
+                return
+            }
+            do {
+                let response = try self.sendRequest(
+                    method: "license.check_access",
+                    payload: LKSwiftUISupportEmptyPayload(),
+                    installation: installation,
+                    responseType: LKSwiftUISupportAuthServerAccessDecisionPayload.self
+                )
+                if let payload = response.payload {
+                    self.recordDecision(payload.decision)
+                }
+            } catch {
+                LKSwiftUISupportLogger.authServer.info(
+                    "activation state refresh failed: \(error.localizedDescription, privacy: .public)"
+                )
+            }
         }
     }
 
     func shutdownRuntime() {
-        let process = lock.withLock {
-            launchedProcess
-        }
-
         guard let installation = try? resolveInstallation() else {
             return
         }
 
-        if process != nil {
-            do {
-                _ = try sendRequest(
-                    method: "server.shutdown",
-                    payload: LKSwiftUISupportEmptyPayload(),
-                    installation: installation,
-                    responseType: LKSwiftUISupportEmptyPayload.self
-                )
-            } catch {
-                LKSwiftUISupportLogger.authServer.error(
-                    "shutdown request failed: \(error.localizedDescription, privacy: .public)"
-                )
-            }
+        do {
+            _ = try sendRequest(
+                method: "server.shutdown",
+                payload: LKSwiftUISupportEmptyPayload(),
+                installation: installation,
+                responseType: LKSwiftUISupportEmptyPayload.self
+            )
+        } catch {
+            LKSwiftUISupportLogger.authServer.error(
+                "shutdown request failed: \(error.localizedDescription, privacy: .public)"
+            )
         }
 
         unlink(installation.socketURL.path + ".lock")
@@ -183,6 +240,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 launchedProcess.terminate()
             }
             self.launchedProcess = nil
+            self.helperPresence = .notDetermined
         }
     }
 
@@ -202,7 +260,10 @@ private final class LKSwiftUISupportAuthServerBridge {
             unlink(installation.socketURL.path + ".lock")
             unlink(installation.socketURL.path)
         }
-        lock.withLock { self.launchedProcess = nil }
+        lock.withLock {
+            self.launchedProcess = nil
+            self.helperPresence = .notDetermined
+        }
     }
 
     private func shouldTriggerRefresh(for error: Error) -> Bool {
@@ -222,7 +283,13 @@ private final class LKSwiftUISupportAuthServerBridge {
     }
 
     func showActivationWindow(from window: NSWindow?) {
-        performVoidRequest(method: "ui.show_activation", from: window)
+        performVoidRequest(
+            method: "ui.show_activation",
+            payload: LKSwiftUISupportClientProcessPayload(
+                lookInsideProcessID: ProcessInfo.processInfo.processIdentifier
+            ),
+            from: window
+        )
     }
 
     func showLicenseWindow(from window: NSWindow?) {
@@ -243,6 +310,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 }
                 return payload
             }
+            recordDecision(payload.decision)
             presentAccessAlert(title: payload.title, detail: payload.message, window: window)
         } catch {
             presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
@@ -264,6 +332,8 @@ private final class LKSwiftUISupportAuthServerBridge {
                 return payload
             }
 
+            recordDecision(payload.decision)
+
             switch payload.decision {
             case .allow:
                 return true
@@ -281,11 +351,23 @@ private final class LKSwiftUISupportAuthServerBridge {
     }
 
     private func performVoidRequest(method: String, from window: NSWindow?) {
+        performVoidRequest(
+            method: method,
+            payload: LKSwiftUISupportEmptyPayload(),
+            from: window
+        )
+    }
+
+    private func performVoidRequest<RequestPayload: Encodable>(
+        method: String,
+        payload: RequestPayload,
+        from window: NSWindow?
+    ) {
         do {
             try runWithAutoRefresh(window: window) { installation in
                 _ = try self.sendRequest(
                     method: method,
-                    payload: LKSwiftUISupportEmptyPayload(),
+                    payload: payload,
                     installation: installation,
                     responseType: LKSwiftUISupportEmptyPayload.self
                 )
@@ -325,66 +407,85 @@ private final class LKSwiftUISupportAuthServerBridge {
     private func ensureServerAvailable(
         using installation: LKSwiftUISupportAuthServerInstallation
     ) throws -> LKSwiftUISupportAuthServerInstallation {
-        do {
-            let response = try sendRequest(
-                method: "health.ping",
-                payload: LKSwiftUISupportEmptyPayload(),
-                installation: installation,
-                responseType: LKSwiftUISupportAuthServerHealthPayload.self
-            )
-            guard let payload = response.payload else {
-                throw LKSwiftUISupportAuthServerError.invalidResponse("Missing health payload.")
-            }
-            guard payload.protocolVersion == LKSwiftUISupportAuthServerConstants.supportedProtocolVersion else {
-                throw LKSwiftUISupportAuthServerError.incompatibleProtocol(
-                    expected: LKSwiftUISupportAuthServerConstants.supportedProtocolVersion,
-                    found: payload.protocolVersion
-                )
-            }
-            try enforceVersionMatch(payload: payload)
-            return installation
-        } catch LKSwiftUISupportAuthServerError.helperVersionMismatch(let expected, let found) {
-            throw LKSwiftUISupportAuthServerError.helperVersionMismatch(expected: expected, found: found)
-        } catch {
+        let presence = lock.withLock { helperPresence }
+
+        if presence == .notDetermined {
             try launchHelperIfNeeded(for: installation)
-            return try waitForHealthyServer(using: installation)
+            try waitForHealthyServer(
+                using: installation,
+                timeout: LKSwiftUISupportAuthServerConstants.firstLaunchHealthTimeout
+            )
+            lock.withLock { helperPresence = .spawned }
+            return installation
         }
-    }
 
-    private func waitForHealthyServer(
-        using installation: LKSwiftUISupportAuthServerInstallation
-    ) throws -> LKSwiftUISupportAuthServerInstallation {
-        let deadline = Date().addingTimeInterval(LKSwiftUISupportAuthServerConstants.helperLaunchTimeout)
-        var lastError: Error?
-
-        while Date() < deadline {
+        for attempt in 0 ..< 2 {
             do {
-                let response = try sendRequest(
-                    method: "health.ping",
-                    payload: LKSwiftUISupportEmptyPayload(),
-                    installation: installation,
-                    responseType: LKSwiftUISupportAuthServerHealthPayload.self
-                )
-                guard let payload = response.payload else {
-                    throw LKSwiftUISupportAuthServerError.invalidResponse("Missing health payload.")
-                }
-                guard payload.protocolVersion == LKSwiftUISupportAuthServerConstants.supportedProtocolVersion else {
-                    throw LKSwiftUISupportAuthServerError.incompatibleProtocol(
-                        expected: LKSwiftUISupportAuthServerConstants.supportedProtocolVersion,
-                        found: payload.protocolVersion
-                    )
-                }
-                try enforceVersionMatch(payload: payload)
+                try performHealthPing(using: installation)
                 return installation
             } catch let error as LKSwiftUISupportAuthServerError {
                 if case .helperVersionMismatch = error {
                     throw error
                 }
+                LKSwiftUISupportLogger.authServer.info(
+                    "health probe attempt \(attempt + 1) failed: \(error.localizedDescription, privacy: .public)"
+                )
+            } catch {
+                LKSwiftUISupportLogger.authServer.info(
+                    "health probe attempt \(attempt + 1) failed: \(error.localizedDescription, privacy: .public)"
+                )
+            }
+        }
+
+        try launchHelperIfNeeded(for: installation)
+        try waitForHealthyServer(
+            using: installation,
+            timeout: LKSwiftUISupportAuthServerConstants.relaunchHealthTimeout
+        )
+        return installation
+    }
+
+    private func performHealthPing(
+        using installation: LKSwiftUISupportAuthServerInstallation
+    ) throws {
+        let response = try sendRequest(
+            method: "health.ping",
+            payload: LKSwiftUISupportEmptyPayload(),
+            installation: installation,
+            responseType: LKSwiftUISupportAuthServerHealthPayload.self
+        )
+        guard let payload = response.payload else {
+            throw LKSwiftUISupportAuthServerError.invalidResponse("Missing health payload.")
+        }
+        guard payload.protocolVersion == LKSwiftUISupportAuthServerConstants.supportedProtocolVersion else {
+            throw LKSwiftUISupportAuthServerError.incompatibleProtocol(
+                expected: LKSwiftUISupportAuthServerConstants.supportedProtocolVersion,
+                found: payload.protocolVersion
+            )
+        }
+        try enforceVersionMatch(payload: payload)
+    }
+
+    private func waitForHealthyServer(
+        using installation: LKSwiftUISupportAuthServerInstallation,
+        timeout: TimeInterval
+    ) throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        var lastError: Error?
+
+        while Date() < deadline {
+            do {
+                try performHealthPing(using: installation)
+                return
+            } catch let error as LKSwiftUISupportAuthServerError {
+                if case .helperVersionMismatch = error {
+                    throw error
+                }
                 lastError = error
-                usleep(100_000)
+                usleep(LKSwiftUISupportAuthServerConstants.helperHealthPollInterval)
             } catch {
                 lastError = error
-                usleep(100_000)
+                usleep(LKSwiftUISupportAuthServerConstants.helperHealthPollInterval)
             }
         }
 
@@ -449,14 +550,20 @@ private final class LKSwiftUISupportAuthServerBridge {
 
             let process = Process()
             process.executableURL = installation.executableURL
-            process.arguments = ["--socket-path", installation.socketURL.path]
+            let clientProcessID = ProcessInfo.processInfo.processIdentifier
+            process.arguments = [
+                "--socket-path", installation.socketURL.path,
+                "--lookinside-pid", "\(clientProcessID)"
+            ]
 
             var environment = ProcessInfo.processInfo.environment
             environment[LKSwiftUISupportAuthServerConstants.helperSocketPathEnvironmentKey] = installation.socketURL.path
+            environment[LKSwiftUISupportAuthServerConstants.helperClientProcessIDEnvironmentKey] = "\(clientProcessID)"
             process.environment = environment
             process.terminationHandler = { [weak self] _ in
                 self?.lock.withLock {
                     self?.launchedProcess = nil
+                    self?.helperPresence = .notDetermined
                 }
             }
             self.launchedProcess = process
@@ -671,11 +778,6 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
         shared
     }
 
-    @objc(preloadRuntime)
-    public func preloadRuntime() {
-        runtimeBridge.preloadRuntime()
-    }
-
     @objc(shutdownRuntime)
     public func shutdownRuntime() {
         runtimeBridge.shutdownRuntime()
@@ -699,5 +801,13 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     @objc(allowProtectedFeatureAccessForWindow:)
     public func allowProtectedFeatureAccess(for window: NSWindow?) -> Bool {
         runtimeBridge.allowProtectedFeatureAccess(for: window)
+    }
+
+    @objc public var activationState: LKSwiftUISupportActivationState {
+        runtimeBridge.currentActivationState
+    }
+
+    @objc public func refreshActivationStateInBackground() {
+        runtimeBridge.refreshActivationStateInBackground()
     }
 }

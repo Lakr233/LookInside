@@ -45,8 +45,7 @@
     }];
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {    
-    [[LKSwiftUISupportGatekeeper sharedInstance] preloadRuntime];
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     [LKConnectionManager sharedInstance];
     if (!self.launchedToOpenFile) {
         [[LKNavigationManager sharedInstance] showLaunch];

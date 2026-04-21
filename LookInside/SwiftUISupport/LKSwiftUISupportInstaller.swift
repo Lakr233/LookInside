@@ -37,6 +37,7 @@ enum LKSwiftUISupportInstallerError: LocalizedError {
 
 enum LKSwiftUISupportInstallerStage: String {
     case preparing = "Preparing…"
+    case checkingForUpdates = "Checking for updates…"
     case downloading = "Downloading…"
     case extracting = "Extracting…"
     case verifying = "Verifying code signature…"
@@ -47,6 +48,8 @@ enum LKSwiftUISupportInstallerStage: String {
         switch self {
         case .preparing:
             return NSLocalizedString("Preparing…", comment: "")
+        case .checkingForUpdates:
+            return NSLocalizedString("Checking for updates…", comment: "")
         case .downloading:
             return NSLocalizedString("Downloading…", comment: "")
         case .extracting:
@@ -106,6 +109,8 @@ final class LKSwiftUISupportInstaller {
     private let installLock = NSLock()
     private let cacheLock = NSLock()
     private var cachedPublishedVersion: String?
+    private var lastFailedFetchAt: Date?
+    private static let failedFetchCooldown: TimeInterval = 30
 
     func ensureInstalled(presentingWindow: NSWindow?) throws {
         if LKSwiftUISupportInstallerLayout.isInstalled {
@@ -143,9 +148,50 @@ final class LKSwiftUISupportInstaller {
     }
 
     func fetchPublishedVersion() -> String? {
-        if let cached = cacheLock.lkLock({ cachedPublishedVersion }) {
+        let cachedState: (version: String?, cooldownActive: Bool) = cacheLock.lkLock {
+            let cooldown: Bool
+            if let lastFailedFetchAt {
+                cooldown = Date().timeIntervalSince(lastFailedFetchAt) < Self.failedFetchCooldown
+            } else {
+                cooldown = false
+            }
+            return (cachedPublishedVersion, cooldown)
+        }
+        if let cached = cachedState.version {
             return cached
         }
+        if cachedState.cooldownActive {
+            return nil
+        }
+        if Thread.isMainThread {
+            return fetchPublishedVersionPresentingProgress()
+        }
+        return fetchPublishedVersionFromNetwork()
+    }
+
+    private func fetchPublishedVersionPresentingProgress() -> String? {
+        let controller = LKSwiftUISupportInstallerWindowController(
+            title: NSLocalizedString("Checking LookInside Auth Server", comment: "")
+        )
+        controller.updateStage(.checkingForUpdates)
+        controller.showWindow(self)
+
+        var capturedVersion: String?
+        let semaphore = DispatchSemaphore(value: 0)
+        Thread.detachNewThread {
+            capturedVersion = self.fetchPublishedVersionFromNetwork()
+            DispatchQueue.main.async {
+                NSApp.stopModal()
+                semaphore.signal()
+            }
+        }
+        NSApp.runModal(for: controller.window!)
+        _ = semaphore.wait(timeout: .now() + 1)
+        controller.close()
+        return capturedVersion
+    }
+
+    private func fetchPublishedVersionFromNetwork() -> String? {
         var capturedVersion: String?
         let semaphore = DispatchSemaphore(value: 0)
         var request = URLRequest(url: LKSwiftUISupportInstallerLayout.versionURL)
@@ -174,14 +220,22 @@ final class LKSwiftUISupportInstaller {
         }
         task.resume()
         _ = semaphore.wait(timeout: .now() + 6)
-        if let capturedVersion {
-            cacheLock.lkLock { cachedPublishedVersion = capturedVersion }
+        cacheLock.lkLock {
+            if let capturedVersion {
+                cachedPublishedVersion = capturedVersion
+                lastFailedFetchAt = nil
+            } else {
+                lastFailedFetchAt = Date()
+            }
         }
         return capturedVersion
     }
 
     func invalidatePublishedVersionCache() {
-        cacheLock.lkLock { cachedPublishedVersion = nil }
+        cacheLock.lkLock {
+            cachedPublishedVersion = nil
+            lastFailedFetchAt = nil
+        }
     }
 
     func invalidate() {
@@ -485,7 +539,11 @@ final class LKSwiftUISupportInstallerWindowController: NSWindowController {
     private let statusLabel = NSTextField(labelWithString: LKSwiftUISupportInstallerStage.preparing.localizedDescription)
     private let progressIndicator = NSProgressIndicator()
 
-    init() {
+    convenience init() {
+        self.init(title: NSLocalizedString("Installing LookInside Auth Server", comment: ""))
+    }
+
+    init(title: String) {
         let contentRect = NSRect(x: 0, y: 0, width: 360, height: 140)
         let window = NSWindow(
             contentRect: contentRect,
@@ -500,7 +558,7 @@ final class LKSwiftUISupportInstallerWindowController: NSWindowController {
 
         super.init(window: window)
 
-        let titleLabel = NSTextField(labelWithString: NSLocalizedString("Installing LookInside Auth Server", comment: ""))
+        let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = NSFont.boldSystemFont(ofSize: 13)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 

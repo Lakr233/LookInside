@@ -18,6 +18,12 @@ static NSUInteger const kTag_CheckUpdates = 13;
 static NSUInteger const kTag_ActivateSwiftUISupport = 14;
 static NSUInteger const kTag_SwiftUISupportLicense = 15;
 static NSUInteger const kTag_RefreshSwiftUISupportLicense = 16;
+static NSUInteger const kTag_PurchaseSwiftUISupport = 17;
+static NSUInteger const kTag_SwiftUISupportCustomerSupport = 18;
+static NSUInteger const kTag_SwiftUISupportSubmenu = 19;
+
+static NSString *const kSwiftUISupportPurchaseURL = @"https://example.com/";
+static NSString *const kSwiftUISupportCustomerSupportURL = @"https://example.com/";
 
 static NSUInteger const kTag_Reload = 21;
 static NSUInteger const kTag_Dimension = 22;
@@ -184,16 +190,55 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (NSMenu *)_buildSwiftUIPluginSubmenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"SwiftUI"];
-    [menu addItem:LKMenuItem(@"Activate SwiftUI Support…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
-    [menu addItem:LKMenuItem(@"SwiftUI Support License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
-    [menu addItem:LKMenuItem(@"Refresh License Status", nil, @"", 0, kTag_RefreshSwiftUISupportLicense)];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"SwiftUI Support"];
+    [self _populateSwiftUIPluginSubmenu:menu];
     return menu;
+}
+
+- (void)_populateSwiftUIPluginSubmenu:(NSMenu *)menu {
+    [menu removeAllItems];
+
+    LKSwiftUISupportActivationState state = [LKSwiftUISupportGatekeeper sharedInstance].activationState;
+
+    if (state == LKSwiftUISupportActivationStateActivated) {
+        [menu addItem:LKMenuItem(@"SwiftUI Support License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
+        [menu addItem:LKMenuItem(@"Refresh License Status", nil, @"", 0, kTag_RefreshSwiftUISupportLicense)];
+        [menu addItem:[NSMenuItem separatorItem]];
+        [menu addItem:LKMenuItem(@"Customer Support…", nil, @"", 0, kTag_SwiftUISupportCustomerSupport)];
+    } else {
+        [menu addItem:LKMenuItem(@"Activate SwiftUI Support…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
+        [menu addItem:[NSMenuItem separatorItem]];
+        [menu addItem:LKMenuItem(@"Purchase…", nil, @"", 0, kTag_PurchaseSwiftUISupport)];
+    }
+
+    [self _wireSwiftUIPluginSubmenuActions:menu];
+}
+
+- (void)_wireSwiftUIPluginSubmenuActions:(NSMenu *)menu {
+    NSMenuItem *activateItem = [menu itemWithTag:kTag_ActivateSwiftUISupport];
+    activateItem.target = self;
+    activateItem.action = @selector(_handleActivateSwiftUISupport);
+
+    NSMenuItem *licenseItem = [menu itemWithTag:kTag_SwiftUISupportLicense];
+    licenseItem.target = self;
+    licenseItem.action = @selector(_handleSwiftUISupportLicense);
+
+    NSMenuItem *refreshItem = [menu itemWithTag:kTag_RefreshSwiftUISupportLicense];
+    refreshItem.target = self;
+    refreshItem.action = @selector(_handleRefreshSwiftUISupportLicense);
+
+    NSMenuItem *purchaseItem = [menu itemWithTag:kTag_PurchaseSwiftUISupport];
+    purchaseItem.target = self;
+    purchaseItem.action = @selector(_handlePurchaseSwiftUISupport);
+
+    NSMenuItem *customerSupportItem = [menu itemWithTag:kTag_SwiftUISupportCustomerSupport];
+    customerSupportItem.target = self;
+    customerSupportItem.action = @selector(_handleSwiftUISupportCustomerSupport);
 }
 
 - (NSMenu *)_buildPluginsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Plugins"];
-    [menu addItem:LKSubmenuItem(@"SwiftUI", [self _buildSwiftUIPluginSubmenu], 0)];
+    [menu addItem:LKSubmenuItem(@"SwiftUI Support", [self _buildSwiftUIPluginSubmenu], kTag_SwiftUISupportSubmenu)];
     return menu;
 }
 
@@ -279,18 +324,8 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     menu_plugins.autoenablesItems = NO;
     NSMenu *menu_plugins_swiftUI = [menu_plugins itemAtIndex:0].submenu;
     menu_plugins_swiftUI.autoenablesItems = NO;
-
-    NSMenuItem *menuItem_activateSwiftUISupport = [menu_plugins_swiftUI itemWithTag:kTag_ActivateSwiftUISupport];
-    menuItem_activateSwiftUISupport.target = self;
-    menuItem_activateSwiftUISupport.action = @selector(_handleActivateSwiftUISupport);
-
-    NSMenuItem *menuItem_swiftUISupportLicense = [menu_plugins_swiftUI itemWithTag:kTag_SwiftUISupportLicense];
-    menuItem_swiftUISupportLicense.target = self;
-    menuItem_swiftUISupportLicense.action = @selector(_handleSwiftUISupportLicense);
-
-    NSMenuItem *menuItem_refreshSwiftUISupportLicense = [menu_plugins_swiftUI itemWithTag:kTag_RefreshSwiftUISupportLicense];
-    menuItem_refreshSwiftUISupportLicense.target = self;
-    menuItem_refreshSwiftUISupportLicense.action = @selector(_handleRefreshSwiftUISupportLicense);
+    menu_plugins_swiftUI.delegate = self;
+    [self _wireSwiftUIPluginSubmenuActions:menu_plugins_swiftUI];
 
     NSMenu *menu_help = [menu itemAtIndex:6].submenu;
     menu_help.autoenablesItems = YES;
@@ -329,6 +364,12 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 - (void)menuNeedsUpdate:(NSMenu *)menu {
     if (menu == self.recentDocumentsMenu) {
         [self _reloadRecentDocumentsMenu];
+        return;
+    }
+
+    if ([menu.title isEqualToString:@"SwiftUI Support"]) {
+        [[LKSwiftUISupportGatekeeper sharedInstance] refreshActivationStateInBackground];
+        [self _populateSwiftUIPluginSubmenu:menu];
         return;
     }
 
@@ -414,6 +455,20 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 - (void)_handleRefreshSwiftUISupportLicense {
     [[LKSwiftUISupportGatekeeper sharedInstance] refreshLicenseStatus];
+}
+
+- (void)_handlePurchaseSwiftUISupport {
+    NSURL *url = [NSURL URLWithString:kSwiftUISupportPurchaseURL];
+    if (url) {
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
+}
+
+- (void)_handleSwiftUISupportCustomerSupport {
+    NSURL *url = [NSURL URLWithString:kSwiftUISupportCustomerSupportURL];
+    if (url) {
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
 }
 
 - (void)_handleShowGitHub {
