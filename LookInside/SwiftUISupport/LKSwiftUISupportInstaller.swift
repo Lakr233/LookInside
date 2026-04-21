@@ -16,21 +16,21 @@ enum LKSwiftUISupportInstallerError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .downloadFailed(message):
-            return "Failed to download LookInside Auth Server.\n\(message)"
+            return String(format: NSLocalizedString("Failed to download LookInside Auth Server.\n%@", comment: ""), message)
         case let .unzipFailed(message):
-            return "Failed to extract LookInside Auth Server.\n\(message)"
+            return String(format: NSLocalizedString("Failed to extract LookInside Auth Server.\n%@", comment: ""), message)
         case let .checksumFailed(message):
-            return "Failed to verify LookInside Auth Server download.\n\(message)"
+            return String(format: NSLocalizedString("Failed to verify LookInside Auth Server download.\n%@", comment: ""), message)
         case .appBundleNotFound:
-            return "The downloaded archive did not contain a LookInside Auth Server bundle."
+            return NSLocalizedString("The downloaded archive did not contain a LookInside Auth Server bundle.", comment: "")
         case let .teamIdentifierUnavailable(message):
-            return "Unable to read the code signature of LookInside Auth Server.\n\(message)"
+            return String(format: NSLocalizedString("Unable to read the code signature of LookInside Auth Server.\n%@", comment: ""), message)
         case let .teamIdentifierMismatch(expected, found):
-            return "LookInside Auth Server is signed by a different team.\nExpected: \(expected)\nFound: \(found)"
+            return String(format: NSLocalizedString("LookInside Auth Server is signed by a different team.\nExpected: %1$@\nFound: %2$@", comment: ""), expected, found)
         case let .installFailed(message):
-            return "Failed to install LookInside Auth Server.\n\(message)"
+            return String(format: NSLocalizedString("Failed to install LookInside Auth Server.\n%@", comment: ""), message)
         case .cancelled:
-            return "Installation was cancelled."
+            return NSLocalizedString("Installation was cancelled.", comment: "")
         }
     }
 }
@@ -42,6 +42,23 @@ enum LKSwiftUISupportInstallerStage: String {
     case verifying = "Verifying code signature…"
     case installing = "Installing…"
     case finishing = "Finalizing…"
+
+    var localizedDescription: String {
+        switch self {
+        case .preparing:
+            return NSLocalizedString("Preparing…", comment: "")
+        case .downloading:
+            return NSLocalizedString("Downloading…", comment: "")
+        case .extracting:
+            return NSLocalizedString("Extracting…", comment: "")
+        case .verifying:
+            return NSLocalizedString("Verifying code signature…", comment: "")
+        case .installing:
+            return NSLocalizedString("Installing…", comment: "")
+        case .finishing:
+            return NSLocalizedString("Finalizing…", comment: "")
+        }
+    }
 }
 
 enum LKSwiftUISupportInstallerLayout {
@@ -300,7 +317,9 @@ final class LKSwiftUISupportInstaller {
                 return
             }
             guard let httpResponse = response as? HTTPURLResponse else {
-                capturedError = LKSwiftUISupportInstallerError.downloadFailed("No response received.")
+                capturedError = LKSwiftUISupportInstallerError.downloadFailed(
+                    NSLocalizedString("No response received.", comment: "")
+                )
                 return
             }
             guard (200...299).contains(httpResponse.statusCode) else {
@@ -308,7 +327,9 @@ final class LKSwiftUISupportInstaller {
                 return
             }
             guard let tempURL else {
-                capturedError = LKSwiftUISupportInstallerError.downloadFailed("Empty download payload.")
+                capturedError = LKSwiftUISupportInstallerError.downloadFailed(
+                    NSLocalizedString("Empty download payload.", comment: "")
+                )
                 return
             }
             do {
@@ -328,7 +349,9 @@ final class LKSwiftUISupportInstaller {
             throw capturedError
         }
         guard capturedTempURL != nil else {
-            throw LKSwiftUISupportInstallerError.downloadFailed("Unknown download failure.")
+            throw LKSwiftUISupportInstallerError.downloadFailed(
+                NSLocalizedString("Unknown download failure.", comment: "")
+            )
         }
     }
 
@@ -347,7 +370,8 @@ final class LKSwiftUISupportInstaller {
         process.waitUntilExit()
         if process.terminationStatus != 0 {
             let data = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let message = String(data: data, encoding: .utf8) ?? "ditto exited with status \(process.terminationStatus)."
+            let message = String(data: data, encoding: .utf8)
+                ?? String(format: NSLocalizedString("ditto exited with status %d.", comment: ""), process.terminationStatus)
             throw LKSwiftUISupportInstallerError.unzipFailed(message)
         }
     }
@@ -373,7 +397,9 @@ final class LKSwiftUISupportInstaller {
     private static func ensureExecutableBit(at url: URL) throws {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path) else {
-            throw LKSwiftUISupportInstallerError.installFailed("Executable not found at \(url.path)")
+            throw LKSwiftUISupportInstallerError.installFailed(
+                String(format: NSLocalizedString("Executable not found at %@", comment: ""), url.path)
+            )
         }
         let attributes = try fileManager.attributesOfItem(atPath: url.path)
         if let perms = attributes[.posixPermissions] as? NSNumber {
@@ -402,7 +428,9 @@ final class LKSwiftUISupportInstaller {
             .map({ String($0).lowercased() }),
             expected.count == 64
         else {
-            throw LKSwiftUISupportInstallerError.checksumFailed("The release checksum file is malformed.")
+            throw LKSwiftUISupportInstallerError.checksumFailed(
+                NSLocalizedString("The release checksum file is malformed.", comment: "")
+            )
         }
 
         let zipData: Data
@@ -417,7 +445,9 @@ final class LKSwiftUISupportInstaller {
             .joined()
 
         guard actual == expected else {
-            throw LKSwiftUISupportInstallerError.checksumFailed("Expected \(expected), got \(actual).")
+            throw LKSwiftUISupportInstallerError.checksumFailed(
+                String(format: NSLocalizedString("Expected %1$@, got %2$@.", comment: ""), expected, actual)
+            )
         }
     }
 
@@ -452,7 +482,7 @@ final class LKSwiftUISupportInstaller {
 }
 
 final class LKSwiftUISupportInstallerWindowController: NSWindowController {
-    private let statusLabel = NSTextField(labelWithString: LKSwiftUISupportInstallerStage.preparing.rawValue)
+    private let statusLabel = NSTextField(labelWithString: LKSwiftUISupportInstallerStage.preparing.localizedDescription)
     private let progressIndicator = NSProgressIndicator()
 
     init() {
@@ -470,7 +500,7 @@ final class LKSwiftUISupportInstallerWindowController: NSWindowController {
 
         super.init(window: window)
 
-        let titleLabel = NSTextField(labelWithString: "Installing LookInside Auth Server")
+        let titleLabel = NSTextField(labelWithString: NSLocalizedString("Installing LookInside Auth Server", comment: ""))
         titleLabel.font = NSFont.boldSystemFont(ofSize: 13)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
@@ -520,6 +550,6 @@ final class LKSwiftUISupportInstallerWindowController: NSWindowController {
     }
 
     func updateStage(_ stage: LKSwiftUISupportInstallerStage) {
-        statusLabel.stringValue = stage.rawValue
+        statusLabel.stringValue = stage.localizedDescription
     }
 }

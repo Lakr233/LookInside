@@ -100,23 +100,23 @@ private enum LKSwiftUISupportAuthServerError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .helperMissing(path):
-            return "LookInside Auth Server is not installed.\nExpected executable:\n\(path)"
+            return String(format: NSLocalizedString("LookInside Auth Server is not installed.\nExpected executable:\n%@", comment: ""), path)
         case let .incompatibleProtocol(expected, found):
-            return "LookInside Auth Server protocol is incompatible.\nApp expects v\(expected), helper provides v\(found)."
+            return String(format: NSLocalizedString("LookInside Auth Server protocol is incompatible.\nApp expects v%1$ld, helper provides v%2$ld.", comment: ""), expected, found)
         case let .helperVersionMismatch(expected, found):
-            return "LookInside Auth Server version mismatch.\nExpected: \(expected)\nFound: \(found)"
+            return String(format: NSLocalizedString("LookInside Auth Server version mismatch.\nExpected: %1$@\nFound: %2$@", comment: ""), expected, found)
         case let .socketPathInvalid(path):
-            return "LookInside Auth Server socket path is too long for a Unix domain socket.\n\(path)"
+            return String(format: NSLocalizedString("LookInside Auth Server socket path is too long for a Unix domain socket.\n%@", comment: ""), path)
         case let .launchFailed(message):
-            return "LookInside Auth Server could not be launched.\n\(message)"
+            return String(format: NSLocalizedString("LookInside Auth Server could not be launched.\n%@", comment: ""), message)
         case let .launchTimedOut(path):
-            return "LookInside Auth Server did not respond after launch.\nSocket path:\n\(path)"
+            return String(format: NSLocalizedString("LookInside Auth Server did not respond after launch.\nSocket path:\n%@", comment: ""), path)
         case let .rpcTransport(message):
-            return "LookInside Auth Server connection failed.\n\(message)"
+            return String(format: NSLocalizedString("LookInside Auth Server connection failed.\n%@", comment: ""), message)
         case let .rpcServer(code, message):
-            return "LookInside Auth Server returned \(code).\n\(message)"
+            return String(format: NSLocalizedString("LookInside Auth Server returned %1$@.\n%2$@", comment: ""), code, message)
         case let .invalidResponse(message):
-            return "LookInside Auth Server returned an unreadable response.\n\(message)"
+            return String(format: NSLocalizedString("LookInside Auth Server returned an unreadable response.\n%@", comment: ""), message)
         }
     }
 }
@@ -245,7 +245,7 @@ private final class LKSwiftUISupportAuthServerBridge {
             }
             presentAccessAlert(title: payload.title, detail: payload.message, window: window)
         } catch {
-            presentRuntimeAlert(title: "LookInside Auth Server Required", detail: error.localizedDescription, window: window)
+            presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
         }
     }
 
@@ -275,7 +275,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 return false
             }
         } catch {
-            presentRuntimeAlert(title: "LookInside Auth Server Required", detail: error.localizedDescription, window: window)
+            presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
             return false
         }
     }
@@ -291,7 +291,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 )
             }
         } catch {
-            presentRuntimeAlert(title: "LookInside Auth Server Required", detail: error.localizedDescription, window: window)
+            presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
         }
     }
 
@@ -565,7 +565,7 @@ private final class LKSwiftUISupportAuthServerBridge {
             let alert = NSAlert()
             alert.messageText = title
             alert.informativeText = detail
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
             if let window {
                 alert.beginSheetModal(for: window, completionHandler: nil)
             } else {
