@@ -1484,6 +1484,12 @@
         }
       }
     },
+    "License challenge payload is malformed." : {
+
+    },
+    "License signing failed." : {
+
+    },
     "Light Mode" : {
       "localizations" : {
         "en" : {
@@ -1721,6 +1727,12 @@
           }
         }
       }
+    },
+    "LookInside license verification failed." : {
+
+    },
+    "LookInside license verification is required to inspect this app." : {
+
     },
     "Measure" : {
       "localizations" : {
