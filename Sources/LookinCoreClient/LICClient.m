@@ -406,10 +406,13 @@ static unsigned long LICBestObjectOIDForItem(LookinDisplayItem *item, BOOL prefe
         if (!session) {
             continue;
         }
-        LICDiscoveredTarget *target = [self targetFromSession:session transport:@"simulator" port:port deviceID:nil error:nil];
+        NSError *handshakeError = nil;
+        LICDiscoveredTarget *target = [self targetFromSession:session transport:@"simulator" port:port deviceID:nil error:&handshakeError];
         [session close];
         if (target) {
             [targets addObject:target];
+        } else if (handshakeError) {
+            NSLog(@"LookInside discovery: simulator port %@ handshake failed: %@", @(port), handshakeError.localizedDescription);
         }
     }
     return targets;
@@ -423,10 +426,13 @@ static unsigned long LICBestObjectOIDForItem(LookinDisplayItem *item, BOOL prefe
         if (!session) {
             continue;
         }
-        LICDiscoveredTarget *target = [self targetFromSession:session transport:@"mac" port:port deviceID:nil error:nil];
+        NSError *handshakeError = nil;
+        LICDiscoveredTarget *target = [self targetFromSession:session transport:@"mac" port:port deviceID:nil error:&handshakeError];
         [session close];
         if (target) {
             [targets addObject:target];
+        } else if (handshakeError) {
+            NSLog(@"LookInside discovery: mac port %@ handshake failed: %@", @(port), handshakeError.localizedDescription);
         }
     }
     return targets;
@@ -448,12 +454,15 @@ static unsigned long LICBestObjectOIDForItem(LookinDisplayItem *item, BOOL prefe
                 if (!session) {
                     continue;
                 }
-                LICDiscoveredTarget *target = [self targetFromSession:session transport:@"usb" port:port deviceID:deviceID.stringValue error:nil];
+                NSError *handshakeError = nil;
+                LICDiscoveredTarget *target = [self targetFromSession:session transport:@"usb" port:port deviceID:deviceID.stringValue error:&handshakeError];
                 [session close];
                 if (target) {
                     @synchronized (targets) {
                         [targets addObject:target];
                     }
+                } else if (handshakeError) {
+                    NSLog(@"LookInside discovery: usb device %@ port %@ handshake failed: %@", deviceID, @(port), handshakeError.localizedDescription);
                 }
             }
         }

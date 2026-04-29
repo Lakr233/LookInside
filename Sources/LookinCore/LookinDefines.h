@@ -29,7 +29,7 @@ static NSString * const LOOKIN_SERVER_READABLE_VERSION = @"1.3.0";
 static const int LOOKIN_CLIENT_VERSION = 8;
 
 /// the minimum connection protocol version supported by current LookinClient
-static const int LOOKIN_SUPPORTED_SERVER_MIN = 8;
+static const int LOOKIN_SUPPORTED_SERVER_MIN = 7;
 /// the maximum connection protocol version supported by current LookinClient
 static const int LOOKIN_SUPPORTED_SERVER_MAX = 8;
 
