@@ -354,16 +354,7 @@ static NSIndexSet * PushFrameTypeList(void) {
                 }];
             };
 
-            if (channel.isLicenseVerified) {
-                dispatchRealRequest();
-                return;
-            }
-
-            [self _performLicenseHandshakeOnChannel:channel succ:^{
-                dispatchRealRequest();
-            } fail:^(NSError *error) {
-                [subscriber sendError:error];
-            }];
+            dispatchRealRequest();
 
         } fail:^(NSError *error) {
             // ping 失败了
@@ -378,6 +369,11 @@ static NSIndexSet * PushFrameTypeList(void) {
                                      succ:(void (^)(void))succBlock
                                      fail:(void (^)(NSError *error))failBlock {
     [self _requestWithType:LookinRequestTypeLicenseChallenge channel:channel data:nil timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *challengeAttachment) {
+        if (challengeAttachment.error) {
+            if (failBlock) failBlock(challengeAttachment.error);
+            return;
+        }
+
         NSDictionary *challenge = [challengeAttachment.data isKindOfClass:[NSDictionary class]] ? (NSDictionary *)challengeAttachment.data : nil;
         NSData *nonce = [challenge[@"nonce"] isKindOfClass:[NSData class]] ? challenge[@"nonce"] : nil;
         NSString *serverID = [challenge[@"server_instance_id"] isKindOfClass:[NSString class]] ? challenge[@"server_instance_id"] : nil;
@@ -420,7 +416,12 @@ static NSIndexSet * PushFrameTypeList(void) {
                     @"intermediate_cert_der": intermediateCertDER,
                     @"udid":                  udid ?: @"",
                 };
-                [self _requestWithType:LookinRequestTypeLicenseVerify channel:channel data:verifyPayload timeoutInterval:5 succ:^(id verifyResponse) {
+                [self _requestWithType:LookinRequestTypeLicenseVerify channel:channel data:verifyPayload timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *verifyResponse) {
+                    if (verifyResponse.error) {
+                        if (failBlock) failBlock(verifyResponse.error);
+                        return;
+                    }
+
                     channel.isLicenseVerified = YES;
                     if (succBlock) succBlock();
                 } fail:^(NSError *verifyError) {

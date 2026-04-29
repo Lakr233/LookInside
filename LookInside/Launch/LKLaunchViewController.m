@@ -128,8 +128,6 @@
     if (view.app.serverVersionError) {
         if (view.app.serverVersionError.code == LookinErrCode_ServerVersionTooLow) {
             [LKHelper openLookinWebsiteWithPath:@"faq/server-version-too-low/"];
-        } else if (view.app.serverVersionError.code == LookinErrCode_LicenseRequired) {
-            [[LKSwiftUISupportGatekeeper sharedInstance] showLicenseWindow];
         } else {
             [LKHelper openLookinWebsiteWithPath:@"faq/server-version-too-high/"];
         }
