@@ -5,7 +5,7 @@ A macOS UI inspector for debuggable macOS and iOS apps. Click a view, see its la
 ![Preview](./Resources/SCR-20260330-ccud.png)
 
 Website · [lookinside-app.com](https://lookinside-app.com)
-Server library · [LookInsideServer](https://github.com/LookInsideApp/LookInsideServer)
+Server library · [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server)
 Upstream · [QMUI/LookinServer](https://github.com/QMUI/LookinServer)
 
 LookInside is a community continuation of [Lookin](https://github.com/QMUI/LookinServer). It ships with no telemetry, no crash upload, and no auto-update service.
@@ -21,7 +21,7 @@ LookInside is a community continuation of [Lookin](https://github.com/QMUI/Looki
 └────────────┘                                          └──────────────┘
 ```
 
-1. You embed [LookInsideServer](https://github.com/LookInsideApp/LookInsideServer) into the app you want to inspect (debug builds only).
+1. You embed [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server) into the app you want to inspect (debug builds only).
 2. You launch LookInside on your Mac.
 3. LookInside auto-discovers running targets — macOS apps, iOS Simulator apps, USB-connected iOS devices.
 4. You click into the live view hierarchy.
@@ -36,7 +36,7 @@ Grab a notarized build from the [Releases page](https://github.com/LookInsideApp
 
 ### 2. Embed the server in your app
 
-See [LookInsideServer](https://github.com/LookInsideApp/LookInsideServer) for the SwiftPM / CocoaPods integration. It only links into debug configurations and is wire-compatible with upstream Lookin.
+See [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server) for the SwiftPM / CocoaPods integration. It only links into debug configurations and is wire-compatible with upstream Lookin.
 
 ### 3. Run and inspect
 
