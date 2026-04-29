@@ -76,9 +76,9 @@ enum LKSwiftUISupportInstallerLayout {
 
     static var installedAppURL: URL {
         #if DEBUG
-        if debugLocalAuthRepositoryURL != nil {
-            return debugInstalledAppURL
-        }
+            if debugLocalAuthRepositoryURL != nil {
+                return debugInstalledAppURL
+            }
         #endif
 
         return FileManager.default.homeDirectoryForCurrentUser
@@ -109,56 +109,57 @@ enum LKSwiftUISupportInstallerLayout {
     }
 
     #if DEBUG
-    static var debugInstalledAppURL: URL {
-        URL(fileURLWithPath: "/tmp", isDirectory: true)
-            .appendingPathComponent("lookinside-auth-server-debug", isDirectory: true)
-            .appendingPathComponent("current", isDirectory: true)
-            .appendingPathComponent(appBundleName, isDirectory: true)
-    }
+        static var debugInstalledAppURL: URL {
+            URL(fileURLWithPath: "/tmp", isDirectory: true)
+                .appendingPathComponent("lookinside-auth-server-debug", isDirectory: true)
+                .appendingPathComponent("current", isDirectory: true)
+                .appendingPathComponent(appBundleName, isDirectory: true)
+        }
 
-    static var debugLocalAuthRepositoryURL: URL? {
-        let fileManager = FileManager.default
-        let searchRoots = [
-            URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true),
-            Bundle.main.bundleURL,
-            URL(fileURLWithPath: #filePath, isDirectory: false).deletingLastPathComponent()
-        ]
+        static var debugLocalAuthRepositoryURL: URL? {
+            let fileManager = FileManager.default
+            let searchRoots = [
+                URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true),
+                Bundle.main.bundleURL,
+                URL(fileURLWithPath: #filePath, isDirectory: false).deletingLastPathComponent(),
+            ]
 
-        for root in searchRoots {
-            if let monorepoRoot = findMonorepoRoot(startingAt: root) {
-                let authRepositoryURL = monorepoRoot.appendingPathComponent("LookInside-Auth", isDirectory: true)
-                let projectURL = authRepositoryURL.appendingPathComponent("Project.swift", isDirectory: false)
-                if fileManager.fileExists(atPath: projectURL.path) {
-                    return authRepositoryURL
+            for root in searchRoots {
+                if let monorepoRoot = findMonorepoRoot(startingAt: root) {
+                    let authRepositoryURL = monorepoRoot.appendingPathComponent("LookInside-Auth", isDirectory: true)
+                    let projectURL = authRepositoryURL.appendingPathComponent("Project.swift", isDirectory: false)
+                    if fileManager.fileExists(atPath: projectURL.path) {
+                        return authRepositoryURL
+                    }
                 }
             }
+
+            return nil
         }
 
-        return nil
-    }
-
-    private static func findMonorepoRoot(startingAt startURL: URL) -> URL? {
-        let fileManager = FileManager.default
-        var cursor = startURL.standardizedFileURL
-        if cursor.hasDirectoryPath == false {
-            cursor.deleteLastPathComponent()
-        }
-
-        for _ in 0 ..< 12 {
-            let gitmodulesURL = cursor.appendingPathComponent(".gitmodules", isDirectory: false)
-            let authRepositoryURL = cursor.appendingPathComponent("LookInside-Auth", isDirectory: true)
-            if fileManager.fileExists(atPath: gitmodulesURL.path),
-               fileManager.fileExists(atPath: authRepositoryURL.path) {
-                return cursor
+        private static func findMonorepoRoot(startingAt startURL: URL) -> URL? {
+            let fileManager = FileManager.default
+            var cursor = startURL.standardizedFileURL
+            if cursor.hasDirectoryPath == false {
+                cursor.deleteLastPathComponent()
             }
 
-            let parent = cursor.deletingLastPathComponent()
-            guard parent.path != cursor.path else { break }
-            cursor = parent
-        }
+            for _ in 0 ..< 12 {
+                let gitmodulesURL = cursor.appendingPathComponent(".gitmodules", isDirectory: false)
+                let authRepositoryURL = cursor.appendingPathComponent("LookInside-Auth", isDirectory: true)
+                if fileManager.fileExists(atPath: gitmodulesURL.path),
+                   fileManager.fileExists(atPath: authRepositoryURL.path)
+                {
+                    return cursor
+                }
 
-        return nil
-    }
+                let parent = cursor.deletingLastPathComponent()
+                guard parent.path != cursor.path else { break }
+                cursor = parent
+            }
+
+            return nil
+        }
     #endif
 }
 
@@ -171,15 +172,15 @@ final class LKSwiftUISupportInstaller {
     private var lastFailedFetchAt: Date?
     private static let failedFetchCooldown: TimeInterval = 30
     #if DEBUG
-    private var debugLocalInstallPrepared = false
+        private var debugLocalInstallPrepared = false
     #endif
 
     func ensureInstalled(presentingWindow: NSWindow?) throws {
         #if DEBUG
-        if LKSwiftUISupportInstallerLayout.debugLocalAuthRepositoryURL != nil {
-            try ensureDebugLocalInstall()
-            return
-        }
+            if LKSwiftUISupportInstallerLayout.debugLocalAuthRepositoryURL != nil {
+                try ensureDebugLocalInstall()
+                return
+            }
         #endif
 
         if LKSwiftUISupportInstallerLayout.isInstalled {
@@ -205,27 +206,27 @@ final class LKSwiftUISupportInstaller {
     }
 
     #if DEBUG
-    private func ensureDebugLocalInstall() throws {
-        installLock.lock()
-        defer { installLock.unlock() }
+        private func ensureDebugLocalInstall() throws {
+            installLock.lock()
+            defer { installLock.unlock() }
 
-        if debugLocalInstallPrepared && LKSwiftUISupportInstallerLayout.isInstalled {
-            return
-        }
+            if debugLocalInstallPrepared, LKSwiftUISupportInstallerLayout.isInstalled {
+                return
+            }
 
-        let destination = LKSwiftUISupportInstallerLayout.debugInstalledAppURL
-        guard FileManager.default.isExecutableFile(atPath: LKSwiftUISupportInstallerLayout.installedExecutableURL.path) else {
-            throw LKSwiftUISupportInstallerError.installFailed(
-                "Debug auth server app is missing. Build the LookInside Debug target again to prepare \(destination.path)."
+            let destination = LKSwiftUISupportInstallerLayout.debugInstalledAppURL
+            guard FileManager.default.isExecutableFile(atPath: LKSwiftUISupportInstallerLayout.installedExecutableURL.path) else {
+                throw LKSwiftUISupportInstallerError.installFailed(
+                    "Debug auth server app is missing. Build the LookInside Debug target again to prepare \(destination.path)."
+                )
+            }
+            try Self.ensureExecutableBit(at: LKSwiftUISupportInstallerLayout.installedExecutableURL)
+            debugLocalInstallPrepared = true
+            invalidatePublishedVersionCache()
+            LKSwiftUISupportLogger.installer.notice(
+                "debug auth server app ready destination=\(destination.path, privacy: .public)"
             )
         }
-        try Self.ensureExecutableBit(at: LKSwiftUISupportInstallerLayout.installedExecutableURL)
-        debugLocalInstallPrepared = true
-        invalidatePublishedVersionCache()
-        LKSwiftUISupportLogger.installer.notice(
-            "debug auth server app ready destination=\(destination.path, privacy: .public)"
-        )
-    }
     #endif
 
     func installedHelperVersion() -> String? {
@@ -234,7 +235,8 @@ final class LKSwiftUISupportInstaller {
               let data = try? Data(contentsOf: plistURL),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
               let value = plist["CFBundleShortVersionString"] as? String,
-              value.isEmpty == false else {
+              value.isEmpty == false
+        else {
             return nil
         }
         return value
@@ -299,8 +301,9 @@ final class LKSwiftUISupportInstaller {
                 return
             }
             guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode),
-                  let data else {
+                  (200 ... 299).contains(httpResponse.statusCode),
+                  let data
+            else {
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 LKSwiftUISupportLogger.installer.warning(
                     "version fetch returned status=\(status)"
@@ -480,7 +483,7 @@ final class LKSwiftUISupportInstaller {
                 )
                 return
             }
-            guard (200...299).contains(httpResponse.statusCode) else {
+            guard (200 ... 299).contains(httpResponse.statusCode) else {
                 capturedError = LKSwiftUISupportInstallerError.downloadFailed("HTTP \(httpResponse.statusCode)")
                 return
             }

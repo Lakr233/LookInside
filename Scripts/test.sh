@@ -10,51 +10,51 @@ export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-/tmp/clang-module-cac
 export SWIFTPM_MODULECACHE_OVERRIDE="${SWIFTPM_MODULECACHE_OVERRIDE:-/tmp/swiftpm-module-cache}"
 
 mkdir -p \
-    "$HOME" \
-    "$XDG_CACHE_HOME" \
-    "$CLANG_MODULE_CACHE_PATH" \
-    "$SWIFTPM_MODULECACHE_OVERRIDE"
+	"$HOME" \
+	"$XDG_CACHE_HOME" \
+	"$CLANG_MODULE_CACHE_PATH" \
+	"$SWIFTPM_MODULECACHE_OVERRIDE"
 
 format_output() {
-    if command -v xcbeautify >/dev/null 2>&1; then
-        xcbeautify --disable-logging
-    else
-        cat
-    fi
+	if command -v xcbeautify >/dev/null 2>&1; then
+		xcbeautify --disable-logging
+	else
+		cat
+	fi
 }
 
 run_command() {
-    local label="$1"
-    shift
+	local label="$1"
+	shift
 
-    echo "[*] $label"
-    "$@" 2>&1 | format_output
-    local exit_code=${PIPESTATUS[0]}
-    if [ "$exit_code" -ne 0 ]; then
-        echo "[!] failed: $label"
-        exit "$exit_code"
-    fi
+	echo "[*] $label"
+	"$@" 2>&1 | format_output
+	local exit_code=${PIPESTATUS[0]}
+	if [ "$exit_code" -ne 0 ]; then
+		echo "[!] failed: $label"
+		exit "$exit_code"
+	fi
 }
 
 run_swift_build() {
-    local description="$1"
-    shift
-    run_command "$description" swift "$@" --disable-sandbox
+	local description="$1"
+	shift
+	run_command "$description" swift "$@" --disable-sandbox
 }
 
 run_xcode_build() {
-    local scheme="$1"
-    local configuration="$2"
-    run_command \
-        "xcodebuild scheme=$scheme configuration=$configuration" \
-        xcodebuild \
-        -skipMacroValidation \
-        -project LookInside.xcodeproj \
-        -scheme "$scheme" \
-        -configuration "$configuration" \
-        -derivedDataPath /tmp/LookInsideDerivedData \
-        CODE_SIGNING_ALLOWED=NO \
-        build
+	local scheme="$1"
+	local configuration="$2"
+	run_command \
+		"xcodebuild scheme=$scheme configuration=$configuration" \
+		xcodebuild \
+		-skipMacroValidation \
+		-project LookInside.xcodeproj \
+		-scheme "$scheme" \
+		-configuration "$configuration" \
+		-derivedDataPath /tmp/LookInsideDerivedData \
+		CODE_SIGNING_ALLOWED=NO \
+		build
 }
 
 run_command "sync derived source" bash Scripts/sync-derived-source.sh

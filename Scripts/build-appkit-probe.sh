@@ -39,10 +39,10 @@ cat >"$APP_ROOT/Contents/Info.plist" <<'PLIST'
 PLIST
 
 xcrun swiftc \
-    -target arm64-apple-macos14.0 \
-    -framework AppKit \
-    "$ROOT/Scripts/AppKitProbe/main.swift" \
-    -o "$BIN_DIR/LookInsideAppKitProbe"
+	-target arm64-apple-macos14.0 \
+	-framework AppKit \
+	"$ROOT/Scripts/AppKitProbe/main.swift" \
+	-o "$BIN_DIR/LookInsideAppKitProbe"
 
 chmod +x "$BIN_DIR/LookInsideAppKitProbe"
 echo "$APP_ROOT"

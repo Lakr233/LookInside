@@ -21,7 +21,7 @@ REQUESTED_BUILD_NUMBER=""
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-/tmp/LookInsideReleaseDerivedData}"
 
 usage() {
-    cat <<'EOF'
+	cat <<'EOF'
 Usage: bash Scripts/build-and-release.sh [options]
 
 Options:
@@ -38,128 +38,128 @@ EOF
 }
 
 log() {
-    echo "==> $*"
+	echo "==> $*"
 }
 
 fail() {
-    echo "Error: $*" >&2
-    exit 1
+	echo "Error: $*" >&2
+	exit 1
 }
 
 require_command() {
-    command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+	command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
 parse_args() {
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --version)
-                REQUESTED_VERSION="${2:-}"
-                shift 2
-                ;;
-            --build-number)
-                REQUESTED_BUILD_NUMBER="${2:-}"
-                shift 2
-                ;;
-            --signing-identity)
-                SIGNING_IDENTITY="${2:-}"
-                shift 2
-                ;;
-            --keychain-profile)
-                KEYCHAIN_PROFILE="${2:-}"
-                shift 2
-                ;;
-            --remote)
-                REMOTE="${2:-}"
-                shift 2
-                ;;
-            --release-title)
-                RELEASE_TITLE="${2:-}"
-                shift 2
-                ;;
-            --skip-tests)
-                SKIP_TESTS=true
-                shift
-                ;;
-            --skip-notarize)
-                SKIP_NOTARIZE=true
-                shift
-                ;;
-            --help|-h)
-                usage
-                exit 0
-                ;;
-            *)
-                fail "Unknown option: $1"
-                ;;
-        esac
-    done
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--version)
+			REQUESTED_VERSION="${2:-}"
+			shift 2
+			;;
+		--build-number)
+			REQUESTED_BUILD_NUMBER="${2:-}"
+			shift 2
+			;;
+		--signing-identity)
+			SIGNING_IDENTITY="${2:-}"
+			shift 2
+			;;
+		--keychain-profile)
+			KEYCHAIN_PROFILE="${2:-}"
+			shift 2
+			;;
+		--remote)
+			REMOTE="${2:-}"
+			shift 2
+			;;
+		--release-title)
+			RELEASE_TITLE="${2:-}"
+			shift 2
+			;;
+		--skip-tests)
+			SKIP_TESTS=true
+			shift
+			;;
+		--skip-notarize)
+			SKIP_NOTARIZE=true
+			shift
+			;;
+		--help | -h)
+			usage
+			exit 0
+			;;
+		*)
+			fail "Unknown option: $1"
+			;;
+		esac
+	done
 }
 
 current_branch() {
-    git branch --show-current
+	git branch --show-current
 }
 
 ensure_clean_worktree() {
-    local status
-    status="$(git status --porcelain)"
-    [[ -z "$status" ]] || fail "Git worktree is not clean. Commit or stash changes before running a release."
+	local status
+	status="$(git status --porcelain)"
+	[[ -z "$status" ]] || fail "Git worktree is not clean. Commit or stash changes before running a release."
 }
 
 ensure_valid_version() {
-    [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Invalid version '$1'. Expected x.y.z"
+	[[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Invalid version '$1'. Expected x.y.z"
 }
 
 ensure_valid_build_number() {
-    [[ "$1" =~ ^[0-9]+$ ]] || fail "Invalid build number '$1'. Expected an integer"
+	[[ "$1" =~ ^[0-9]+$ ]] || fail "Invalid build number '$1'. Expected an integer"
 }
 
 build_setting() {
-    local key="$1"
-    xcodebuild \
-        -project "$PROJECT_FILE" \
-        -scheme "$SCHEME" \
-        -configuration "$CONFIGURATION" \
-        -showBuildSettings 2>/dev/null \
-        | awk -F' = ' -v search_key="$key" '$1 ~ search_key"$" { print $2; exit }'
+	local key="$1"
+	xcodebuild \
+		-project "$PROJECT_FILE" \
+		-scheme "$SCHEME" \
+		-configuration "$CONFIGURATION" \
+		-showBuildSettings 2>/dev/null |
+		awk -F' = ' -v search_key="$key" '$1 ~ search_key"$" { print $2; exit }'
 }
 
 increment_patch_version() {
-    local version="$1"
-    IFS='.' read -r major minor patch <<<"$version"
-    echo "${major}.${minor}.$((patch + 1))"
+	local version="$1"
+	IFS='.' read -r major minor patch <<<"$version"
+	echo "${major}.${minor}.$((patch + 1))"
 }
 
 detect_signing_identity() {
-    if [[ -n "$SIGNING_IDENTITY" ]]; then
-        echo "$SIGNING_IDENTITY"
-        return
-    fi
+	if [[ -n "$SIGNING_IDENTITY" ]]; then
+		echo "$SIGNING_IDENTITY"
+		return
+	fi
 
-    local identity
-    identity="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application:/ { print $2; exit }')"
-    [[ -n "$identity" ]] || fail "Could not find a Developer ID Application identity in the local keychain."
-    echo "$identity"
+	local identity
+	identity="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application:/ { print $2; exit }')"
+	[[ -n "$identity" ]] || fail "Could not find a Developer ID Application identity in the local keychain."
+	echo "$identity"
 }
 
 detect_development_team() {
-    if [[ -n "$DEVELOPMENT_TEAM" ]]; then
-        echo "$DEVELOPMENT_TEAM"
-        return
-    fi
+	if [[ -n "$DEVELOPMENT_TEAM" ]]; then
+		echo "$DEVELOPMENT_TEAM"
+		return
+	fi
 
-    local team
-    team="$(build_setting DEVELOPMENT_TEAM)"
-    [[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Configuration/Base.xcconfig, a local Developer*.xcconfig override, or export DEVELOPMENT_TEAM before building a signed release."
-    echo "$team"
+	local team
+	team="$(build_setting DEVELOPMENT_TEAM)"
+	[[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Configuration/Base.xcconfig, a local Developer*.xcconfig override, or export DEVELOPMENT_TEAM before building a signed release."
+	echo "$team"
 }
 
 update_target_versions() {
-    local version="$1"
-    local build_number="$2"
+	local version="$1"
+	local build_number="$2"
 
-    mkdir -p "$(dirname "$VERSION_XCCONFIG")"
-    cat > "$VERSION_XCCONFIG" <<EOF
+	mkdir -p "$(dirname "$VERSION_XCCONFIG")"
+	cat >"$VERSION_XCCONFIG" <<EOF
 //
 //  Version.xcconfig
 //  LookInside
@@ -171,125 +171,125 @@ EOF
 }
 
 ensure_tag_absent() {
-    local tag="$1"
-    if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1; then
-        fail "Local tag '$tag' already exists."
-    fi
+	local tag="$1"
+	if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1; then
+		fail "Local tag '$tag' already exists."
+	fi
 
-    if git ls-remote --exit-code --tags "$REMOTE" "refs/tags/$tag" >/dev/null 2>&1; then
-        fail "Remote tag '$tag' already exists on '$REMOTE'."
-    fi
+	if git ls-remote --exit-code --tags "$REMOTE" "refs/tags/$tag" >/dev/null 2>&1; then
+		fail "Remote tag '$tag' already exists on '$REMOTE'."
+	fi
 }
 
 commit_version_bump() {
-    local version="$1"
-    local build_number="$2"
-    git add "$VERSION_XCCONFIG"
-    git commit -m "Release ${version} (${build_number})"
+	local version="$1"
+	local build_number="$2"
+	git add "$VERSION_XCCONFIG"
+	git commit -m "Release ${version} (${build_number})"
 }
 
 run_preflight() {
-    if [[ "$SKIP_TESTS" == "true" ]]; then
-        log "Skipping preflight checks"
-        return
-    fi
+	if [[ "$SKIP_TESTS" == "true" ]]; then
+		log "Skipping preflight checks"
+		return
+	fi
 
-    log "Running preflight checks"
-    bash Scripts/test.sh
+	log "Running preflight checks"
+	bash Scripts/test.sh
 }
 
 create_archive() {
-    local archive_path="$1"
-    local identity="$2"
-    local development_team
-    development_team="$(detect_development_team)"
+	local archive_path="$1"
+	local identity="$2"
+	local development_team
+	development_team="$(detect_development_team)"
 
-    rm -rf "$archive_path"
-    rm -rf "$DERIVED_DATA_PATH"
+	rm -rf "$archive_path"
+	rm -rf "$DERIVED_DATA_PATH"
 
-    log "Archiving signed app"
-    bash Scripts/write-github-action-xcconfig.sh \
-        --version "$NEXT_VERSION" \
-        --build-number "$NEXT_BUILD_NUMBER" \
-        --development-team "$development_team" \
-        --signing-identity "$identity"
+	log "Archiving signed app"
+	bash Scripts/write-github-action-xcconfig.sh \
+		--version "$NEXT_VERSION" \
+		--build-number "$NEXT_BUILD_NUMBER" \
+		--development-team "$development_team" \
+		--signing-identity "$identity"
 
-    xcodebuild \
-        -skipMacroValidation \
-        -project "$PROJECT_FILE" \
-        -scheme "$SCHEME" \
-        -configuration "$CONFIGURATION" \
-        -destination "generic/platform=macOS" \
-        -derivedDataPath "$DERIVED_DATA_PATH" \
-        -archivePath "$archive_path" \
-        archive
+	xcodebuild \
+		-skipMacroValidation \
+		-project "$PROJECT_FILE" \
+		-scheme "$SCHEME" \
+		-configuration "$CONFIGURATION" \
+		-destination "generic/platform=macOS" \
+		-derivedDataPath "$DERIVED_DATA_PATH" \
+		-archivePath "$archive_path" \
+		archive
 }
 
 verify_codesign() {
-    local app_path="$1"
-    log "Verifying code signature"
-    codesign --verify --deep --strict --verbose=2 "$app_path"
+	local app_path="$1"
+	log "Verifying code signature"
+	codesign --verify --deep --strict --verbose=2 "$app_path"
 }
 
 notarize_app() {
-    local app_path="$1"
-    local zip_path="$2"
+	local app_path="$1"
+	local zip_path="$2"
 
-    rm -f "$zip_path"
-    ditto -c -k --keepParent "$app_path" "$zip_path"
+	rm -f "$zip_path"
+	ditto -c -k --keepParent "$app_path" "$zip_path"
 
-    if [[ "$SKIP_NOTARIZE" == "true" ]]; then
-        log "Skipping notarization"
-        return
-    fi
+	if [[ "$SKIP_NOTARIZE" == "true" ]]; then
+		log "Skipping notarization"
+		return
+	fi
 
-    log "Submitting app for notarization"
-    xcrun notarytool submit "$zip_path" \
-        --keychain-profile "$KEYCHAIN_PROFILE" \
-        --wait
+	log "Submitting app for notarization"
+	xcrun notarytool submit "$zip_path" \
+		--keychain-profile "$KEYCHAIN_PROFILE" \
+		--wait
 
-    log "Stapling notarization ticket"
-    xcrun stapler staple "$app_path"
+	log "Stapling notarization ticket"
+	xcrun stapler staple "$app_path"
 }
 
 verify_spctl() {
-    local app_path="$1"
-    if [[ "$SKIP_NOTARIZE" == "true" ]]; then
-        log "Skipping spctl assessment because notarization was skipped"
-        return
-    fi
+	local app_path="$1"
+	if [[ "$SKIP_NOTARIZE" == "true" ]]; then
+		log "Skipping spctl assessment because notarization was skipped"
+		return
+	fi
 
-    log "Running spctl assessment"
-    spctl --assess --type execute --verbose=4 "$app_path"
+	log "Running spctl assessment"
+	spctl --assess --type execute --verbose=4 "$app_path"
 }
 
 repack_release_zip() {
-    local app_path="$1"
-    local zip_path="$2"
-    rm -f "$zip_path"
-    ditto -c -k --keepParent "$app_path" "$zip_path"
+	local app_path="$1"
+	local zip_path="$2"
+	rm -f "$zip_path"
+	ditto -c -k --keepParent "$app_path" "$zip_path"
 }
 
 push_release_refs() {
-    local branch="$1"
-    local tag="$2"
+	local branch="$1"
+	local tag="$2"
 
-    log "Pushing branch $branch"
-    git push "$REMOTE" "HEAD:$branch"
+	log "Pushing branch $branch"
+	git push "$REMOTE" "HEAD:$branch"
 
-    log "Pushing tag $tag"
-    git push "$REMOTE" "$tag"
+	log "Pushing tag $tag"
+	git push "$REMOTE" "$tag"
 }
 
 create_github_release() {
-    local tag="$1"
-    local asset="$2"
-    local notes="$3"
+	local tag="$1"
+	local asset="$2"
+	local notes="$3"
 
-    log "Creating GitHub release"
-    gh release create "$tag" "$asset" \
-        --title "$RELEASE_TITLE" \
-        --notes "$notes"
+	log "Creating GitHub release"
+	gh release create "$tag" "$asset" \
+		--title "$RELEASE_TITLE" \
+		--notes "$notes"
 }
 
 parse_args "$@"
@@ -317,17 +317,17 @@ CURRENT_BUILD_NUMBER="$(build_setting CURRENT_PROJECT_VERSION)"
 ensure_valid_build_number "$CURRENT_BUILD_NUMBER"
 
 if [[ -n "$REQUESTED_VERSION" ]]; then
-    ensure_valid_version "$REQUESTED_VERSION"
-    NEXT_VERSION="$REQUESTED_VERSION"
+	ensure_valid_version "$REQUESTED_VERSION"
+	NEXT_VERSION="$REQUESTED_VERSION"
 else
-    NEXT_VERSION="$(increment_patch_version "$CURRENT_VERSION")"
+	NEXT_VERSION="$(increment_patch_version "$CURRENT_VERSION")"
 fi
 
 if [[ -n "$REQUESTED_BUILD_NUMBER" ]]; then
-    ensure_valid_build_number "$REQUESTED_BUILD_NUMBER"
-    NEXT_BUILD_NUMBER="$REQUESTED_BUILD_NUMBER"
+	ensure_valid_build_number "$REQUESTED_BUILD_NUMBER"
+	NEXT_BUILD_NUMBER="$REQUESTED_BUILD_NUMBER"
 else
-    NEXT_BUILD_NUMBER="$((CURRENT_BUILD_NUMBER + 1))"
+	NEXT_BUILD_NUMBER="$((CURRENT_BUILD_NUMBER + 1))"
 fi
 
 [[ "$NEXT_VERSION" != "$CURRENT_VERSION" ]] || fail "Next version matches current version ($CURRENT_VERSION)."
@@ -348,7 +348,7 @@ log "Next version: $NEXT_VERSION ($NEXT_BUILD_NUMBER)"
 update_target_versions "$NEXT_VERSION" "$NEXT_BUILD_NUMBER"
 
 if git diff --quiet -- "$VERSION_XCCONFIG"; then
-    fail "Version update did not modify $VERSION_XCCONFIG."
+	fail "Version update did not modify $VERSION_XCCONFIG."
 fi
 
 commit_version_bump "$NEXT_VERSION" "$NEXT_BUILD_NUMBER"

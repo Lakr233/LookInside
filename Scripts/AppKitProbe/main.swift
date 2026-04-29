@@ -4,10 +4,10 @@ final class ProbeDataSource: NSObject, NSTableViewDataSource, NSTableViewDelegat
     let rows = [
         ("Title", "First row"),
         ("Status", "Inspector sample"),
-        ("Count", "3")
+        ("Count", "3"),
     ]
 
-    func numberOfRows(in tableView: NSTableView) -> Int {
+    func numberOfRows(in _: NSTableView) -> Int {
         rows.count
     }
 
@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let tableSource = ProbeDataSource()
     private var window: NSWindow?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.window = window
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {
         true
     }
 
@@ -155,7 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 28),
             stack.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -28),
-            stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 28)
+            stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 28),
         ])
 
         return root

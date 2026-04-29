@@ -8,6 +8,6 @@ DERIVED_ROOT="$PROJECT_DIR/LookInside/DerivedSource"
 mkdir -p "$DERIVED_ROOT"
 
 for name in LookinCore LookinServerBase; do
-  mkdir -p "$DERIVED_ROOT/$name"
-  rsync -a --delete "$SOURCE_ROOT/$name/" "$DERIVED_ROOT/$name/"
+	mkdir -p "$DERIVED_ROOT/$name"
+	rsync -a --delete "$SOURCE_ROOT/$name/" "$DERIVED_ROOT/$name/"
 done

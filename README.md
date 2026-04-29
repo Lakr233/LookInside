@@ -79,12 +79,12 @@ This bumps the version, notarizes, pushes the tag, and publishes a GitHub Releas
 
 ## Repository layout
 
-| Path | What lives there |
-| --- | --- |
-| [`LookInside/`](LookInside/) | macOS app target — AppKit shell, sidebar, hierarchy view |
-| [`Sources/`](Sources/) | Canonical shared sources mirrored into the app target |
-| [`Sources/LookinCore`](Sources/LookinCore) | Inspection primitives, Peertalk transport |
-| [`Resources/`](Resources/) | Assets and preserved third-party license notices |
+| Path                                       | What lives there                                         |
+| ------------------------------------------ | -------------------------------------------------------- |
+| [`LookInside/`](LookInside/)               | macOS app target — AppKit shell, sidebar, hierarchy view |
+| [`Sources/`](Sources/)                     | Canonical shared sources mirrored into the app target    |
+| [`Sources/LookinCore`](Sources/LookinCore) | Inspection primitives, Peertalk transport                |
+| [`Resources/`](Resources/)                 | Assets and preserved third-party license notices         |
 
 Module names like `LookinServer`, `LookinShared`, `LookinCore` are intentionally preserved from upstream Lookin to keep migrations painless.
 

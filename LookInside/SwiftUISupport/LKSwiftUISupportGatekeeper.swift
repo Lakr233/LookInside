@@ -262,19 +262,19 @@ private final class LKSwiftUISupportAuthServerBridge {
             }
             guard let self else { return }
             #if DEBUG
-            let installation: LKSwiftUISupportAuthServerInstallation
-            do {
-                installation = try self.ensureInstalledAndRunning(window: nil)
-            } catch {
-                LKSwiftUISupportLogger.authServer.info(
-                    "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
-                )
-                return
-            }
+                let installation: LKSwiftUISupportAuthServerInstallation
+                do {
+                    installation = try self.ensureInstalledAndRunning(window: nil)
+                } catch {
+                    LKSwiftUISupportLogger.authServer.info(
+                        "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                    )
+                    return
+                }
             #else
-            guard let installation = try? self.resolveInstallation() else {
-                return
-            }
+                guard let installation = try? self.resolveInstallation() else {
+                    return
+                }
             #endif
             do {
                 let response = try self.sendRequest(
@@ -323,7 +323,7 @@ private final class LKSwiftUISupportAuthServerBridge {
             if isRunning == false {
                 break
             }
-            usleep(50_000)
+            usleep(50000)
         }
 
         lock.withLock {
@@ -340,8 +340,8 @@ private final class LKSwiftUISupportAuthServerBridge {
         if let process, process.isRunning {
             process.terminate()
             let deadline = Date().addingTimeInterval(1)
-            while Date() < deadline && process.isRunning {
-                usleep(50_000)
+            while Date() < deadline, process.isRunning {
+                usleep(50000)
             }
             if process.isRunning {
                 kill(process.processIdentifier, SIGKILL)
@@ -427,7 +427,8 @@ private final class LKSwiftUISupportAuthServerBridge {
             throw LKSwiftUISupportAuthServerError.invalidResponse("Missing sign-challenge payload.")
         }
         guard let signature = Data(base64Encoded: payload.signature),
-              let intermediateDER = Data(base64Encoded: payload.intermediateCertDER) else {
+              let intermediateDER = Data(base64Encoded: payload.intermediateCertDER)
+        else {
             throw LKSwiftUISupportAuthServerError.invalidResponse("Sign-challenge payload base64 decode failed.")
         }
         return (signature, intermediateDER, payload.udid)
@@ -615,9 +616,9 @@ private final class LKSwiftUISupportAuthServerBridge {
 
     private func enforceVersionMatch(payload: LKSwiftUISupportAuthServerHealthPayload) throws {
         #if DEBUG
-        if LKSwiftUISupportInstallerLayout.debugLocalAuthRepositoryURL != nil {
-            return
-        }
+            if LKSwiftUISupportInstallerLayout.debugLocalAuthRepositoryURL != nil {
+                return
+            }
         #endif
 
         guard let published = LKSwiftUISupportInstaller.shared.fetchPublishedVersion() else {
@@ -640,7 +641,8 @@ private final class LKSwiftUISupportAuthServerBridge {
 
         let executableURL: URL
         if let explicitPath = environment[LKSwiftUISupportAuthServerConstants.helperPathEnvironmentKey],
-           explicitPath.isEmpty == false {
+           explicitPath.isEmpty == false
+        {
             executableURL = URL(fileURLWithPath: explicitPath)
         } else {
             executableURL = LKSwiftUISupportInstallerLayout.installedExecutableURL
@@ -652,7 +654,8 @@ private final class LKSwiftUISupportAuthServerBridge {
 
         let socketURL: URL
         if let explicitPath = environment[LKSwiftUISupportAuthServerConstants.helperSocketPathEnvironmentKey],
-           explicitPath.isEmpty == false {
+           explicitPath.isEmpty == false
+        {
             socketURL = URL(fileURLWithPath: explicitPath)
         } else {
             socketURL = LKSwiftUISupportInstallerLayout.installedSocketURL
@@ -675,7 +678,7 @@ private final class LKSwiftUISupportAuthServerBridge {
             let clientProcessID = ProcessInfo.processInfo.processIdentifier
             process.arguments = [
                 "--socket-path", installation.socketURL.path,
-                "--lookinside-pid", "\(clientProcessID)"
+                "--lookinside-pid", "\(clientProcessID)",
             ]
 
             var environment = ProcessInfo.processInfo.environment
@@ -900,7 +903,7 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
         "LKSwiftUISupportActivationStateDidChangeNotification"
     )
 
-    @objc public static var activationStateDidChangeNotificationName: NSString {
+    public static var activationStateDidChangeNotificationName: NSString {
         activationStateDidChangeNotification.rawValue as NSString
     }
 
@@ -938,11 +941,11 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
         runtimeBridge.allowProtectedFeatureAccess(for: window)
     }
 
-    @objc public var activationState: LKSwiftUISupportActivationState {
+    public var activationState: LKSwiftUISupportActivationState {
         runtimeBridge.currentActivationState
     }
 
-    @objc public func refreshActivationStateInBackground() {
+    public func refreshActivationStateInBackground() {
         runtimeBridge.refreshActivationStateInBackground()
     }
 

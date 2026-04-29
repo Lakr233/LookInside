@@ -11,14 +11,14 @@ pkill -x lookinside-auth-server 2>/dev/null || true
 
 cd "$PROJECT_DIR"
 xcodebuild \
-    -workspace LookInside.xcworkspace \
-    -scheme LookInside \
-    -configuration Debug \
-    -destination 'platform=macOS' \
-    -derivedDataPath build/derived \
-    -skipMacroValidation \
-    -skipPackagePluginValidation \
-    CODE_SIGNING_ALLOWED=NO \
-    build
+	-workspace LookInside.xcworkspace \
+	-scheme LookInside \
+	-configuration Debug \
+	-destination 'platform=macOS' \
+	-derivedDataPath build/derived \
+	-skipMacroValidation \
+	-skipPackagePluginValidation \
+	CODE_SIGNING_ALLOWED=NO \
+	build
 
 open -n "$PROJECT_DIR/build/derived/Build/Products/Debug/LookInside.app"

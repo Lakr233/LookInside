@@ -6,8 +6,8 @@
 //  Copyright © 2024 hughkli. All rights reserved.
 //
 
-import Foundation
 import Demangling
+import Foundation
 
 public class LKSwiftDemangler: NSObject {
     private static var simpleCache: [String: String] = [:]
