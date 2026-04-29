@@ -11,6 +11,7 @@ Icon?
 # Apple toolchains
 .build/
 .swiftpm/
+Package.resolved
 DerivedData/
 build/
 dist/
