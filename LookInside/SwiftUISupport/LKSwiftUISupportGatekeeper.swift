@@ -182,6 +182,7 @@ private final class LKSwiftUISupportAuthServerBridge {
     private var lastPresentedErrorDescription: String?
     private var helperPresence: LKSwiftUISupportHelperPresence = .notDetermined
     private var activationState: LKSwiftUISupportActivationState = .unknown
+    private var activationStatusSummary: String?
     private var activationStateRefreshInFlight = false
     private var activationStatePollingStarted = false
     private var activationStatePollingTimer: DispatchSourceTimer?
@@ -190,24 +191,28 @@ private final class LKSwiftUISupportAuthServerBridge {
         lock.withLock { activationState }
     }
 
-    private func recordDecision(_ decision: LKSwiftUISupportAuthServerAccessDecisionPayload.Decision) {
+    private func recordAccessDecision(_ payload: LKSwiftUISupportAuthServerAccessDecisionPayload) {
         let newState: LKSwiftUISupportActivationState
-        switch decision {
+        switch payload.decision {
         case .allow, .allowWithWarning:
             newState = .activated
         case .block:
             newState = .notActivated
         }
         var previousState: LKSwiftUISupportActivationState = .unknown
-        let changed: Bool = lock.withLock {
-            guard activationState != newState else { return false }
+        let shouldNotify: Bool = lock.withLock {
+            let previousStatusSummary = activationStatusSummary
+            let stateChanged = activationState != newState
+            let licenseMaterialMayHaveChanged = newState == .activated && previousStatusSummary != payload.statusSummary
+            guard stateChanged || licenseMaterialMayHaveChanged else { return false }
             previousState = activationState
             activationState = newState
+            activationStatusSummary = payload.statusSummary
             return true
         }
-        if changed {
+        if shouldNotify {
             LKSwiftUISupportLogger.authServer.info(
-                "activation state changed: \(previousState.lkDebugDescription, privacy: .public) -> \(newState.lkDebugDescription, privacy: .public) (decision=\(decision.rawValue, privacy: .public))"
+                "activation state changed: \(previousState.lkDebugDescription, privacy: .public) -> \(newState.lkDebugDescription, privacy: .public) (decision=\(payload.decision.rawValue, privacy: .public))"
             )
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
@@ -284,7 +289,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                     responseType: LKSwiftUISupportAuthServerAccessDecisionPayload.self
                 )
                 if let payload = response.payload {
-                    self.recordDecision(payload.decision)
+                    self.recordAccessDecision(payload)
                 }
             } catch {
                 LKSwiftUISupportLogger.authServer.info(
@@ -401,7 +406,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 }
                 return payload
             }
-            recordDecision(payload.decision)
+            recordAccessDecision(payload)
             presentAccessAlert(title: payload.title, detail: payload.message, window: window)
         } catch {
             presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
@@ -449,7 +454,7 @@ private final class LKSwiftUISupportAuthServerBridge {
                 return payload
             }
 
-            recordDecision(payload.decision)
+            recordAccessDecision(payload)
 
             switch payload.decision {
             case .allow:
@@ -899,7 +904,7 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     private static let shared = LKSwiftUISupportGatekeeper()
     private let runtimeBridge = LKSwiftUISupportAuthServerBridge()
     private let activationPromptLock = NSLock()
-    private var activationPromptedAppInfoIdentifiers = Set<UInt>()
+    private var hasPromptedForDetectedSwiftUISupport = false
 
     public static let activationStateDidChangeNotification = Notification.Name(
         "LKSwiftUISupportActivationStateDidChangeNotification"
@@ -928,22 +933,21 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
         runtimeBridge.showActivationWindow(from: NSApp.keyWindow)
     }
 
-    @objc(promptForSwiftUISupportActivationIfNeededForAppInfoIdentifier:window:)
-    public func promptForSwiftUISupportActivationIfNeeded(
-        appInfoIdentifier: UInt,
-        window: NSWindow?
-    ) {
+    @objc(promptForDetectedSwiftUISupportIfNeededForWindow:)
+    public func promptForDetectedSwiftUISupportIfNeeded(window: NSWindow?) {
         guard activationState != .activated else { return }
 
         let shouldPrompt = activationPromptLock.withLock {
-            guard !activationPromptedAppInfoIdentifiers.contains(appInfoIdentifier) else {
-                return false
-            }
-            activationPromptedAppInfoIdentifiers.insert(appInfoIdentifier)
+            guard !hasPromptedForDetectedSwiftUISupport else { return false }
+            hasPromptedForDetectedSwiftUISupport = true
             return true
         }
         guard shouldPrompt else { return }
 
+        presentSwiftUISupportActivationPrompt(window: window)
+    }
+
+    private func presentSwiftUISupportActivationPrompt(window: NSWindow?) {
         let alert = NSAlert()
         alert.messageText = NSLocalizedString("Activate SwiftUI Support?", comment: "")
         alert.informativeText = NSLocalizedString(

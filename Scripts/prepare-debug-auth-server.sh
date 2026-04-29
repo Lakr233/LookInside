@@ -19,6 +19,7 @@ if [ ! -d "$AUTH_REPO" ]; then
 fi
 
 mkdir -p "$DEBUG_ROOT" "$DEST_DIR"
+rm -rf "$DERIVED_DATA" "$DEST_APP"
 
 if [ ! -d "$WORKSPACE" ]; then
 	(cd "$AUTH_REPO" && mise exec -- tuist generate --no-open)
@@ -53,7 +54,6 @@ if [ -z "$built_app" ]; then
 	exit 1
 fi
 
-rm -rf "$DEST_APP"
 cp -R "$built_app" "$DEST_APP"
 chmod +x "$DEST_APP/Contents/MacOS/lookinside-auth-server"
 echo "Prepared debug auth server at $DEST_APP"

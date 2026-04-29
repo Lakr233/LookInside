@@ -65,6 +65,12 @@
         }
       }
     },
+    "Activate" : {
+
+    },
+    "Activate SwiftUI Support?" : {
+
+    },
     "Adjust this option to use a deeper layer selection color." : {
       "localizations" : {
         "en" : {
@@ -1356,6 +1362,9 @@
         }
       }
     },
+    "Later" : {
+
+    },
     "Legacy custom information guides are disabled in this community build. See the repository README instead." : {
       "localizations" : {
         "en" : {
@@ -1729,9 +1738,6 @@
       }
     },
     "LookInside license verification failed." : {
-
-    },
-    "LookInside license verification is required to inspect this app." : {
 
     },
     "Measure" : {
@@ -2868,6 +2874,9 @@
         }
       }
     },
+    "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details." : {
+
+    },
     "This upstream community link is not available in this build." : {
       "localizations" : {
         "en" : {
@@ -2915,6 +2924,9 @@
           }
         }
       }
+    },
+    "Unable to inspect this app." : {
+
     },
     "Unable to inspect this iOS App. Current version of LookInside app is too low." : {
       "localizations" : {

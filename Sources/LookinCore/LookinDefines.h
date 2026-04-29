@@ -91,6 +91,9 @@ enum {
     
     // 用户在 Lookin 客户端取消了之前 HierarchyDetails 的拉取
     LookinPush_CanceHierarchyDetails = 304,
+
+    /// Server 在层级扫描期间检测到 SwiftUI hosting view
+    LookinPush_SwiftUISupportDetected = 305,
 };
 
 static NSString * const LookinParam_ViewLayerTag = @"tag";

@@ -21,6 +21,7 @@ static NSIndexSet * PushFrameTypeList(void) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSMutableIndexSet *set = [NSMutableIndexSet indexSet];
+        [set addIndex:LookinPush_SwiftUISupportDetected];
         list = set.copy;
     });
     return list;
@@ -410,12 +411,18 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
 
 - (void)_ensureLicenseHandshakeOnChannel:(Lookin_PTChannel *)channel
                               completion:(void (^)(BOOL verified))completionBlock {
+    [self _ensureLicenseHandshakeOnChannel:channel force:NO completion:completionBlock];
+}
+
+- (void)_ensureLicenseHandshakeOnChannel:(Lookin_PTChannel *)channel
+                                    force:(BOOL)force
+                               completion:(void (^)(BOOL verified))completionBlock {
     if (!channel || !channel.isConnected) {
         if (completionBlock) completionBlock(NO);
         return;
     }
 
-    if (channel.isLicenseVerified) {
+    if (channel.isLicenseVerified && !force) {
         if (completionBlock) completionBlock(YES);
         return;
     }
@@ -566,10 +573,22 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
     }
 
     [channels enumerateObjectsUsingBlock:^(Lookin_PTChannel *channel, __unused NSUInteger idx, __unused BOOL *stop) {
-        [self _ensureLicenseHandshakeOnChannel:channel completion:^(BOOL verified) {
+        [self _ensureLicenseHandshakeOnChannel:channel force:YES completion:^(BOOL verified) {
             NSLog(@"LookinClient - activation-state license handshake finished, verified:%@", @(verified));
         }];
     }];
+}
+
+- (void)_handlePushWithType:(uint32_t)type data:(NSObject *)data channel:(Lookin_PTChannel *)channel {
+    if (type != LookinPush_SwiftUISupportDetected) {
+        return;
+    }
+
+    NSLog(@"LookinClient - received SwiftUI support detection push from channel:%@ data:%@", channel, data);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSWindow *keyWindow = [NSApplication sharedApplication].keyWindow;
+        [[LKSwiftUISupportGatekeeper sharedInstance] promptForDetectedSwiftUISupportIfNeededForWindow:keyWindow];
+    });
 }
 
 - (NSArray<Lookin_PTChannel *> *)_connectedChannels {
@@ -727,13 +746,22 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
     if ([PushFrameTypeList() containsIndex:type]) {
         NSData *data = [NSData dataWithContentsOfDispatchData:payload.dispatchData];
         NSError *unarchiveError = nil;
-        NSObject *unarchivedData = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSObject class] fromData:data error:&unarchiveError];
+        NSSet *allowedClasses = [NSSet setWithObjects:
+                                 [NSString class],
+                                 [NSDictionary class],
+                                 [NSArray class],
+                                 [NSNumber class],
+                                 [NSData class],
+                                 [NSNull class],
+                                 nil];
+        NSObject *unarchivedData = [NSKeyedUnarchiver unarchivedObjectOfClasses:allowedClasses fromData:data error:&unarchiveError];
         if (unarchiveError) {
             //        NSAssert(NO, @"");
         }
         
         RACTuple *tuple = [RACTuple tupleWithObjects:channel, @(type), unarchivedData, nil];
         [self.didReceivePush sendNext:tuple];
+        [self _handlePushWithType:type data:unarchivedData channel:channel];
         return;
     }
     

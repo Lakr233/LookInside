@@ -10,6 +10,7 @@ pkill -x LookInside 2>/dev/null || true
 pkill -x lookinside-auth-server 2>/dev/null || true
 
 cd "$PROJECT_DIR"
+rm -rf build/derived
 xcodebuild \
 	-workspace LookInside.xcworkspace \
 	-scheme LookInside \
