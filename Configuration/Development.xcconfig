@@ -5,6 +5,8 @@
 
 #include "Base.xcconfig"
 
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG
+
 #include? "Developer.xcconfig"
 #include? "DevelopmentDeveloper.xcconfig"
 #include? "GitHubAction.xcconfig"

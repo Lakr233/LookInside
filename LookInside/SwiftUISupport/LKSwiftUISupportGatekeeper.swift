@@ -261,9 +261,21 @@ private final class LKSwiftUISupportAuthServerBridge {
                 self?.lock.withLock { self?.activationStateRefreshInFlight = false }
             }
             guard let self else { return }
+            #if DEBUG
+            let installation: LKSwiftUISupportAuthServerInstallation
+            do {
+                installation = try self.ensureInstalledAndRunning(window: nil)
+            } catch {
+                LKSwiftUISupportLogger.authServer.info(
+                    "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                )
+                return
+            }
+            #else
             guard let installation = try? self.resolveInstallation() else {
                 return
             }
+            #endif
             do {
                 let response = try self.sendRequest(
                     method: "license.check_access",
@@ -602,6 +614,12 @@ private final class LKSwiftUISupportAuthServerBridge {
     }
 
     private func enforceVersionMatch(payload: LKSwiftUISupportAuthServerHealthPayload) throws {
+        #if DEBUG
+        if LKSwiftUISupportInstallerLayout.debugLocalAuthRepositoryURL != nil {
+            return
+        }
+        #endif
+
         guard let published = LKSwiftUISupportInstaller.shared.fetchPublishedVersion() else {
             return
         }
