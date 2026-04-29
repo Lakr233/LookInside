@@ -26,6 +26,17 @@ static NSIndexSet * PushFrameTypeList(void) {
     return list;
 }
 
+static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
+    switch (requestType) {
+        case LookinRequestTypePing:
+        case LookinRequestTypeLicenseChallenge:
+        case LookinRequestTypeLicenseVerify:
+            return NO;
+        default:
+            return YES;
+    }
+}
+
 @interface Lookin_PTChannel (LKConnection)
 
 /// 已经发送但尚未收到全部回复的请求
@@ -35,6 +46,12 @@ static NSIndexSet * PushFrameTypeList(void) {
 /// channel end. Consulted by `requestWithType:data:channel:` before dispatching
 /// a non-exempt request.
 @property(nonatomic, assign) BOOL isLicenseVerified;
+
+/// YES while a challenge/verify exchange is in flight for this channel.
+@property(nonatomic, assign) BOOL isLicenseHandshakeInFlight;
+
+/// Completion blocks waiting for the in-flight license handshake to settle.
+@property(nonatomic, strong) NSMutableArray *licenseHandshakeCompletionBlocks;
 
 @end
 
@@ -54,6 +71,22 @@ static NSIndexSet * PushFrameTypeList(void) {
 
 - (BOOL)isLicenseVerified {
     return [[self lookin_getBindObjectForKey:@"isLicenseVerified"] boolValue];
+}
+
+- (void)setIsLicenseHandshakeInFlight:(BOOL)isLicenseHandshakeInFlight {
+    [self lookin_bindObject:@(isLicenseHandshakeInFlight) forKey:@"isLicenseHandshakeInFlight"];
+}
+
+- (BOOL)isLicenseHandshakeInFlight {
+    return [[self lookin_getBindObjectForKey:@"isLicenseHandshakeInFlight"] boolValue];
+}
+
+- (void)setLicenseHandshakeCompletionBlocks:(NSMutableArray *)licenseHandshakeCompletionBlocks {
+    [self lookin_bindObject:licenseHandshakeCompletionBlocks forKey:@"licenseHandshakeCompletionBlocks"];
+}
+
+- (NSMutableArray *)licenseHandshakeCompletionBlocks {
+    return [self lookin_getBindObjectForKey:@"licenseHandshakeCompletionBlocks"];
 }
 
 @end
@@ -157,6 +190,9 @@ static NSIndexSet * PushFrameTypeList(void) {
         self.allUSBPorts = [NSMutableArray array];
         
         [self _startListeningForUSBDevices];
+        [NSNotificationCenter.defaultCenter addObserverForName:LKSwiftUISupportGatekeeper.activationStateDidChangeNotificationName object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
+            [self _handleActivationStateDidChange];
+        }];
         
         [[LKServerVersionRequestor shared] preload];
     }
@@ -354,7 +390,14 @@ static NSIndexSet * PushFrameTypeList(void) {
                 }];
             };
 
-            dispatchRealRequest();
+            if (!LKCanStartLicenseHandshakeForRequestType(requestType)) {
+                dispatchRealRequest();
+                return;
+            }
+
+            [self _ensureLicenseHandshakeOnChannel:channel completion:^(__unused BOOL verified) {
+                dispatchRealRequest();
+            }];
 
         } fail:^(NSError *error) {
             // ping 失败了
@@ -362,6 +405,60 @@ static NSIndexSet * PushFrameTypeList(void) {
 
         } completion:nil];
         return nil;
+    }];
+}
+
+- (void)_ensureLicenseHandshakeOnChannel:(Lookin_PTChannel *)channel
+                              completion:(void (^)(BOOL verified))completionBlock {
+    if (!channel || !channel.isConnected) {
+        if (completionBlock) completionBlock(NO);
+        return;
+    }
+
+    if (channel.isLicenseVerified) {
+        if (completionBlock) completionBlock(YES);
+        return;
+    }
+
+    if ([LKSwiftUISupportGatekeeper sharedInstance].activationState != LKSwiftUISupportActivationStateActivated) {
+        if (completionBlock) completionBlock(NO);
+        return;
+    }
+
+    if (!channel.licenseHandshakeCompletionBlocks) {
+        channel.licenseHandshakeCompletionBlocks = [NSMutableArray array];
+    }
+    if (completionBlock) {
+        [channel.licenseHandshakeCompletionBlocks addObject:[completionBlock copy]];
+    }
+
+    if (channel.isLicenseHandshakeInFlight) {
+        return;
+    }
+
+    channel.isLicenseHandshakeInFlight = YES;
+    [self _performLicenseHandshakeOnChannel:channel succ:^{
+        [self _finishLicenseHandshakeOnChannel:channel verified:YES];
+    } fail:^(NSError *error) {
+        NSLog(@"LookinClient - license handshake failed, domain:%@, code:%@, description:%@",
+              error.domain,
+              @(error.code),
+              error.localizedDescription);
+        [self _finishLicenseHandshakeOnChannel:channel verified:NO];
+    }];
+}
+
+- (void)_finishLicenseHandshakeOnChannel:(Lookin_PTChannel *)channel
+                                verified:(BOOL)verified {
+    channel.isLicenseHandshakeInFlight = NO;
+    if (verified) {
+        channel.isLicenseVerified = YES;
+    }
+
+    NSArray *completionBlocks = channel.licenseHandshakeCompletionBlocks.copy;
+    channel.licenseHandshakeCompletionBlocks = nil;
+    [completionBlocks enumerateObjectsUsingBlock:^(void (^block)(BOOL verified), __unused NSUInteger idx, __unused BOOL *stop) {
+        block(verified);
     }];
 }
 
@@ -422,7 +519,6 @@ static NSIndexSet * PushFrameTypeList(void) {
                         return;
                     }
 
-                    channel.isLicenseVerified = YES;
                     if (succBlock) succBlock();
                 } fail:^(NSError *verifyError) {
                     if (failBlock) failBlock(verifyError);
@@ -459,6 +555,42 @@ static NSIndexSet * PushFrameTypeList(void) {
 }
 
 #pragma mark - Private
+
+- (void)_handleActivationStateDidChange {
+    NSArray<Lookin_PTChannel *> *channels = [self _connectedChannels];
+    if ([LKSwiftUISupportGatekeeper sharedInstance].activationState != LKSwiftUISupportActivationStateActivated) {
+        [channels enumerateObjectsUsingBlock:^(Lookin_PTChannel *channel, __unused NSUInteger idx, __unused BOOL *stop) {
+            channel.isLicenseVerified = NO;
+        }];
+        return;
+    }
+
+    [channels enumerateObjectsUsingBlock:^(Lookin_PTChannel *channel, __unused NSUInteger idx, __unused BOOL *stop) {
+        [self _ensureLicenseHandshakeOnChannel:channel completion:^(BOOL verified) {
+            NSLog(@"LookinClient - activation-state license handshake finished, verified:%@", @(verified));
+        }];
+    }];
+}
+
+- (NSArray<Lookin_PTChannel *> *)_connectedChannels {
+    NSMutableArray<Lookin_PTChannel *> *channels = [NSMutableArray array];
+    [self.allSimulatorPorts enumerateObjectsUsingBlock:^(LKSimulatorConnectionPort *port, __unused NSUInteger idx, __unused BOOL *stop) {
+        if (port.connectedChannel.isConnected) {
+            [channels addObject:port.connectedChannel];
+        }
+    }];
+    [self.allMacPorts enumerateObjectsUsingBlock:^(LKMacConnectionPort *port, __unused NSUInteger idx, __unused BOOL *stop) {
+        if (port.connectedChannel.isConnected) {
+            [channels addObject:port.connectedChannel];
+        }
+    }];
+    [self.allUSBPorts enumerateObjectsUsingBlock:^(LKUSBConnectionPort *port, __unused NSUInteger idx, __unused BOOL *stop) {
+        if (port.connectedChannel.isConnected) {
+            [channels addObject:port.connectedChannel];
+        }
+    }];
+    return channels.copy;
+}
 
 - (void)_requestWithType:(unsigned int)requestType channel:(Lookin_PTChannel *)channel data:(NSObject *)data timeoutInterval:(NSTimeInterval)timeoutInterval succ:(void (^)(id data))succBlock fail:(void (^)(NSError *error))failBlock completion:(void (^)(void))completionBlock {
     if (!channel) {

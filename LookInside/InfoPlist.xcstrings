@@ -7,7 +7,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside"
           }
         },
@@ -23,7 +23,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Document"
           }
         },
@@ -41,7 +41,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside community continuation of Lookin"
           }
         },

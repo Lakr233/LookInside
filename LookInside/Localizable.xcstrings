@@ -5,7 +5,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "%@ active apps were found"
           }
         },
@@ -21,7 +21,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "1 active app was found"
           }
         },
@@ -37,7 +37,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "A public project website is not configured for this build yet."
           }
         },
@@ -53,7 +53,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "A race condition occurred implementing %1$@ on class %2$@"
           }
         },
@@ -69,7 +69,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Adjust this option to use a deeper layer selection color."
           }
         },
@@ -101,7 +101,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "And no inspectable app was found"
           }
         },
@@ -117,7 +117,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Appearance"
           }
         },
@@ -133,7 +133,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Automatic update checks are disabled in this community build."
           }
         },
@@ -149,7 +149,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Automatically make highlighted view in hierarchy panel as console target"
           }
         },
@@ -165,7 +165,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Cancel"
           }
         },
@@ -181,7 +181,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Cancel measure after key up."
           }
         },
@@ -197,7 +197,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "CancelSearch"
           }
         },
@@ -213,7 +213,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Cannot reload at this time"
           }
         },
@@ -229,7 +229,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Change App"
           }
         },
@@ -245,7 +245,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Check out version updates on GitHub…"
           }
         },
@@ -261,7 +261,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Checking for updates…"
           }
         },
@@ -277,7 +277,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Checking LookInside Auth Server"
           }
         },
@@ -293,7 +293,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Click the screenshot below to Change App"
           }
         },
@@ -309,7 +309,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Click the screenshot below to inspect"
           }
         },
@@ -325,7 +325,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Click to invoke methods below and get the return value."
           }
         },
@@ -341,7 +341,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Collapse children"
           }
         },
@@ -357,7 +357,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Color Format"
           }
         },
@@ -373,7 +373,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Color will be displayed in format like (255, 12, 34, 0.5). Alpha value is between 0 and 1."
           }
         },
@@ -389,7 +389,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Color will be displayed in format like #7e7e7eff. The components are #RRGGBBAA."
           }
         },
@@ -405,7 +405,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Connection lost"
           }
         },
@@ -421,7 +421,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Console"
           }
         },
@@ -437,7 +437,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Content is empty."
           }
         },
@@ -453,7 +453,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Copy text \"%@\""
           }
         },
@@ -469,7 +469,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Current LookInside app is too old to open this document. Current LookInside app version is %1$@, but the document version is %2$@."
           }
         },
@@ -485,7 +485,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Currently in focus mode"
           }
         },
@@ -501,7 +501,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Dark Mode"
           }
         },
@@ -517,7 +517,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Details"
           }
         },
@@ -533,7 +533,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Display"
           }
         },
@@ -549,7 +549,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "ditto exited with status %d."
           }
         },
@@ -565,7 +565,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Don't remind me again"
           }
         },
@@ -581,7 +581,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Done"
           }
         },
@@ -597,7 +597,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Double click"
           }
         },
@@ -613,7 +613,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Downloading…"
           }
         },
@@ -629,7 +629,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Empty download payload."
           }
         },
@@ -645,7 +645,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Executable not found at %@"
           }
         },
@@ -661,7 +661,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Exit"
           }
         },
@@ -677,7 +677,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Expand or collapse layer"
           }
         },
@@ -693,7 +693,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Expand recursively"
           }
         },
@@ -709,7 +709,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Expected %1$@, got %2$@."
           }
         },
@@ -725,7 +725,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Export screenshot…"
           }
         },
@@ -741,7 +741,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Extracting…"
           }
         },
@@ -758,7 +758,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Fail to inspect this iOS app due to a version problem."
           }
         },
@@ -774,7 +774,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Fail to inspect this target app due to a version problem."
           }
         },
@@ -790,7 +790,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to download LookInside Auth Server.\n%@"
           }
         },
@@ -806,7 +806,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to extract LookInside Auth Server.\n%@"
           }
         },
@@ -822,7 +822,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to get target object in iOS app"
           }
         },
@@ -838,7 +838,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to install LookInside Auth Server.\n%@"
           }
         },
@@ -854,7 +854,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to open the document."
           }
         },
@@ -870,7 +870,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to search related methods: "
           }
         },
@@ -886,7 +886,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Failed to verify LookInside Auth Server download.\n%@"
           }
         },
@@ -902,7 +902,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Fast Mode"
           }
         },
@@ -918,7 +918,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Fast refresh mode is enabled, which may result in layer consistency issues."
           }
         },
@@ -934,7 +934,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "File Size"
           }
         },
@@ -950,7 +950,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "File Size: %.2f M"
           }
         },
@@ -966,7 +966,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Filter"
           }
         },
@@ -982,7 +982,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Finalizing…"
           }
         },
@@ -998,7 +998,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Find solution…"
           }
         },
@@ -1014,7 +1014,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Focus"
           }
         },
@@ -1030,7 +1030,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Focus on layer"
           }
         },
@@ -1046,7 +1046,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Free Rotation"
           }
         },
@@ -1062,7 +1062,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Hide screenshot forever…"
           }
         },
@@ -1078,7 +1078,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Hide screenshot this time"
           }
         },
@@ -1094,7 +1094,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "High"
           }
         },
@@ -1110,7 +1110,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Hover on a layer"
           }
         },
@@ -1126,7 +1126,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "How to add custom properties…"
           }
         },
@@ -1142,7 +1142,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "How to display more member variables…"
           }
         },
@@ -1158,7 +1158,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "How to turn on…"
           }
         },
@@ -1174,7 +1174,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Image contrast"
           }
         },
@@ -1190,7 +1190,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Image is too large to be displayed."
           }
         },
@@ -1206,7 +1206,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Image Quality:"
           }
         },
@@ -1222,7 +1222,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Inherits from"
           }
         },
@@ -1238,7 +1238,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Installation was cancelled."
           }
         },
@@ -1254,7 +1254,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Installing LookInside Auth Server"
           }
         },
@@ -1270,7 +1270,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Installing…"
           }
         },
@@ -1286,7 +1286,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Invalid Size"
           }
         },
@@ -1302,7 +1302,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Invoke -rac_signalForSelector: again to override the implementation."
           }
         },
@@ -1328,7 +1328,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Item separation"
           }
         },
@@ -1344,7 +1344,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Job openings…(China)"
           }
         },
@@ -1360,7 +1360,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy custom information guides are disabled in this community build. See the repository README instead."
           }
         },
@@ -1376,7 +1376,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy custom property guides are disabled in this community build. See the repository README instead."
           }
         },
@@ -1392,7 +1392,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy documentation links are disabled in this community build."
           }
         },
@@ -1408,7 +1408,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy fast mode documentation links are disabled in this community build. See the repository README instead."
           }
         },
@@ -1424,7 +1424,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy member-variable documentation links are disabled in this community build. See the repository README instead."
           }
         },
@@ -1440,7 +1440,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy release history links are disabled in this community build."
           }
         },
@@ -1456,7 +1456,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy Swift integration guides are disabled in this community build. See the repository README instead."
           }
         },
@@ -1472,7 +1472,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Legacy website links are disabled in this community build. See the local repository README for current documentation."
           }
         },
@@ -1494,7 +1494,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Light Mode"
           }
         },
@@ -1510,7 +1510,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Link Disabled"
           }
         },
@@ -1536,7 +1536,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server connection failed.\n%@"
           }
         },
@@ -1552,7 +1552,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server could not be launched.\n%@"
           }
         },
@@ -1568,7 +1568,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server did not respond after launch.\nSocket path:\n%@"
           }
         },
@@ -1584,7 +1584,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server is not installed.\nExpected executable:\n%@"
           }
         },
@@ -1600,7 +1600,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server is signed by a different team.\nExpected: %1$@\nFound: %2$@"
           }
         },
@@ -1616,7 +1616,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server protocol is incompatible.\nApp expects v%1$ld, helper provides v%2$ld."
           }
         },
@@ -1632,7 +1632,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server Required"
           }
         },
@@ -1648,7 +1648,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server returned %1$@.\n%2$@"
           }
         },
@@ -1664,7 +1664,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server returned an unreadable response.\n%@"
           }
         },
@@ -1680,7 +1680,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server socket path is too long for a Unix domain socket.\n%@"
           }
         },
@@ -1696,7 +1696,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "LookInside Auth Server version mismatch.\nExpected: %1$@\nFound: %2$@"
           }
         },
@@ -1738,7 +1738,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Measure"
           }
         },
@@ -1754,7 +1754,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Medium"
           }
         },
@@ -1770,7 +1770,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "More…"
           }
         },
@@ -1786,7 +1786,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Navigate…"
           }
         },
@@ -1802,7 +1802,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No Filter Results"
           }
         },
@@ -1818,7 +1818,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No inspectable app was found"
           }
         },
@@ -1834,7 +1834,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No matching signal found for value %@"
           }
         },
@@ -1850,7 +1850,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No message"
           }
         },
@@ -1866,7 +1866,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No object was returned yet"
           }
         },
@@ -1882,7 +1882,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "No response received."
           }
         },
@@ -1898,7 +1898,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Normal"
           }
         },
@@ -1914,7 +1914,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Notifications"
           }
         },
@@ -1930,7 +1930,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Objects highlighted in hierarchy panel"
           }
         },
@@ -1946,7 +1946,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Objects returned recently in console"
           }
         },
@@ -1962,7 +1962,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "OK"
           }
         },
@@ -1978,7 +1978,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Open Image with Preview…"
           }
         },
@@ -1994,7 +1994,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Operation failed."
           }
         },
@@ -2010,7 +2010,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Operation failed. The image property value of selected UIImageView is nil."
           }
         },
@@ -2026,7 +2026,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Other %@ apps were found"
           }
         },
@@ -2042,7 +2042,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Other…"
           }
         },
@@ -2068,7 +2068,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Perhaps your iOS app is paused with breakpoint in Xcode, blocked by other tasks in main thread, or moved to background state."
           }
         },
@@ -2084,7 +2084,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Perhaps your iOS app is paused with breakpoint in Xcode, blocked by other tasks in main thread, or moved to background state.\nToo large screenshots may also lead to this error."
           }
         },
@@ -2100,7 +2100,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Please update the embedded LookinServer integration in your target app to a newer version from this repository."
           }
         },
@@ -2116,7 +2116,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Please upgrade the LookinServer SDK version in your iOS project to 1.2.7 or higher."
           }
         },
@@ -2132,7 +2132,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Please wait until current sync is completed. You can get sync progress in the upper-left corner of this window."
           }
         },
@@ -2148,7 +2148,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Preferences"
           }
         },
@@ -2164,7 +2164,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Preparing…"
           }
         },
@@ -2180,7 +2180,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Print"
           }
         },
@@ -2196,7 +2196,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "properties or methods"
           }
         },
@@ -2212,7 +2212,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "README.md was not found in the current repository checkout."
           }
         },
@@ -2228,7 +2228,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reconnecting…"
           }
         },
@@ -2244,7 +2244,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reload"
           }
         },
@@ -2260,7 +2260,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reload layer"
           }
         },
@@ -2276,7 +2276,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reload layer and its children"
           }
         },
@@ -2292,7 +2292,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Request timeout"
           }
         },
@@ -2308,7 +2308,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Request timeout, layer data transmission failed."
           }
         },
@@ -2324,7 +2324,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reset"
           }
         },
@@ -2340,7 +2340,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Reveal in panel…"
           }
         },
@@ -2356,7 +2356,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Searching for inspectable apps"
           }
         },
@@ -2372,7 +2372,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Select App"
           }
         },
@@ -2388,7 +2388,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Select target object"
           }
         },
@@ -2404,7 +2404,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Selected %1$@'s %2$@ is less than or equal to 0."
           }
         },
@@ -2420,7 +2420,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "shortcut: holding \"option\" key"
           }
         },
@@ -2436,7 +2436,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Show hidden UIView and CALayer"
           }
         },
@@ -2452,7 +2452,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Show layer border"
           }
         },
@@ -2468,7 +2468,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Show layer outline"
           }
         },
@@ -2484,7 +2484,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Show screenshot"
           }
         },
@@ -2500,7 +2500,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Some layer data failed to transmit."
           }
         },
@@ -2516,7 +2516,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Switch color format to HEX"
           }
         },
@@ -2532,7 +2532,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Switch color format to RGBA"
           }
         },
@@ -2548,7 +2548,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "System Default"
           }
         },
@@ -2568,7 +2568,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Target iOS app is linked with a higher version LookinServer.framework. Update this community build from the current repository source."
           }
         },
@@ -2584,7 +2584,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The command is disabled and cannot be executed"
           }
         },
@@ -2600,7 +2600,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The document was created by a LookInside app with too old version. Current LookInside app version is %1$@, but the document version is %2$@."
           }
         },
@@ -2616,7 +2616,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The downloaded archive did not contain a LookInside Auth Server bundle."
           }
         },
@@ -2632,7 +2632,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The feature is not available in current mode."
           }
         },
@@ -2648,7 +2648,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The file type is not supported."
           }
         },
@@ -2664,7 +2664,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The layout of selected view is not affected by this constraint."
           }
         },
@@ -2680,7 +2680,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The method was invoked successfully and no value was returned."
           }
         },
@@ -2696,7 +2696,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The modification seems to have no effect."
           }
         },
@@ -2712,7 +2712,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The operation failed because target iOS app has entered to the background state."
           }
         },
@@ -2728,7 +2728,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The operation failed due to an inner error."
           }
         },
@@ -2744,7 +2744,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The operation failed due to disconnection with the iOS app."
           }
         },
@@ -2760,7 +2760,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The release checksum file is malformed."
           }
         },
@@ -2776,7 +2776,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The request is discarded due to a newer same request."
           }
         },
@@ -2792,7 +2792,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The screenshot is not displayed due to the config in iOS App."
           }
         },
@@ -2808,7 +2808,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The screenshot of selected %@ is not displayed."
           }
         },
@@ -2824,7 +2824,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The screenshot of selected item is not displayed."
           }
         },
@@ -2840,7 +2840,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The version of LookinServer linked with this iOS App is too low."
           }
         },
@@ -2856,7 +2856,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "This object may not be a UIView or CALayer."
           }
         },
@@ -2872,7 +2872,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "This upstream community link is not available in this build."
           }
         },
@@ -2888,7 +2888,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "to measure between it and selected %@."
           }
         },
@@ -2904,7 +2904,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Type property or method name here"
           }
         },
@@ -2930,7 +2930,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Unable to read the code signature of LookInside Auth Server.\n%@"
           }
         },
@@ -2946,7 +2946,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Unknown download failure."
           }
         },
@@ -2962,7 +2962,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Updating screenshots… %1$@ / %2$@"
           }
         },
@@ -2978,7 +2978,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Verifying code signature…"
           }
         },
@@ -2994,7 +2994,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "View"
           }
         },
@@ -3010,7 +3010,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "View feature description"
           }
         },
@@ -3026,7 +3026,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "You can click \"Pause\" button near the bottom-left corner in Xcode to pause your iOS app, and input in Xcode console like the contents below:\nexpr [((%1$@ *)%2$@) %3$@]"
           }
         },
@@ -3062,7 +3062,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Your iOS project uses an outdated version of the LookinServer SDK. It is recommended to upgrade to the latest version %@"
           }
         },
@@ -3078,7 +3078,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Your iOS project uses version %1$@ of the LookinServer SDK, while the latest version online is %2$@, it is recommended to upgrade."
           }
         },
@@ -3094,7 +3094,7 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Zoom"
           }
         },

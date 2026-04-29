@@ -187,10 +187,18 @@
         } else {
             [LKAppsManager sharedInstance].inspectingApp = app;
             [[LKStaticHierarchyDataSource sharedInstance] reloadWithHierarchyInfo:info keepState:NO];
+            BOOL shouldPromptForSwiftUISupport = info.appInfo.swiftEnabledInLookinServer == 1;
+            NSUInteger appInfoIdentifier = info.appInfo.appInfoIdentifier;
             
             [self.bottomIndicatorView finishWithCompletion:^{
                 [[LKNavigationManager sharedInstance] showStaticWorkspace];
                 [[LKNavigationManager sharedInstance] closeLaunch];
+                if (shouldPromptForSwiftUISupport) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        NSWindow *currentKeyWindow = [NSApplication sharedApplication].keyWindow;
+                        [[LKSwiftUISupportGatekeeper sharedInstance] promptForSwiftUISupportActivationIfNeededForAppInfoIdentifier:appInfoIdentifier window:currentKeyWindow];
+                    });
+                }
             }];
         }
         

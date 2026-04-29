@@ -24,8 +24,6 @@ Do not reintroduce analytics, crash upload SDKs, or automatic update frameworks 
 - [`Scripts/`](Scripts/): local helper scripts
 - [`Resources/Licenses/`](Resources/Licenses/): upstream and third-party notices
 
-The top-level [`App/`](App/) directory is not the active app workspace entrypoint for the current repository layout.
-
 ## Dependency Rules
 
 - SwiftPM is used for the root package and CLI.

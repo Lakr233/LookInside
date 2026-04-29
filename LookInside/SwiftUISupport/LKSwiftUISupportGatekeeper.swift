@@ -898,6 +898,8 @@ private extension NSLock {
 public final class LKSwiftUISupportGatekeeper: NSObject {
     private static let shared = LKSwiftUISupportGatekeeper()
     private let runtimeBridge = LKSwiftUISupportAuthServerBridge()
+    private let activationPromptLock = NSLock()
+    private var activationPromptedAppInfoIdentifiers = Set<UInt>()
 
     public static let activationStateDidChangeNotification = Notification.Name(
         "LKSwiftUISupportActivationStateDidChangeNotification"
@@ -924,6 +926,44 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     @objc(showActivationWindow)
     public func showActivationWindow() {
         runtimeBridge.showActivationWindow(from: NSApp.keyWindow)
+    }
+
+    @objc(promptForSwiftUISupportActivationIfNeededForAppInfoIdentifier:window:)
+    public func promptForSwiftUISupportActivationIfNeeded(
+        appInfoIdentifier: UInt,
+        window: NSWindow?
+    ) {
+        guard activationState != .activated else { return }
+
+        let shouldPrompt = activationPromptLock.withLock {
+            guard !activationPromptedAppInfoIdentifiers.contains(appInfoIdentifier) else {
+                return false
+            }
+            activationPromptedAppInfoIdentifiers.insert(appInfoIdentifier)
+            return true
+        }
+        guard shouldPrompt else { return }
+
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Activate SwiftUI Support?", comment: "")
+        alert.informativeText = NSLocalizedString(
+            "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details.",
+            comment: ""
+        )
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: NSLocalizedString("Activate", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Later", comment: ""))
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            self?.runtimeBridge.showActivationWindow(from: window ?? NSApp.keyWindow)
+        }
+
+        if let window {
+            alert.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(alert.runModal())
+        }
     }
 
     @objc(showLicenseWindow)
