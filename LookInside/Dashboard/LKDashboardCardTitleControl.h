@@ -13,5 +13,6 @@
 @property(nonatomic, strong, readonly) NSImageView *iconImageView;
 @property(nonatomic, strong, readonly) LKLabel *label;
 @property(nonatomic, strong, readonly) NSImageView *disclosureImageView;
+@property(nonatomic, strong, readonly) NSImageView *accentImageView;
 
 @end

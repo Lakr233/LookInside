@@ -2579,6 +2579,22 @@
         }
       }
     },
+    "SwiftUI Support · Activated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SwiftUI Support · Activated"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SwiftUI 支持 · 已激活"
+          }
+        }
+      }
+    },
     "Switch color format to HEX" : {
       "localizations" : {
         "en" : {

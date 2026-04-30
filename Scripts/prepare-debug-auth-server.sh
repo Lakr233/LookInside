@@ -14,7 +14,8 @@ DEST_DIR="$DEBUG_ROOT/current"
 DEST_APP="$DEST_DIR/lookinside-auth-server.app"
 
 if [ ! -d "$AUTH_REPO" ]; then
-	echo "LookInside-Auth repo not found at $AUTH_REPO" >&2
+	echo "warning: LookInside-Auth repo not found at $AUTH_REPO" >&2
+	echo "         (private/source-available; public contributors can ignore)" >&2
 	exit 1
 fi
 
@@ -22,7 +23,15 @@ mkdir -p "$DEBUG_ROOT" "$DEST_DIR"
 rm -rf "$DERIVED_DATA" "$DEST_APP"
 
 if [ ! -d "$WORKSPACE" ]; then
-	(cd "$AUTH_REPO" && mise exec -- tuist generate --no-open)
+	# Prefer mise (matches internal toolchain pinning); fall back to bare tuist.
+	if command -v mise >/dev/null 2>&1; then
+		(cd "$AUTH_REPO" && mise exec -- tuist generate --no-open)
+	elif command -v tuist >/dev/null 2>&1; then
+		(cd "$AUTH_REPO" && tuist generate --no-open)
+	else
+		echo "warning: neither 'mise' nor 'tuist' is on PATH; cannot generate workspace" >&2
+		exit 1
+	fi
 fi
 
 set +e

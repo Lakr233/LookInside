@@ -16,6 +16,11 @@
 @property(nonatomic, copy) NSString *subtitle;
 @property(nonatomic, copy) NSString *danceuiSource;
 
+/// YES if this display item represents a SwiftUI virtual node produced by the
+/// activation-gated SwiftUI extension. Hosts use this to render an accent
+/// indicating paid-feature data.
+@property(nonatomic, assign) BOOL isSwiftUI;
+
 @end
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

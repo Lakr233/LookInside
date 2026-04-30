@@ -29,7 +29,8 @@
     newInstance.title = self.title;
     newInstance.subtitle = self.subtitle;
     newInstance.danceuiSource = self.danceuiSource;
-    
+    newInstance.isSwiftUI = self.isSwiftUI;
+
     return newInstance;
 }
 
@@ -38,6 +39,7 @@
     [aCoder encodeObject:self.title forKey:@"title"];
     [aCoder encodeObject:self.subtitle forKey:@"subtitle"];
     [aCoder encodeObject:self.danceuiSource forKey:@"danceuiSource"];
+    [aCoder encodeBool:self.isSwiftUI forKey:@"isSwiftUI"];
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
@@ -46,6 +48,7 @@
         self.title = [aDecoder decodeObjectForKey:@"title"];
         self.subtitle = [aDecoder decodeObjectForKey:@"subtitle"];
         self.danceuiSource = [aDecoder decodeObjectForKey:@"danceuiSource"];
+        self.isSwiftUI = [aDecoder decodeBoolForKey:@"isSwiftUI"];
     }
     return self;
 }

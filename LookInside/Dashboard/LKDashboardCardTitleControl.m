@@ -7,6 +7,7 @@
 //
 
 #import "LKDashboardCardTitleControl.h"
+#import "LKHelper.h"
 
 @interface LKDashboardCardTitleControl ()
 
@@ -29,18 +30,27 @@
         
         _disclosureImageView = [NSImageView new];
         [self addSubview:self.disclosureImageView];
+
+        _accentImageView = [NSImageView new];
+        self.accentImageView.contentTintColor = [LKHelper accentColor];
+        self.accentImageView.hidden = YES;
+        [self addSubview:self.accentImageView];
     }
     return self;
 }
 
 - (void)layout {
     [super layout];
-    
+
     $(self.iconImageView).sizeToFit.verAlign.x(DashboardHorInset).offsetY(-1);
     $(self.label).sizeToFit.verAlign.offsetY(-1).x(self.iconImageView.$maxX + 3);
-    $(self.disclosureImageView).sizeToFit.verAlign.x(self.label.$maxX + 3);
-    
-//    $(self.iconImageView, self.label, self.disclosureImageView).groupHorAlign;
+
+    CGFloat tailX = self.label.$maxX;
+    if (self.accentImageView && !self.accentImageView.hidden) {
+        $(self.accentImageView).sizeToFit.verAlign.x(tailX + 4);
+        tailX = self.accentImageView.$maxX;
+    }
+    $(self.disclosureImageView).sizeToFit.verAlign.x(tailX + 3);
 }
 
 @end

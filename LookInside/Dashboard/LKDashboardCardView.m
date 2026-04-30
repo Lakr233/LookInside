@@ -25,6 +25,15 @@
 #import "LookinAttributesSection+LookinClient.h"
 #import "LKDashboardSectionViewPool.h"
 
+// Wire-compat fallback for v8 servers (no isSwiftUIGroup flag yet).
+// LKS_SwiftUIAttrGroupsMaker emits user-custom groups whose userCustomTitle
+// always begins with "SwiftUI" (e.g. "SwiftUI Type", "SwiftUI Layout"). The
+// upstream user-custom path (lookin_customDebugInfos) never produces those
+// titles, so this distinguishes correctly. Remove once v8 support is dropped.
+static BOOL LKAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
+    return group.isSwiftUIGroup || [group.userCustomTitle hasPrefix:@"SwiftUI"];
+}
+
 @interface LKDashboardCardView () <LKUserActionManagerDelegate, LKDashboardAccessoryWindowControllerDelegate>
 
 @property(nonatomic, strong) LKVisualEffectView *backgroundEffectView;
@@ -136,6 +145,16 @@
     
     self.titleControl.label.stringValue = [self.attrGroup queryDisplayTitle];
     self.titleControl.iconImageView.image = [LKDashboardCardView imageWithAttrGroup:self.attrGroup];
+
+    // Cards are reused via cardViews[uniqueKey] in LKDashboardViewController; clear
+    // stale accent state when reassigned to a non-SwiftUI group.
+    BOOL isSwiftUIGroup = LKAttrGroupLooksLikeSwiftUI(self.attrGroup);
+    NSImageView *accent = self.titleControl.accentImageView;
+    accent.hidden = !isSwiftUIGroup;
+    accent.image = isSwiftUIGroup ? [LKDashboardCardView swiftUIAccentImage] : nil;
+    self.titleControl.toolTip = isSwiftUIGroup
+        ? NSLocalizedString(@"SwiftUI Support · Activated", nil)
+        : nil;
     [self.titleControl setNeedsLayout:YES];
     
     self.detailButton.hidden = ![self _shouldShowDetailButtonWithGroupID:self.attrGroup.identifier];
@@ -284,6 +303,16 @@
     });
     NSImage *image = dict[group.identifier];
     NSAssert(image, @"");
+    return image;
+}
+
++ (NSImage *)swiftUIAccentImage {
+    static dispatch_once_t onceToken;
+    static NSImage *image = nil;
+    dispatch_once(&onceToken, ^{
+        image = [NSImage imageWithSystemSymbolName:@"sparkles" accessibilityDescription:nil];
+        image.template = YES;
+    });
     return image;
 }
 

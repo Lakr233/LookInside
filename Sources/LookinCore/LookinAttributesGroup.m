@@ -27,6 +27,7 @@
     newGroup.attrSections = [self.attrSections lookin_map:^id(NSUInteger idx, LookinAttributesSection *value) {
         return value.copy;
     }];
+    newGroup.isSwiftUIGroup = self.isSwiftUIGroup;
     return newGroup;
 }
 
@@ -36,6 +37,7 @@
     [aCoder encodeObject:self.userCustomTitle forKey:@"userCustomTitle"];
     [aCoder encodeObject:self.identifier forKey:@"identifier"];
     [aCoder encodeObject:self.attrSections forKey:@"attrSections"];
+    [aCoder encodeBool:self.isSwiftUIGroup forKey:@"isSwiftUIGroup"];
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
@@ -43,6 +45,7 @@
         self.userCustomTitle = [aDecoder decodeObjectForKey:@"userCustomTitle"];
         self.identifier = [aDecoder decodeObjectForKey:@"identifier"];
         self.attrSections = [aDecoder decodeObjectForKey:@"attrSections"];
+        self.isSwiftUIGroup = [aDecoder decodeBoolForKey:@"isSwiftUIGroup"];
     }
     return self;
 }

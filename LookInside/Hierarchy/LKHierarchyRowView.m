@@ -15,6 +15,24 @@
 #import "LKStaticWindowController.h"
 #import "LKHierarchyDataSource.h"
 #import "LookinDisplayItem+LookinClient.h"
+#import "LookinCustomDisplayItemInfo.h"
+#import "LookinAttributesGroup.h"
+#import "LKHelper.h"
+#import "LKTableViewHorizontalScrollWidthManager.h"
+
+// Wire-compat fallback for v8 servers (no isSwiftUI flag yet). SwiftUI nodes
+// always get at least one custom attr group whose userCustomTitle starts with
+// "SwiftUI" (LKS_SwiftUIAttrGroupsMaker always emits "SwiftUI Type").
+// LKS_CustomDisplayItemsMaker (lookin_customDebugInfos path) sets customInfo
+// but never produces SwiftUI-prefixed groups, so this distinguishes correctly.
+// Remove once v8 support is dropped.
+static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
+    if (item.customInfo.isSwiftUI) return YES;
+    for (LookinAttributesGroup *group in item.customAttrGroupList) {
+        if ([group.userCustomTitle hasPrefix:@"SwiftUI"]) return YES;
+    }
+    return NO;
+}
 
 @interface LKHierarchyRowView () <LookinDisplayItemDelegate>
 
@@ -22,6 +40,8 @@
 
 @property(nonatomic, strong) CALayer *eventHandlerButtonColorLayer;
 @property(nonatomic, assign) BOOL isFocusingHandlerButton;
+
+@property(nonatomic, strong) NSImageView *swiftUIBadge;
 
 @property(nonatomic, strong) LKHierarchyDataSource *dataSource;
 
@@ -37,10 +57,25 @@
 }
 - (void)layout {
     [super layout];
-    
+
     $(self.eventHandlerButton).y(3).toBottom(3).width(10).x(3);
     [self _updateEventHandlerButtonLayout];
-    
+
+    // Insert SwiftUI badge between title and (optional) subtitle. Super layout
+    // placed subtitle at titleLabel.$maxX + _subtitleLeft, which would overlap
+    // the badge — shift subtitle right and re-publish row width.
+    if (self.swiftUIBadge && !self.swiftUIBadge.hidden) {
+        $(self.swiftUIBadge).sizeToFit.x(self.titleLabel.$maxX + 4).verAlign;
+        CGFloat finalMaxX = self.swiftUIBadge.$maxX;
+        if (self.subtitleLabel.isVisible) {
+            $(self.subtitleLabel).x(self.swiftUIBadge.$maxX + _subtitleLeft);
+            finalMaxX = self.subtitleLabel.$maxX;
+        }
+        if (self.horizontalScrollWidthManager) {
+            [self.horizontalScrollWidthManager rowDidLayoutWithWidth:finalMaxX];
+        }
+    }
+
     if (self.strikethroughLayer && !self.strikethroughLayer.hidden) {
         CGFloat maxX = self.subtitleLabel.hidden ? (self.titleLabel.$maxX + 2) : self.subtitleLabel.$maxX + 2;
         $(self.strikethroughLayer).height(1).x(self.titleLabel.$x - 1).toMaxX(maxX).midY(self.titleLabel.$midY + 1);
@@ -71,8 +106,25 @@
     [self updateStrikethroughLayer];
     [self _updateLabelStringsAndImageViewAlpha];
     [self _updateLabelsFonts];
-    
+    [self _updateSwiftUIBadge];
+
     [self setNeedsLayout:YES];
+}
+
+- (void)_updateSwiftUIBadge {
+    BOOL isSwiftUINode = LKDisplayItemLooksLikeSwiftUI(self.displayItem);
+    if (isSwiftUINode && !self.swiftUIBadge) {
+        NSImage *image = [NSImage imageWithSystemSymbolName:@"sparkles" accessibilityDescription:nil];
+        image.template = YES;
+        _swiftUIBadge = [NSImageView new];
+        _swiftUIBadge.image = image;
+        _swiftUIBadge.contentTintColor = [LKHelper accentColor];
+        [self addSubview:_swiftUIBadge];
+    }
+    if (self.swiftUIBadge) {
+        self.swiftUIBadge.hidden = !isSwiftUINode;
+    }
+    self.toolTip = isSwiftUINode ? NSLocalizedString(@"SwiftUI Support · Activated", nil) : nil;
 }
 
 - (void)setIsHovered:(BOOL)isHovered {

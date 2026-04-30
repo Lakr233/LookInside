@@ -20,18 +20,18 @@
 #pragma mark - Version
 
 /// current connection protocol version of LookinServer
-static const int LOOKIN_SERVER_VERSION = 8;
+static const int LOOKIN_SERVER_VERSION = 9;
 
 /// current release version of LookinServer
 static NSString * const LOOKIN_SERVER_READABLE_VERSION = @"1.3.0";
 
 /// current connection protocol version of LookinClient
-static const int LOOKIN_CLIENT_VERSION = 8;
+static const int LOOKIN_CLIENT_VERSION = 9;
 
 /// the minimum connection protocol version supported by current LookinClient
 static const int LOOKIN_SUPPORTED_SERVER_MIN = 8;
 /// the maximum connection protocol version supported by current LookinClient
-static const int LOOKIN_SUPPORTED_SERVER_MAX = 8;
+static const int LOOKIN_SUPPORTED_SERVER_MAX = 9;
 
 #pragma mark - Connection
 
@@ -81,9 +81,9 @@ enum {
     /// 请求修改某个自定义 Attribute 的值
     LookinRequestTypeCustomAttrModification = 214,
 
-    /// License 握手：Server → Host 发起 challenge（返回 nonce + server_instance_id）
+    /// 许可证握手：服务端下发随机 nonce + server_instance_id
     LookinRequestTypeLicenseChallenge = 220,
-    /// License 握手：Host → Server 提交签名 + 中间证书供校验
+    /// 许可证握手：客户端回传 intermediate 证书 + 对 nonce 的签名
     LookinRequestTypeLicenseVerify = 221,
 
     /// 从 LookinServer 1.2.7 & Lookin 1.0.7 开始，该属性被废弃、不再使用
@@ -131,9 +131,6 @@ enum {
     LookinErrCode_ModifyValueTypeInvalid = -501,
     LookinErrCode_Exception = -502,
     
-    /// License 校验失败，Host 未激活 LookInside 许可证
-    LookinErrCode_LicenseRequired = -408,
-
     // LookinServer 版本过高，要升级 client
     LookinErrCode_ServerVersionTooHigh = -600,
     // LookinServer 版本过低，要升级 server
@@ -141,6 +138,9 @@ enum {
     
     // 不支持的文件类型
     LookinErrCode_UnsupportedFileType = -700,
+
+    /// Host 未通过 LookinServer 的许可证验证
+    LookinErrCode_LicenseRequired = -408,
 };
 
 #define LookinErr_ObjNotFound [NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_ObjectNotFound userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Failed to get target object in iOS app", nil), NSLocalizedRecoverySuggestionErrorKey:NSLocalizedString(@"Perhaps the related object was deallocated. You can reload LookInside to get newest data.", nil)}]

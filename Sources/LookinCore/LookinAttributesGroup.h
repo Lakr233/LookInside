@@ -31,6 +31,11 @@
 
 @property(nonatomic, copy) NSArray<LookinAttributesSection *> *attrSections;
 
+/// YES if this group represents a SwiftUI attribute card produced by the
+/// activation-gated SwiftUI extension. Hosts use this to render an accent
+/// indicating paid-feature data. Not part of `isEqual:`/`hash`.
+@property(nonatomic, assign) BOOL isSwiftUIGroup;
+
 /// 如果是 custom 则返回 userCustomTitle，如果不是 custom 则返回 identifier
 - (NSString *)uniqueKey;
 
