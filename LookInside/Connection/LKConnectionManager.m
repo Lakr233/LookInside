@@ -14,6 +14,8 @@
 #import "LookinAppInfo.h"
 #import "LKConnectionRequest.h"
 #import "LKServerVersionRequestor.h"
+#import "LKNavigationManager.h"
+#import "LKLaunchWindowController.h"
 #import "LookInside-Swift.h"
 
 static NSIndexSet * PushFrameTypeList(void) {
@@ -596,8 +598,14 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
 
     NSLog(@"LookinClient - received SwiftUI support detection push from channel:%@ data:%@", channel, data);
     dispatch_async(dispatch_get_main_queue(), ^{
+        LKSwiftUISupportGatekeeper *gatekeeper = [LKSwiftUISupportGatekeeper sharedInstance];
+        [gatekeeper noteDetectedSwiftUISupport];
+
         NSWindow *keyWindow = [NSApplication sharedApplication].keyWindow;
-        [[LKSwiftUISupportGatekeeper sharedInstance] promptForDetectedSwiftUISupportIfNeededForWindow:keyWindow];
+        NSWindow *launchWindow = [LKNavigationManager sharedInstance].launchWindowController.window;
+        if (keyWindow && keyWindow != launchWindow) {
+            [gatekeeper promptForPendingDetectedSwiftUISupportIfNeededForWindow:keyWindow];
+        }
     });
 }
 

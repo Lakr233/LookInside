@@ -904,6 +904,7 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     private static let shared = LKSwiftUISupportGatekeeper()
     private let runtimeBridge = LKSwiftUISupportAuthServerBridge()
     private let activationPromptLock = NSLock()
+    private var hasPendingDetectedSwiftUISupportPrompt = false
     private var hasPromptedForDetectedSwiftUISupport = false
 
     public static let activationStateDidChangeNotification = Notification.Name(
@@ -935,10 +936,29 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
 
     @objc(promptForDetectedSwiftUISupportIfNeededForWindow:)
     public func promptForDetectedSwiftUISupportIfNeeded(window: NSWindow?) {
+        noteDetectedSwiftUISupport()
+        promptForPendingDetectedSwiftUISupportIfNeeded(window: window)
+    }
+
+    @objc(noteDetectedSwiftUISupport)
+    public func noteDetectedSwiftUISupport() {
+        guard activationState != .activated else { return }
+
+        activationPromptLock.withLock {
+            guard !hasPromptedForDetectedSwiftUISupport else { return }
+            hasPendingDetectedSwiftUISupportPrompt = true
+        }
+    }
+
+    @objc(promptForPendingDetectedSwiftUISupportIfNeededForWindow:)
+    public func promptForPendingDetectedSwiftUISupportIfNeeded(window: NSWindow?) {
         guard activationState != .activated else { return }
 
         let shouldPrompt = activationPromptLock.withLock {
-            guard !hasPromptedForDetectedSwiftUISupport else { return false }
+            guard hasPendingDetectedSwiftUISupportPrompt,
+                  !hasPromptedForDetectedSwiftUISupport
+            else { return false }
+            hasPendingDetectedSwiftUISupportPrompt = false
             hasPromptedForDetectedSwiftUISupport = true
             return true
         }

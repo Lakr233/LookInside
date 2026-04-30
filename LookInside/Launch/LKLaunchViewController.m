@@ -13,6 +13,7 @@
 #import "LKAppsManager.h"
 #import "LookinHierarchyInfo.h"
 #import "LKNavigationManager.h"
+#import "LKStaticWindowController.h"
 #import "LKPreferenceManager.h"
 #import "LKTextControl.h"
 #import "LKPerformanceReporter.h"
@@ -101,7 +102,12 @@
             return value.appInfo;
         }];
         
-        if (autoEnter && apps.count == 1 && !apps.firstObject.serverVersionError) {
+        BOOL canAutoEnter = autoEnter
+            && apps.count == 1
+            && !apps.firstObject.serverVersionError
+            && [LKSwiftUISupportGatekeeper sharedInstance].activationState == LKSwiftUISupportActivationStateActivated;
+
+        if (canAutoEnter) {
             // 进入页面时自动触发的 refetch，并且只有一个 app，则自动拉取 hierarchy
             [self _renderWithApps:apps];
             [self _enterApp:apps.firstObject];
@@ -191,6 +197,8 @@
             [self.bottomIndicatorView finishWithCompletion:^{
                 [[LKNavigationManager sharedInstance] showStaticWorkspace];
                 [[LKNavigationManager sharedInstance] closeLaunch];
+                NSWindow *staticWindow = [LKNavigationManager sharedInstance].staticWindowController.window;
+                [[LKSwiftUISupportGatekeeper sharedInstance] promptForPendingDetectedSwiftUISupportIfNeededForWindow:staticWindow];
             }];
         }
         
