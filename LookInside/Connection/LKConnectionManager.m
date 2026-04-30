@@ -472,8 +472,10 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
 - (void)_performLicenseHandshakeOnChannel:(Lookin_PTChannel *)channel
                                      succ:(void (^)(void))succBlock
                                      fail:(void (^)(NSError *error))failBlock {
+    NSLog(@"LookInside - License: starting handshake on channel %p (sending 220 LicenseChallenge).", channel);
     [self _requestWithType:LookinRequestTypeLicenseChallenge channel:channel data:nil timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *challengeAttachment) {
         if (challengeAttachment.error) {
+            NSLog(@"LookInside - License: 220 challenge errored: %@", challengeAttachment.error.localizedDescription);
             if (failBlock) failBlock(challengeAttachment.error);
             return;
         }
@@ -482,11 +484,13 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
         NSData *nonce = [challenge[@"nonce"] isKindOfClass:[NSData class]] ? challenge[@"nonce"] : nil;
         NSString *serverID = [challenge[@"server_instance_id"] isKindOfClass:[NSString class]] ? challenge[@"server_instance_id"] : nil;
         if (nonce.length != 32 || serverID.length == 0) {
+            NSLog(@"LookInside - License: 220 challenge payload malformed (nonce_len=%lu, server_instance_id_len=%lu).", (unsigned long)nonce.length, (unsigned long)serverID.length);
             if (failBlock) {
                 failBlock([NSError errorWithDomain:LookinErrorDomain code:LookinErrCode_Inner userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"License challenge payload is malformed.", nil)}]);
             }
             return;
         }
+        NSLog(@"LookInside - License: 220 challenge OK (server_instance_id=%@); requesting signature from auth helper.", serverID);
 
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
             NSError *signError = nil;
@@ -503,6 +507,7 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (!ok || signature.length == 0 || intermediateCertDER.length == 0) {
                     NSString *detail = signError.localizedDescription ?: NSLocalizedString(@"License signing failed.", nil);
+                    NSLog(@"LookInside - License: auth helper sign_challenge failed: %@", detail);
                     NSError *reportedError = [NSError errorWithDomain:LookinErrorDomain
                                                                  code:LookinErrCode_LicenseRequired
                                                              userInfo:@{
@@ -512,6 +517,7 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
                     if (failBlock) failBlock(reportedError);
                     return;
                 }
+                NSLog(@"LookInside - License: signature obtained (sig=%lub, intermediate=%lub, udid=%@); sending 221 LicenseVerify.", (unsigned long)signature.length, (unsigned long)intermediateCertDER.length, udid.length ? udid : @"<none>");
 
                 NSDictionary *verifyPayload = @{
                     @"nonce":                 nonce,
@@ -522,17 +528,21 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
                 };
                 [self _requestWithType:LookinRequestTypeLicenseVerify channel:channel data:verifyPayload timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *verifyResponse) {
                     if (verifyResponse.error) {
+                        NSLog(@"LookInside - License: 221 verify rejected by server: %@", verifyResponse.error.localizedDescription);
                         if (failBlock) failBlock(verifyResponse.error);
                         return;
                     }
 
+                    NSLog(@"LookInside - License: 221 verify accepted; channel %p marked licensed.", channel);
                     if (succBlock) succBlock();
                 } fail:^(NSError *verifyError) {
+                    NSLog(@"LookInside - License: 221 verify transport error: %@", verifyError.localizedDescription);
                     if (failBlock) failBlock(verifyError);
                 } completion:nil];
             });
         });
     } fail:^(NSError *challengeError) {
+        NSLog(@"LookInside - License: 220 challenge transport error: %@", challengeError.localizedDescription);
         if (failBlock) failBlock(challengeError);
     } completion:nil];
 }
