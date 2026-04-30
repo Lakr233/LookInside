@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-OUTPUT_PATH="${OUTPUT_PATH:-Configuration/GitHubAction.xcconfig}"
+OUTPUT_PATH="${OUTPUT_PATH:-Configuration/custom.xcconfig}"
 VERSION=""
 BUILD_NUMBER=""
 DEVELOPMENT_TEAM_VALUE="${DEVELOPMENT_TEAM:-}"
@@ -21,7 +21,7 @@ Options:
   --development-team <id>    DEVELOPMENT_TEAM override.
   --signing-identity <name>  CODE_SIGN_IDENTITY override.
   --bundle-id <id>           PRODUCT_BUNDLE_IDENTIFIER override.
-  --output <path>            Output xcconfig path. Default: Configuration/GitHubAction.xcconfig.
+  --output <path>            Output xcconfig path. Default: Configuration/custom.xcconfig.
   --help, -h                 Show this help.
 EOF
 }

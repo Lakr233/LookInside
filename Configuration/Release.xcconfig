@@ -5,6 +5,4 @@
 
 #include "Base.xcconfig"
 
-#include? "Developer.xcconfig"
-#include? "DeveloperRelease.xcconfig"
-#include? "GitHubAction.xcconfig"
+#include? "custom.xcconfig"

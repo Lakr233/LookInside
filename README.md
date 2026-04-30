@@ -66,6 +66,16 @@ xcodebuild -skipMacroValidation \
 
 The sync step mirrors shared Swift sources from [`Sources/`](Sources/) into [`LookInside/DerivedSource`](LookInside/DerivedSource). If you change shared code, edit it under [`Sources/`](Sources/) and re-sync.
 
+### Code signing
+
+Xcode build settings live under [`Configuration/`](Configuration/). The checked-in defaults use automatic signing with an empty development team.
+
+For signed local builds, create `Configuration/custom.xcconfig`. Debug and Release both include it automatically when it exists, and it is ignored by git:
+
+```xcconfig
+DEVELOPMENT_TEAM = YOURTEAMID
+```
+
 ### Cut a signed local release
 
 ```bash

@@ -150,7 +150,7 @@ detect_development_team() {
 
 	local team
 	team="$(build_setting DEVELOPMENT_TEAM)"
-	[[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Configuration/Base.xcconfig, a local Developer*.xcconfig override, or export DEVELOPMENT_TEAM before building a signed release."
+	[[ -n "$team" ]] || fail "Set DEVELOPMENT_TEAM in Configuration/custom.xcconfig or export DEVELOPMENT_TEAM before building a signed release."
 	echo "$team"
 }
 

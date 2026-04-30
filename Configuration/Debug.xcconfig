@@ -1,0 +1,10 @@
+//
+//  Debug.xcconfig
+//  LookInside
+//
+
+#include "Base.xcconfig"
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG
+
+#include? "custom.xcconfig"
