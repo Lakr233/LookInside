@@ -66,10 +66,36 @@
       }
     },
     "Activate" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "激活"
+          }
+        }
+      }
     },
     "Activate SwiftUI Support?" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activate SwiftUI Support?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "激活 SwiftUI 支持？"
+          }
+        }
+      }
     },
     "Adjust this option to use a deeper layer selection color." : {
       "localizations" : {
@@ -759,23 +785,6 @@
         }
       }
     },
-    "Fail to inspect this iOS app due to a version problem." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fail to inspect this iOS app due to a version problem."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由于版本问题，无法检查此 iOS App。"
-          }
-        }
-      }
-    },
     "Fail to inspect this target app due to a version problem." : {
       "localizations" : {
         "en" : {
@@ -1363,7 +1372,20 @@
       }
     },
     "Later" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "稍后"
+          }
+        }
+      }
     },
     "Legacy custom information guides are disabled in this community build. See the repository README instead." : {
       "localizations" : {
@@ -1494,10 +1516,36 @@
       }
     },
     "License challenge payload is malformed." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License challenge payload is malformed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "许可证挑战数据格式有误。"
+          }
+        }
+      }
     },
     "License signing failed." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License signing failed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "许可证签名失败。"
+          }
+        }
+      }
     },
     "Light Mode" : {
       "localizations" : {
@@ -1738,7 +1786,20 @@
       }
     },
     "LookInside license verification failed." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LookInside license verification failed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LookInside 许可证校验失败。"
+          }
+        }
+      }
     },
     "Measure" : {
       "localizations" : {
@@ -2567,21 +2628,17 @@
       }
     },
     "Target app is linked with a higher version LookinServer.framework. Update this community build from the current repository source." : {
-
-    },
-    "Target iOS app is linked with a higher version LookinServer.framework. Update this community build from the current repository source." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Target iOS app is linked with a higher version LookinServer.framework. Update this community build from the current repository source."
+            "value" : "Target app is linked with a higher version LookinServer.framework. Update this community build from the current repository source."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目标 iOS App 链接的是更高版本的 LookinServer.framework。请基于当前仓库源码更新此社区版本。"
+            "value" : "目标 App 链接的 LookinServer.framework 版本更高。请从当前仓库源码更新此社区版本。"
           }
         }
       }
@@ -2875,7 +2932,20 @@
       }
     },
     "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此目标 App 内含 SwiftUI 支持。激活 LookInside SwiftUI 支持后可查看 SwiftUI 视图详情。"
+          }
+        }
+      }
     },
     "This upstream community link is not available in this build." : {
       "localizations" : {
@@ -2926,7 +2996,20 @@
       }
     },
     "Unable to inspect this app." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to inspect this app."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法检查此 App。"
+          }
+        }
+      }
     },
     "Unable to inspect this iOS App. Current version of LookInside app is too low." : {
       "localizations" : {
