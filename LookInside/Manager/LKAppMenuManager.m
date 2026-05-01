@@ -190,7 +190,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (NSMenu *)_buildSwiftUIPluginSubmenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"SwiftUI Support"];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"LookInside Pro"];
     [self _populateSwiftUIPluginSubmenu:menu];
     return menu;
 }
@@ -201,12 +201,12 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     LKSwiftUISupportActivationState state = [LKSwiftUISupportGatekeeper sharedInstance].activationState;
 
     if (state == LKSwiftUISupportActivationStateActivated) {
-        [menu addItem:LKMenuItem(@"SwiftUI Support License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
+        [menu addItem:LKMenuItem(@"LookInside Pro License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
         [menu addItem:LKMenuItem(@"Refresh License Status", nil, @"", 0, kTag_RefreshSwiftUISupportLicense)];
         [menu addItem:[NSMenuItem separatorItem]];
         [menu addItem:LKMenuItem(@"Customer Support…", nil, @"", 0, kTag_SwiftUISupportCustomerSupport)];
     } else {
-        [menu addItem:LKMenuItem(@"Activate SwiftUI Support…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
+        [menu addItem:LKMenuItem(@"Activate LookInside Pro…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
         [menu addItem:[NSMenuItem separatorItem]];
         [menu addItem:LKMenuItem(@"Purchase…", nil, @"", 0, kTag_PurchaseSwiftUISupport)];
     }
@@ -238,7 +238,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 - (NSMenu *)_buildPluginsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Plugins"];
-    [menu addItem:LKSubmenuItem(@"SwiftUI Support", [self _buildSwiftUIPluginSubmenu], kTag_SwiftUISupportSubmenu)];
+    [menu addItem:LKSubmenuItem(@"LookInside Pro", [self _buildSwiftUIPluginSubmenu], kTag_SwiftUISupportSubmenu)];
     return menu;
 }
 
@@ -367,7 +367,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
         return;
     }
 
-    if ([menu.title isEqualToString:@"SwiftUI Support"]) {
+    if ([menu.title isEqualToString:@"LookInside Pro"]) {
         [[LKSwiftUISupportGatekeeper sharedInstance] refreshActivationStateInBackground];
         [self _populateSwiftUIPluginSubmenu:menu];
         return;

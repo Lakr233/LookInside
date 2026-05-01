@@ -1013,9 +1013,9 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
 
     private func presentSwiftUISupportActivationPrompt(window: NSWindow?) {
         let alert = NSAlert()
-        alert.messageText = NSLocalizedString("Activate SwiftUI Support?", comment: "")
+        alert.messageText = NSLocalizedString("Activate LookInside Pro?", comment: "")
         alert.informativeText = NSLocalizedString(
-            "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details.",
+            "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details.",
             comment: ""
         )
         alert.alertStyle = .informational

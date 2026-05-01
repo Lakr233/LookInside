@@ -81,18 +81,18 @@
         }
       }
     },
-    "Activate SwiftUI Support?" : {
+    "Activate LookInside Pro?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activate SwiftUI Support?"
+            "value" : "Activate LookInside Pro?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "激活 SwiftUI 支持？"
+            "value" : "激活 LookInside Pro？"
           }
         }
       }
@@ -2637,18 +2637,18 @@
     "SwiftUI" : {
 
     },
-    "SwiftUI Support · Activated" : {
+    "LookInside Pro · Activated" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SwiftUI Support · Activated"
+            "value" : "LookInside Pro · Activated"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SwiftUI 支持 · 已激活"
+            "value" : "LookInside Pro · 已激活"
           }
         }
       }
@@ -3005,18 +3005,18 @@
         }
       }
     },
-    "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details." : {
+    "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details."
+            "value" : "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此目标 App 内含 SwiftUI 支持。激活 LookInside SwiftUI 支持后可查看 SwiftUI 视图详情。"
+            "value" : "目标 App 内含 SwiftUI 视图。激活 LookInside Pro 后可查看 SwiftUI 视图详情。"
           }
         }
       }

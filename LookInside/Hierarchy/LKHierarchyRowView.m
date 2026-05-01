@@ -124,7 +124,7 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
     if (self.swiftUIBadge) {
         self.swiftUIBadge.hidden = !isSwiftUINode;
     }
-    self.toolTip = isSwiftUINode ? NSLocalizedString(@"SwiftUI Support · Activated", nil) : nil;
+    self.toolTip = isSwiftUINode ? NSLocalizedString(@"LookInside Pro · Activated", nil) : nil;
 }
 
 - (void)setIsHovered:(BOOL)isHovered {
