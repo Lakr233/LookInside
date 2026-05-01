@@ -481,7 +481,7 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
         [self removeTrackingArea:oldArea];
     }];
     
-    NSTrackingArea *newArea = [[NSTrackingArea alloc] initWithRect:self.bounds options:NSEventTypeMouseExited|NSTrackingMouseMoved|NSTrackingActiveInKeyWindow|NSTrackingInVisibleRect owner:self userInfo:nil];
+    NSTrackingArea *newArea = [[NSTrackingArea alloc] initWithRect:self.bounds options:NSTrackingMouseEnteredAndExited|NSTrackingMouseMoved|NSTrackingActiveInKeyWindow|NSTrackingInVisibleRect owner:self userInfo:nil];
     [self addTrackingArea:newArea];
 }
 

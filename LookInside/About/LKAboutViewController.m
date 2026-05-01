@@ -8,90 +8,145 @@
 
 #import "LKAboutViewController.h"
 
+static NSString * const kLookInsideUpstreamURL = @"https://github.com/QMUI/LookinServer";
+static NSString * const kLookInsideHomeURL = @"https://lookinside-app.com";
+
 @interface LKAboutViewController ()
 
-@property(nonatomic, strong) NSImageView *logoImageView;
+@property(nonatomic, strong) LKBaseView *backgroundImageView;
+@property(nonatomic, strong) LKBaseView *paperOverlayView;
+@property(nonatomic, strong) NSImageView *iconImageView;
 @property(nonatomic, strong) LKLabel *titleLabel;
 @property(nonatomic, strong) LKLabel *versionLabel;
-
-@property(nonatomic, strong) NSImageView *photoImageView;
-@property(nonatomic, strong) LKBaseView *photoMaskView;
-
-@property(nonatomic, copy) NSString *photoName;
-@property(nonatomic, assign) CGFloat maskFinalAlpha;
+@property(nonatomic, strong) LKLabel *taglineLabel;
+@property(nonatomic, strong) NSStackView *contentStackView;
+@property(nonatomic, strong) NSTextView *legalTextView;
 
 @end
 
 @implementation LKAboutViewController
 
-- (instancetype)initWithContainerView:(NSView *)view {
-    NSArray<NSDictionary<NSString *, id> *> *data = @[
-        @{@"name":@"photo0", @"alpha":@(.85)},
-        @{@"name":@"photo1", @"alpha":@(.85)},
-        @{@"name":@"photo2", @"alpha":@(.7)},
-        @{@"name":@"photo3", @"alpha":@(.8)}
-    ];
-    NSUInteger dataIdx = (arc4random() % (data.count));
-    self.photoName = data[dataIdx][@"name"];
-    self.maskFinalAlpha = ((NSNumber *)data[dataIdx][@"alpha"]).doubleValue;
-    
-    return [super initWithContainerView:view];
-}
-
 - (NSView *)makeContainerView {
-    
     LKBaseView *containerView = [LKBaseView new];
-    
-    self.photoImageView = [NSImageView new];
-    self.photoImageView.image = NSImageMake(self.photoName);
-    self.photoImageView.imageScaling = NSImageScaleAxesIndependently;
-    [containerView addSubview:self.photoImageView];
-    
-    self.photoMaskView = [LKBaseView new];
-    self.photoMaskView.backgroundColors = LKColorsCombine([NSColor whiteColor], [NSColor blackColor]);
-    self.photoMaskView.alphaValue = 1;
-    [containerView addSubview:self.photoMaskView];
-    
-    self.logoImageView = [NSImageView new];
-    self.logoImageView.image = NSImageMake(@"logo_jump");
-    self.logoImageView.animates = YES;
-    [containerView addSubview:self.logoImageView];
-    
+    containerView.backgroundColors = LKColorsCombine(
+        [NSColor colorWithCalibratedRed:0.99 green:0.97 blue:0.93 alpha:1],
+        [NSColor colorWithCalibratedWhite:0.10 alpha:1]);
+
+    self.backgroundImageView = [LKBaseView new];
+    self.backgroundImageView.wantsLayer = YES;
+    self.backgroundImageView.layer.contents = NSImageMake(@"aboutHeroBg");
+    self.backgroundImageView.layer.contentsGravity = kCAGravityResizeAspectFill;
+    self.backgroundImageView.layer.masksToBounds = YES;
+    self.backgroundImageView.layer.opacity = 0.25;
+    [containerView addSubview:self.backgroundImageView];
+
+    self.paperOverlayView = [LKBaseView new];
+    self.paperOverlayView.backgroundColors = LKColorsCombine(
+        [NSColor colorWithCalibratedRed:0.99 green:0.97 blue:0.93 alpha:0.55],
+        [NSColor colorWithCalibratedWhite:0.10 alpha:0.55]);
+    [containerView addSubview:self.paperOverlayView];
+
+    self.iconImageView = [NSImageView new];
+    self.iconImageView.image = [NSApp applicationIconImage];
+    self.iconImageView.imageScaling = NSImageScaleProportionallyUpOrDown;
+    [self.iconImageView.widthAnchor constraintEqualToConstant:96].active = YES;
+    [self.iconImageView.heightAnchor constraintEqualToConstant:96].active = YES;
+
+    NSFontDescriptor *serifDescriptor = [[NSFontDescriptor fontDescriptorWithFontAttributes:@{}]
+        fontDescriptorWithDesign:NSFontDescriptorSystemDesignSerif];
+    NSFont *titleFont = [NSFont fontWithDescriptor:serifDescriptor size:30] ?: [NSFont systemFontOfSize:30 weight:NSFontWeightRegular];
+    NSFont *footnoteFont = [NSFont preferredFontForTextStyle:NSFontTextStyleFootnote options:@{}];
+
     self.titleLabel = [LKLabel new];
     self.titleLabel.stringValue = @"LookInside";
-    self.titleLabel.textColors = LKColorsCombine([NSColor blackColor], [NSColor whiteColor]);
-    self.titleLabel.font = [NSFont boldSystemFontOfSize:15];//NSFontMake(15);
-    [containerView addSubview:self.titleLabel];
-    
+    self.titleLabel.textColors = LKColorsCombine([NSColor colorWithCalibratedWhite:0.12 alpha:1],
+                                                  [NSColor colorWithCalibratedWhite:0.96 alpha:1]);
+    self.titleLabel.font = titleFont;
+
     NSString *dotVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
     NSString *numberVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
     self.versionLabel = [LKLabel new];
     self.versionLabel.stringValue = [NSString stringWithFormat:@"Version %@ (%@)", dotVersion, numberVersion];
-    self.versionLabel.textColors = LKColorsCombine([NSColor blackColor], [NSColor whiteColor]);
-    self.versionLabel.font = NSFontMake(13);
-    [containerView addSubview:self.versionLabel];
-    
+    self.versionLabel.textColors = LKColorsCombine([NSColor colorWithCalibratedWhite:0.35 alpha:1],
+                                                    [NSColor colorWithCalibratedWhite:0.78 alpha:1]);
+    self.versionLabel.font = footnoteFont;
+
+    self.taglineLabel = [LKLabel new];
+    self.taglineLabel.stringValue = @"A SwiftUI- and UIKit-aware view debugger.\nWalk every layer. Read every modifier.";
+    self.taglineLabel.textColors = LKColorsCombine([NSColor colorWithCalibratedWhite:0.30 alpha:1],
+                                                    [NSColor colorWithCalibratedWhite:0.82 alpha:1]);
+    self.taglineLabel.font = footnoteFont;
+    self.taglineLabel.alignment = NSTextAlignmentCenter;
+    self.taglineLabel.maximumNumberOfLines = 2;
+
+    self.contentStackView = [NSStackView stackViewWithViews:@[
+        self.iconImageView, self.titleLabel, self.versionLabel, self.taglineLabel
+    ]];
+    self.contentStackView.orientation = NSUserInterfaceLayoutOrientationVertical;
+    self.contentStackView.alignment = NSLayoutAttributeCenterX;
+    self.contentStackView.spacing = 16;
+    [containerView addSubview:self.contentStackView];
+
+    self.legalTextView = [[NSTextView alloc] initWithFrame:NSZeroRect];
+    self.legalTextView.editable = NO;
+    self.legalTextView.selectable = YES;
+    self.legalTextView.drawsBackground = NO;
+    self.legalTextView.textContainerInset = NSZeroSize;
+    self.legalTextView.textContainer.lineFragmentPadding = 0;
+    self.legalTextView.linkTextAttributes = @{
+        NSForegroundColorAttributeName: [NSColor colorWithCalibratedRed:0.40 green:0.32 blue:0.62 alpha:1],
+        NSUnderlineStyleAttributeName: @(NSUnderlineStyleSingle),
+        NSCursorAttributeName: [NSCursor pointingHandCursor]
+    };
+
+    NSMutableParagraphStyle *legalParagraph = [[NSMutableParagraphStyle alloc] init];
+    legalParagraph.alignment = NSTextAlignmentCenter;
+    legalParagraph.lineSpacing = 2;
+
+    NSColor *legalColor = [NSColor colorWithCalibratedWhite:0.40 alpha:1];
+    NSDictionary *legalAttrs = @{
+        NSFontAttributeName: footnoteFont,
+        NSForegroundColorAttributeName: legalColor,
+        NSParagraphStyleAttributeName: legalParagraph
+    };
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSInteger year = [calendar component:NSCalendarUnitYear fromDate:[NSDate date]];
+
+    NSMutableAttributedString *legal = [[NSMutableAttributedString alloc] init];
+    [legal appendAttributedString:[[NSAttributedString alloc] initWithString:
+        [NSString stringWithFormat:@"© %ld LookInside-App. Released under GPL-3.0.\n", (long)year]
+                                                                attributes:legalAttrs]];
+    [legal appendAttributedString:[[NSAttributedString alloc] initWithString:@"Based on " attributes:legalAttrs]];
+    [legal appendAttributedString:[[NSAttributedString alloc] initWithString:@"Lookin" attributes:legalAttrs]];
+    [legal addAttribute:NSLinkAttributeName value:kLookInsideUpstreamURL
+                  range:NSMakeRange(legal.length - 6, 6)];
+    [legal appendAttributedString:[[NSAttributedString alloc] initWithString:@" by QMUI · " attributes:legalAttrs]];
+    [legal appendAttributedString:[[NSAttributedString alloc] initWithString:@"lookinside-app.com" attributes:legalAttrs]];
+    [legal addAttribute:NSLinkAttributeName value:kLookInsideHomeURL
+                  range:NSMakeRange(legal.length - 18, 18)];
+
+    [self.legalTextView.textStorage setAttributedString:legal];
+    [containerView addSubview:self.legalTextView];
+
     return containerView;
 }
 
 - (void)viewDidLayout {
     [super viewDidLayout];
-    $(self.photoImageView, self.photoMaskView).fullFrame;
-    $(self.logoImageView).width(100).height(88).horAlign;
-    $(self.titleLabel).sizeToFit.horAlign.y(self.logoImageView.$maxY - 6);
-    $(self.versionLabel).sizeToFit.horAlign.y(self.titleLabel.$maxY + 3);
-    $(self.logoImageView, self.titleLabel, self.versionLabel).groupVerAlign.offsetY(-10);
-}
+    static const CGFloat kPad = 16;
+    $(self.backgroundImageView, self.paperOverlayView).fullFrame;
 
-- (void)viewDidAppear {
-    [super viewDidAppear];
+    NSSize legalSize = [self.legalTextView.attributedString
+        boundingRectWithSize:NSMakeSize(self.view.$width - kPad * 2, CGFLOAT_MAX)
+                     options:NSStringDrawingUsesLineFragmentOrigin].size;
+    CGFloat legalHeight = ceil(legalSize.height) + 4;
+    CGFloat legalY = self.view.$height - kPad - legalHeight;
+    $(self.legalTextView).width(self.view.$width - kPad * 2).height(legalHeight).horAlign.y(legalY);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
-            context.duration = 8;
-            self.photoMaskView.animator.alphaValue = self.maskFinalAlpha;
-        } completionHandler:nil];
-    });
+    NSSize stackSize = [self.contentStackView fittingSize];
+    CGFloat available = legalY - kPad - kPad;
+    CGFloat stackY = kPad + MAX(0, (available - stackSize.height) / 2.0);
+    $(self.contentStackView).width(stackSize.width).height(stackSize.height).horAlign.y(stackY);
 }
 
 @end

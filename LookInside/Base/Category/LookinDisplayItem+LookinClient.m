@@ -41,7 +41,7 @@ static CGFloat LKApproximateVisiblePixelRatio(NSImage *image) {
                                                  8,
                                                  bytesPerRow,
                                                  colorSpace,
-                                                 kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+                                                 (CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(colorSpace);
     if (!context) {
         return 0;

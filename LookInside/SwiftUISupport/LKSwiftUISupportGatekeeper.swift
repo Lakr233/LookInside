@@ -906,6 +906,8 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     private let activationPromptLock = NSLock()
     private var hasPendingDetectedSwiftUISupportPrompt = false
     private var hasPromptedForDetectedSwiftUISupport = false
+    private var hasPendingDetectionPrompt = false
+    private var hasInstalledKeyWindowObserver = false
 
     public static let activationStateDidChangeNotification = Notification.Name(
         "LKSwiftUISupportActivationStateDidChangeNotification"
@@ -954,17 +956,59 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     public func promptForPendingDetectedSwiftUISupportIfNeeded(window: NSWindow?) {
         guard activationState != .activated else { return }
 
+        if isInspectorWindow(window) {
+            let shouldPrompt = activationPromptLock.withLock {
+                guard !hasPromptedForDetectedSwiftUISupport else { return false }
+                hasPromptedForDetectedSwiftUISupport = true
+                hasPendingDetectionPrompt = false
+                return true
+            }
+            guard shouldPrompt else { return }
+            presentSwiftUISupportActivationPrompt(window: window)
+            return
+        }
+
+        let needsObserver = activationPromptLock.withLock { () -> Bool in
+            guard !hasPromptedForDetectedSwiftUISupport else { return false }
+            hasPendingDetectionPrompt = true
+            guard !hasInstalledKeyWindowObserver else { return false }
+            hasInstalledKeyWindowObserver = true
+            return true
+        }
+        guard needsObserver else { return }
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            self?.handleKeyWindowChange(note.object as? NSWindow)
+        }
+    }
+
+    private func handleKeyWindowChange(_ window: NSWindow?) {
+        let alreadyDone = activationPromptLock.withLock {
+            hasPromptedForDetectedSwiftUISupport || !hasPendingDetectionPrompt
+        }
+        guard !alreadyDone else { return }
+        guard isInspectorWindow(window) else { return }
+
         let shouldPrompt = activationPromptLock.withLock {
             guard hasPendingDetectedSwiftUISupportPrompt,
                   !hasPromptedForDetectedSwiftUISupport
             else { return false }
             hasPendingDetectedSwiftUISupportPrompt = false
             hasPromptedForDetectedSwiftUISupport = true
+            hasPendingDetectionPrompt = false
             return true
         }
         guard shouldPrompt else { return }
-
         presentSwiftUISupportActivationPrompt(window: window)
+    }
+
+    private func isInspectorWindow(_ window: NSWindow?) -> Bool {
+        guard let wc = window?.windowController else { return false }
+        return NSStringFromClass(type(of: wc)) == "LKStaticWindowController"
     }
 
     private func presentSwiftUISupportActivationPrompt(window: NSWindow?) {

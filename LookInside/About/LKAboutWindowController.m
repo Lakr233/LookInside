@@ -17,11 +17,15 @@
 @implementation LKAboutWindowController
 
 - (instancetype)init {
-    CGFloat width = 500;
-    CGFloat height = width * 0.54;
+    CGFloat width = 480;
+    CGFloat height = 460;
     
-    LKWindow *window = [[LKWindow alloc] initWithContentRect:NSMakeRect(0, 0, width, height) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable backing:NSBackingStoreBuffered defer:YES];
+    LKWindow *window = [[LKWindow alloc] initWithContentRect:NSMakeRect(0, 0, width, height) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskFullSizeContentView backing:NSBackingStoreBuffered defer:YES];
     window.movableByWindowBackground = YES;
+    window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
+    [window standardWindowButton:NSWindowMiniaturizeButton].hidden = YES;
+    [window standardWindowButton:NSWindowZoomButton].hidden = YES;
     [window center];
     
     if (self = [self initWithWindow:window]) {

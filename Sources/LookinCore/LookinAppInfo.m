@@ -261,7 +261,12 @@ static NSString * const CodingKey_DeviceType = @"8";
     if (!window) {
         return nil;
     }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // ScreenCaptureKit replacement is async and prompts for screen recording permission; keep the
+    // synchronous CGWindowListCreateImage for capturing our own app window thumbnails.
     CGImageRef cgImage = CGWindowListCreateImage(CGRectZero, kCGWindowListOptionIncludingWindow, (int)window.windowNumber, kCGWindowImageBoundsIgnoreFraming);
+#pragma clang diagnostic pop
     if (!cgImage) {
         return nil;
     }

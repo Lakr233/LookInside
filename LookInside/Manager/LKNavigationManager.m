@@ -93,7 +93,12 @@
         return NO;
     }
     
-    id dataObj = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSObject class] fromData:data error:error];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // .lookin archives are non-secure NSKeyedArchiver payloads. Avoid the NSSecureCoding
+    // "[NSObject class] allowed list" runtime spam by staying on the legacy API.
+    id dataObj = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#pragma clang diagnostic pop
     if (!dataObj) {
         // 比如拖了一个 pdf 格式的文件进来就会走到这里
         if (error) {

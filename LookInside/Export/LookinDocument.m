@@ -39,13 +39,16 @@
     return nil;
 }
 
-- (BOOL)readFromData:(NSData *)data ofType:(NSString *)typeName error:(NSError **)outError {    
-    NSError *unarchiveError = nil;
-    LookinHierarchyFile *hierarchyFile = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSObject class] fromData:data error:&unarchiveError];
-    
-    if (unarchiveError) {
+- (BOOL)readFromData:(NSData *)data ofType:(NSString *)typeName error:(NSError **)outError {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // .lookin archives are non-secure NSKeyedArchiver payloads holding LookinHierarchyFile graphs.
+    // Stay on the legacy API to avoid the NSSecureCoding "[NSObject class] allowed list" runtime spam.
+    LookinHierarchyFile *hierarchyFile = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#pragma clang diagnostic pop
+    if (!hierarchyFile) {
         if (outError) {
-            *outError = unarchiveError;
+            *outError = LookinErr_Inner;
         }
         return NO;
     }
