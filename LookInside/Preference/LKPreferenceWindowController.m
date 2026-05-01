@@ -13,7 +13,11 @@
 @implementation LKPreferenceWindowController
 
 - (instancetype)init {
-    LKWindow *window = [[LKWindow alloc] initWithContentRect:NSMakeRect(0, 0, 600, 380) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable backing:NSBackingStoreBuffered defer:YES];
+    CGFloat windowHeight = 410;
+#if DEBUG
+    windowHeight = 475;
+#endif
+    LKWindow *window = [[LKWindow alloc] initWithContentRect:NSMakeRect(0, 0, 600, windowHeight) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable backing:NSBackingStoreBuffered defer:YES];
     window.movableByWindowBackground = YES;
     window.title = NSLocalizedString(@"Preferences", nil);
     [window center];

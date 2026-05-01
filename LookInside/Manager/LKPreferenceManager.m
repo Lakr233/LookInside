@@ -16,6 +16,8 @@ NSString *const LKWindowSizeName_Dynamic = @"LKWindowSizeName_Dynamic";
 NSString *const LKWindowSizeName_Static = @"LKWindowSizeName_Static";
 
 const CGFloat LKInitialPreviewScale = 0.27;
+const NSTimeInterval LKDefaultHierarchyRequestTimeoutInterval = 15;
+const NSTimeInterval LKDefaultLicenseHandshakeTimeoutInterval = 5;
 
 static NSString * const Key_PreviousClientVersion = @"preVer";
 static NSString * const Key_ShowOutline = @"showOutline";
@@ -29,6 +31,8 @@ static NSString * const Key_ContrastLevel = @"contrastLevel";
 static NSString * const Key_SectionsShow = @"ss";
 static NSString * const Key_CollapsedGroups = @"collapsedGroups_918";
 static NSString * const Key_PreferredExportCompression = @"preferredExportCompression";
+static NSString * const Key_HierarchyRequestTimeoutInterval = @"hierarchyRequestTimeoutInterval";
+static NSString * const Key_LicenseHandshakeTimeoutInterval = @"licenseHandshakeTimeoutInterval";
 static NSString * const Key_CallStackType = @"callStackType";
 static NSString * const Key_SyncConsoleTarget = @"syncConsoleTarget";
 static NSString * const Key_FreeRotation = @"FreeRotation";
@@ -186,6 +190,22 @@ static NSString * const Key_ReceivingConfigTime_Class = @"ConfigTime_Class";
             _preferredExportCompression = .5;
             [userDefaults setObject:@(_preferredExportCompression) forKey:Key_PreferredExportCompression];
         }
+
+        NSNumber *obj_hierarchyRequestTimeoutInterval = [userDefaults objectForKey:Key_HierarchyRequestTimeoutInterval];
+        if (obj_hierarchyRequestTimeoutInterval != nil && [obj_hierarchyRequestTimeoutInterval doubleValue] > 0) {
+            _hierarchyRequestTimeoutInterval = [obj_hierarchyRequestTimeoutInterval doubleValue];
+        } else {
+            _hierarchyRequestTimeoutInterval = LKDefaultHierarchyRequestTimeoutInterval;
+            [userDefaults setObject:@(_hierarchyRequestTimeoutInterval) forKey:Key_HierarchyRequestTimeoutInterval];
+        }
+
+        NSNumber *obj_licenseHandshakeTimeoutInterval = [userDefaults objectForKey:Key_LicenseHandshakeTimeoutInterval];
+        if (obj_licenseHandshakeTimeoutInterval != nil && [obj_licenseHandshakeTimeoutInterval doubleValue] > 0) {
+            _licenseHandshakeTimeoutInterval = [obj_licenseHandshakeTimeoutInterval doubleValue];
+        } else {
+            _licenseHandshakeTimeoutInterval = LKDefaultLicenseHandshakeTimeoutInterval;
+            [userDefaults setObject:@(_licenseHandshakeTimeoutInterval) forKey:Key_LicenseHandshakeTimeoutInterval];
+        }
         
         _receivingConfigTime_Color = [userDefaults doubleForKey:Key_ReceivingConfigTime_Color];
         _receivingConfigTime_Class = [userDefaults doubleForKey:Key_ReceivingConfigTime_Class];
@@ -267,6 +287,32 @@ static NSString * const Key_ReceivingConfigTime_Class = @"ConfigTime_Class";
     _preferredExportCompression = preferredExportCompression;
     if (self.shouldStoreToLocal) {
         [[NSUserDefaults standardUserDefaults] setObject:@(preferredExportCompression) forKey:Key_PreferredExportCompression];
+    }
+}
+
+- (void)setHierarchyRequestTimeoutInterval:(NSTimeInterval)hierarchyRequestTimeoutInterval {
+    if (hierarchyRequestTimeoutInterval <= 0) {
+        hierarchyRequestTimeoutInterval = LKDefaultHierarchyRequestTimeoutInterval;
+    }
+    if (_hierarchyRequestTimeoutInterval == hierarchyRequestTimeoutInterval) {
+        return;
+    }
+    _hierarchyRequestTimeoutInterval = hierarchyRequestTimeoutInterval;
+    if (self.shouldStoreToLocal) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(hierarchyRequestTimeoutInterval) forKey:Key_HierarchyRequestTimeoutInterval];
+    }
+}
+
+- (void)setLicenseHandshakeTimeoutInterval:(NSTimeInterval)licenseHandshakeTimeoutInterval {
+    if (licenseHandshakeTimeoutInterval <= 0) {
+        licenseHandshakeTimeoutInterval = LKDefaultLicenseHandshakeTimeoutInterval;
+    }
+    if (_licenseHandshakeTimeoutInterval == licenseHandshakeTimeoutInterval) {
+        return;
+    }
+    _licenseHandshakeTimeoutInterval = licenseHandshakeTimeoutInterval;
+    if (self.shouldStoreToLocal) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(licenseHandshakeTimeoutInterval) forKey:Key_LicenseHandshakeTimeoutInterval];
     }
 }
 

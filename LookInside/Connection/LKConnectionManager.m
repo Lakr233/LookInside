@@ -44,7 +44,7 @@ static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int reques
     switch (requestType) {
         case LookinRequestTypeHierarchy:
         case LookinRequestTypeHierarchyDetails:
-            return 15;
+            return LKPreferenceManager.mainManager.hierarchyRequestTimeoutInterval;
         default:
             return 5;
     }
@@ -485,7 +485,8 @@ static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int reques
                                      succ:(void (^)(void))succBlock
                                      fail:(void (^)(NSError *error))failBlock {
     NSLog(@"LookInside - License: starting handshake on channel %p (sending 220 LicenseChallenge).", channel);
-    [self _requestWithType:LookinRequestTypeLicenseChallenge channel:channel data:nil timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *challengeAttachment) {
+    NSTimeInterval timeoutInterval = LKPreferenceManager.mainManager.licenseHandshakeTimeoutInterval;
+    [self _requestWithType:LookinRequestTypeLicenseChallenge channel:channel data:nil timeoutInterval:timeoutInterval succ:^(LookinConnectionResponseAttachment *challengeAttachment) {
         if (challengeAttachment.error) {
             NSLog(@"LookInside - License: 220 challenge errored: %@", challengeAttachment.error.localizedDescription);
             if (failBlock) failBlock(challengeAttachment.error);
@@ -538,7 +539,7 @@ static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int reques
                     @"intermediate_cert_der": intermediateCertDER,
                     @"udid":                  udid ?: @"",
                 };
-                [self _requestWithType:LookinRequestTypeLicenseVerify channel:channel data:verifyPayload timeoutInterval:5 succ:^(LookinConnectionResponseAttachment *verifyResponse) {
+                [self _requestWithType:LookinRequestTypeLicenseVerify channel:channel data:verifyPayload timeoutInterval:timeoutInterval succ:^(LookinConnectionResponseAttachment *verifyResponse) {
                     if (verifyResponse.error) {
                         NSLog(@"LookInside - License: 221 verify rejected by server: %@", verifyResponse.error.localizedDescription);
                         if (failBlock) failBlock(verifyResponse.error);
