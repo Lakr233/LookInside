@@ -70,9 +70,9 @@ enum LKSwiftUISupportInstallerLayout {
     static let installParentRelativePath = "Library/Application Support/LookInside/AuthServer/current"
     static let socketRelativePath = "Library/Application Support/LookInside/AuthServer/run/lookinside-auth-server.sock"
 
-    static let downloadURL = URL(string: "https://github.com/LookInsideApp/LookInsideExtra-Shim/releases/download/storage/lookinside-auth-server.app.zip")!
-    static let checksumURL = URL(string: "https://github.com/LookInsideApp/LookInsideExtra-Shim/releases/download/storage/lookinside-auth-server.app.zip.sha256")!
-    static let versionURL = URL(string: "https://github.com/LookInsideApp/LookInsideExtra-Shim/releases/download/storage/lookinside-auth-server.app.zip.version")!
+    static let downloadURL = URL(string: "https://lookinside-app.com/downloads/auth-server/lookinside-auth-server.app.zip")!
+    static let checksumURL = URL(string: "https://lookinside-app.com/downloads/auth-server/lookinside-auth-server.app.zip.sha256")!
+    static let versionURL = URL(string: "https://lookinside-app.com/downloads/auth-server/lookinside-auth-server.app.zip.version")!
 
     static var installedAppURL: URL {
         #if DEBUG

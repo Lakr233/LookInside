@@ -11,6 +11,7 @@
 #import "LKPreferenceManager.h"
 #import "LKWindowController.h"
 #import "LookInside-Swift.h"
+#import <Sparkle/Sparkle.h>
 
 static NSUInteger const kTag_About = 11;
 static NSUInteger const kTag_Preferences = 12;
@@ -57,18 +58,11 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 @property(nonatomic, copy) NSDictionary<NSNumber *, NSString *> *delegatingTagToSelMap;
 @property(nonatomic, strong) NSMenu *recentDocumentsMenu;
+@property(nonatomic, strong) SPUStandardUpdaterController *updaterController;
 
 @end
 
 @implementation LKAppMenuManager
-
-- (void)_showDisabledExternalLinkAlert:(NSString *)message {
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = NSLocalizedString(@"Link Disabled", nil);
-    alert.informativeText = message;
-    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-    [alert runModal];
-}
 
 + (instancetype)sharedInstance {
     static dispatch_once_t onceToken;
@@ -279,6 +273,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (void)setup {
+    self.updaterController = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:nil userDriverDelegate:nil];
     [self _installMainMenu];
 
     self.delegatingTagToSelMap = @{
@@ -438,7 +433,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (void)_handleCheckUpdates {
-    [self _showDisabledExternalLinkAlert:NSLocalizedString(@"Automatic update checks are disabled in this community build.", nil)];
+    [self.updaterController checkForUpdates:nil];
 }
 
 - (void)_handleAbout {

@@ -60,6 +60,8 @@ jobs:
     needs: prepare
     runs-on: macos-26
     timeout-minutes: 60
+    env:
+      SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
 
     steps:
       - name: Checkout
@@ -72,6 +74,14 @@ jobs:
 
       - name: Install xcbeautify
         run: brew install xcbeautify
+
+      - name: Validate Sparkle Public Key
+        run: |
+          set -euo pipefail
+          if [[ -z "${SPARKLE_PUBLIC_ED_KEY}" ]]; then
+            echo "SPARKLE_PUBLIC_ED_KEY secret is required for release builds." >&2
+            exit 1
+          fi
 
       - name: Generate Xcode Configuration
         run: |
@@ -192,3 +202,116 @@ jobs:
           files: |
             dist/*.zip
             dist/checksums.txt
+
+  publish_appcast:
+    needs: [prepare, collect_release]
+    if: needs.prepare.outputs.publish_release == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout App Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: app
+
+      - name: Download Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact_name }}
+          path: dist
+
+      - name: Resolve App Zip
+        id: artifact
+        run: |
+          set -euo pipefail
+          app_zip="$(find dist -maxdepth 1 -type f -name 'LookInside-*-macOS-app.zip' -print -quit)"
+          if [[ -z "$app_zip" ]]; then
+            echo "No LookInside app zip found in release artifact." >&2
+            exit 1
+          fi
+          echo "app_zip=$app_zip" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Sparkle Publishing Secrets
+        env:
+          LOOKINSIDE_WEB_RELEASE_TOKEN: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+          LOOKINSIDE_SECRETS_READ_TOKEN: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}
+          SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE: ${{ secrets.SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [[ -n "$LOOKINSIDE_WEB_RELEASE_TOKEN" ]] || { echo "LOOKINSIDE_WEB_RELEASE_TOKEN secret is required." >&2; exit 1; }
+          [[ -n "$LOOKINSIDE_SECRETS_READ_TOKEN" ]] || { echo "LOOKINSIDE_SECRETS_READ_TOKEN secret is required." >&2; exit 1; }
+          [[ -n "$SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE" ]] || { echo "SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE secret is required." >&2; exit 1; }
+
+      - name: Checkout Web Repository
+        uses: actions/checkout@v4
+        with:
+          repository: LookInsideApp/LookInside-Web
+          ref: main
+          path: web
+          token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+
+      - name: Checkout Secrets Repository
+        uses: actions/checkout@v4
+        with:
+          repository: LookInsideApp/LookInside-Secret
+          ref: main
+          path: secrets
+          token: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}
+
+      - name: Export GitHub Release Notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --json body \
+            --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
+          if [[ ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
+            printf '# LookInside %s\n\nSee the GitHub release for details.\n' "${{ needs.prepare.outputs.build_version }}" > "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      - name: Decrypt Sparkle Private Key
+        env:
+          SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE: ${{ secrets.SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          command -v gpg >/dev/null 2>&1 || brew install gnupg
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE" \
+            --decrypt secrets/sparkle/private-ed-key.txt.gpg > "$RUNNER_TEMP/sparkle-private-ed-key.txt"
+          chmod 600 "$RUNNER_TEMP/sparkle-private-ed-key.txt"
+
+      - name: Install Sparkle Tools
+        id: sparkle
+        run: |
+          set -euo pipefail
+          tools_dir="$(bash app/Scripts/install-sparkle-tools.sh --version 2.9.1)"
+          echo "tools_dir=$tools_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Appcast Into Web Repository
+        run: |
+          set -euo pipefail
+          bash app/Scripts/publish-sparkle-appcast-to-web.sh \
+            --web-dir web \
+            --app-zip "${{ steps.artifact.outputs.app_zip }}" \
+            --private-key-file "$RUNNER_TEMP/sparkle-private-ed-key.txt" \
+            --sparkle-tools-dir "${{ steps.sparkle.outputs.tools_dir }}" \
+            --release-notes-file "$RUNNER_TEMP/release-notes.md" \
+            --version "${{ needs.prepare.outputs.build_version }}"
+
+      - name: Commit Web Appcast
+        working-directory: web
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/appcast.xml public/downloads/lookinside
+          if git diff --cached --quiet; then
+            echo "No Web appcast changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish LookInside ${{ needs.prepare.outputs.build_version }} appcast"
+          git push origin HEAD:main
