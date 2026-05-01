@@ -644,27 +644,21 @@ private final class LKSwiftUISupportAuthServerBridge {
         let environment = ProcessInfo.processInfo.environment
         let fileManager = FileManager.default
 
-        let executableURL: URL
-        if let explicitPath = environment[LKSwiftUISupportAuthServerConstants.helperPathEnvironmentKey],
-           explicitPath.isEmpty == false
-        {
-            executableURL = URL(fileURLWithPath: explicitPath)
-        } else {
-            executableURL = LKSwiftUISupportInstallerLayout.installedExecutableURL
-        }
+        let executableURL = LKSwiftUISupportAuthServerPathPolicy.executableURL(
+            environment: environment,
+            overrideKey: LKSwiftUISupportAuthServerConstants.helperPathEnvironmentKey,
+            defaultURL: LKSwiftUISupportInstallerLayout.installedExecutableURL
+        )
 
         guard fileManager.fileExists(atPath: executableURL.path) else {
             throw LKSwiftUISupportAuthServerError.helperMissing(executableURL.path)
         }
 
-        let socketURL: URL
-        if let explicitPath = environment[LKSwiftUISupportAuthServerConstants.helperSocketPathEnvironmentKey],
-           explicitPath.isEmpty == false
-        {
-            socketURL = URL(fileURLWithPath: explicitPath)
-        } else {
-            socketURL = LKSwiftUISupportInstallerLayout.installedSocketURL
-        }
+        let socketURL = LKSwiftUISupportAuthServerPathPolicy.socketURL(
+            environment: environment,
+            overrideKey: LKSwiftUISupportAuthServerConstants.helperSocketPathEnvironmentKey,
+            defaultURL: LKSwiftUISupportInstallerLayout.installedSocketURL
+        )
 
         return LKSwiftUISupportAuthServerInstallation(
             executableURL: executableURL,
@@ -686,7 +680,11 @@ private final class LKSwiftUISupportAuthServerBridge {
                 "--lookinside-pid", "\(clientProcessID)",
             ]
 
-            var environment = ProcessInfo.processInfo.environment
+            var environment = LKSwiftUISupportAuthServerPathPolicy.launchEnvironment(
+                from: ProcessInfo.processInfo.environment,
+                helperPathKey: LKSwiftUISupportAuthServerConstants.helperPathEnvironmentKey,
+                helperVersionKey: "LOOKINSIDE_AUTH_SERVER_VERSION"
+            )
             environment[LKSwiftUISupportAuthServerConstants.helperSocketPathEnvironmentKey] = installation.socketURL.path
             environment[LKSwiftUISupportAuthServerConstants.helperClientProcessIDEnvironmentKey] = "\(clientProcessID)"
             process.environment = environment

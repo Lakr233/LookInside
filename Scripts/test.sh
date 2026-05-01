@@ -59,7 +59,7 @@ run_xcode_build() {
 
 run_command "sync derived source" bash Scripts/sync-derived-source.sh
 run_swift_build "swift build" build
-run_swift_build "swift build product=lookinside" build -c debug --product lookinside
+run_swift_build "swift build target=LookinServer" build -c debug --target LookinServer
 run_xcode_build "LookInside" "Debug"
 
 echo "[*] all tests passed"
