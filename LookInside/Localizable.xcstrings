@@ -433,6 +433,9 @@
         }
       }
     },
+    "Compact" : {
+
+    },
     "Connection lost" : {
       "localizations" : {
         "en" : {
@@ -2531,6 +2534,9 @@
         }
       }
     },
+    "Selection moved to %@ (modifiers folded in compact mode)." : {
+      "comment" : "hierarchy.swiftui.selection.migrated.body"
+    },
     "shortcut: holding \"option\" key" : {
       "localizations" : {
         "en" : {
@@ -2626,6 +2632,9 @@
           }
         }
       }
+    },
+    "SwiftUI" : {
+
     },
     "SwiftUI Support · Activated" : {
       "localizations" : {
@@ -3132,6 +3141,9 @@
           }
         }
       }
+    },
+    "Verbose" : {
+
     },
     "Verifying code signature…" : {
       "localizations" : {
