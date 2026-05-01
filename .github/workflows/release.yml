@@ -10,6 +10,11 @@ on:
         description: Version to stamp into the release build, for example 2.2.0.
         required: true
         type: string
+      publish_appcast:
+        description: Publish the signed app to the Sparkle appcast.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -25,6 +30,7 @@ jobs:
     outputs:
       build_version: ${{ steps.context.outputs.build_version }}
       publish_release: ${{ steps.context.outputs.publish_release }}
+      publish_appcast: ${{ steps.context.outputs.publish_appcast }}
       artifact_name: ${{ steps.context.outputs.artifact_name }}
 
     steps:
@@ -42,19 +48,30 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             echo "build_version=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
             echo "publish_release=true" >> "${GITHUB_OUTPUT}"
+            echo "publish_appcast=true" >> "${GITHUB_OUTPUT}"
             echo "artifact_name=LookInside-${GITHUB_REF_NAME}-release" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
           VERSION="${{ inputs.version }}"
+          PUBLISH_APPCAST="${{ inputs.publish_appcast }}"
           if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Manual run version must match x.y.z or vX.Y.Z" >&2
+            exit 1
+          fi
+          if [[ "${PUBLISH_APPCAST}" != "true" && "${PUBLISH_APPCAST}" != "false" ]]; then
+            echo "publish_appcast must be true or false." >&2
             exit 1
           fi
 
           echo "build_version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "publish_release=false" >> "${GITHUB_OUTPUT}"
-          echo "artifact_name=LookInside-${VERSION}-notarize-test" >> "${GITHUB_OUTPUT}"
+          echo "publish_appcast=${PUBLISH_APPCAST}" >> "${GITHUB_OUTPUT}"
+          if [[ "${PUBLISH_APPCAST}" == "true" ]]; then
+            echo "artifact_name=LookInside-${VERSION}-release" >> "${GITHUB_OUTPUT}"
+          else
+            echo "artifact_name=LookInside-${VERSION}-notarize-test" >> "${GITHUB_OUTPUT}"
+          fi
 
   build_package:
     needs: prepare
@@ -219,7 +236,7 @@ jobs:
 
   publish_appcast:
     needs: [prepare, collect_release]
-    if: needs.prepare.outputs.publish_release == 'true'
+    if: needs.prepare.outputs.publish_appcast == 'true'
     runs-on: macos-26
     timeout-minutes: 30
 
@@ -279,12 +296,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release view "${{ github.ref_name }}" \
-            --repo "${{ github.repository }}" \
-            --json body \
-            --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
-          if [[ ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
-            printf '# LookInside %s\n\nSee the GitHub release for details.\n' "${{ needs.prepare.outputs.build_version }}" > "$RUNNER_TEMP/release-notes.md"
+          if [[ "${{ needs.prepare.outputs.publish_release }}" == "true" ]]; then
+            gh release view "${{ github.ref_name }}" \
+              --repo "${{ github.repository }}" \
+              --json body \
+              --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
+          fi
+          if [[ ! -f "$RUNNER_TEMP/release-notes.md" || ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
+            printf '# LookInside %s\n\nSparkle update build.\n' "${{ needs.prepare.outputs.build_version }}" > "$RUNNER_TEMP/release-notes.md"
           fi
 
       - name: Decrypt Sparkle Private Key
