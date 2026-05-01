@@ -28,6 +28,7 @@ NSToolbarItemIdentifier const LKToolBarIdentifier_Rotation = @"16";
 NSToolbarItemIdentifier const LKToolBarIdentifier_Measure = @"17";
 NSToolbarItemIdentifier const LKToolBarIdentifier_Message = @"18";
 NSToolbarItemIdentifier const LKToolBarIdentifier_FastMode = @"19";
+NSToolbarItemIdentifier const LKToolBarIdentifier_SwiftUIMode = @"20";
 
 
 static NSString * const Key_BindingPreferenceManager = @"PreferenceManager";
