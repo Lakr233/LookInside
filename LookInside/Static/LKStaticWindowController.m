@@ -28,8 +28,6 @@
 #import "LKHierarchyView.h"
 #import "LKPerformanceReporter.h"
 #import "LKMessageManager.h"
-#import "LKServerVersionRequestor.h"
-#import "LKVersionComparer.h"
 #import "LKHelper.h"
 #import "LKSwiftUIHierarchyDisplayMode.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -340,33 +338,6 @@
             continue;
         }
         
-        if ([msg isEqualToString:LKMessage_NewServerVersion]) {
-            [menu addItem:({
-                NSMenuItem *menuItem = [NSMenuItem new];
-                menuItem.image = [NSImage imageNamed:@"Icon_Inspiration_small"];
-                NSString *userVersion = [[[LKAppsManager.sharedInstance inspectingApp] appInfo] serverReadableVersion];
-                NSString *newestVersion = [[LKServerVersionRequestor shared] query];
-                if (userVersion.length > 0) {
-                    NSString *format = NSLocalizedString(@"Your iOS project uses version %@ of the LookinServer SDK, while the latest version online is %@, it is recommended to upgrade.", nil);
-                    menuItem.title = [NSString stringWithFormat:format, userVersion, newestVersion];
-                } else {
-                    NSString *format = NSLocalizedString(@"Your iOS project uses an outdated version of the LookinServer SDK. It is recommended to upgrade to the latest version %@", nil);
-                    menuItem.title = [NSString stringWithFormat:format, newestVersion];
-                }
-                menuItem;
-            })];
-            [menu addItem:({
-                NSMenuItem *menuItem = [NSMenuItem new];
-                menuItem.image = [[NSImage alloc] initWithSize:NSMakeSize(18, 1)];
-                menuItem.title = NSLocalizedString(@"Check out version updates on GitHub…", nil);
-                menuItem.target = self;
-                menuItem.action = @selector(handleVersionsHistory);
-                menuItem;
-            })];
-            [menu addItem:[NSMenuItem separatorItem]];
-            continue;
-        }
-        
         if ([msg isEqualToString:LKMessage_SwiftSubspec]) {
             [menu addItem:({
                 NSMenuItem *menuItem = [NSMenuItem new];
@@ -514,10 +485,6 @@
 - (void)handleJobsMenuItem {
     [LKHelper showDisabledExternalLinkAlertWithMessage:NSLocalizedString(@"This upstream community link is not available in this build.", nil)];
     [[LKMessageManager sharedInstance] removeMessage:LKMessage_Jobs];
-}
-
-- (void)handleVersionsHistory {
-    [LKHelper showDisabledExternalLinkAlertWithMessage:NSLocalizedString(@"Legacy release history links are disabled in this community build.", nil)];
 }
 
 - (void)handleTurnOnSwift {

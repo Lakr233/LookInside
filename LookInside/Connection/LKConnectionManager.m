@@ -13,7 +13,6 @@
 #import "LKPreferenceManager.h"
 #import "LookinAppInfo.h"
 #import "LKConnectionRequest.h"
-#import "LKServerVersionRequestor.h"
 #import "LKNavigationManager.h"
 #import "LKLaunchWindowController.h"
 #import "LookInside-Swift.h"
@@ -206,8 +205,6 @@ static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int reques
         [NSNotificationCenter.defaultCenter addObserverForName:LKSwiftUISupportGatekeeper.activationStateDidChangeNotificationName object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
             [self _handleActivationStateDidChange];
         }];
-        
-        [[LKServerVersionRequestor shared] preload];
     }
     return self;
 }

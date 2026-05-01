@@ -9,7 +9,6 @@
 #import "LKMessageManager.h"
 
 NSString *const LKMessage_Jobs = @"LKMessage_Jobs";
-NSString *const LKMessage_NewServerVersion = @"LKMessage_NewServerVersion";
 NSString *const LKMessage_SwiftSubspec = @"LKMessage_SwiftSubspec";
 
 @interface LKMessageManager ()
