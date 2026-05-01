@@ -32,7 +32,7 @@
 @property(nonatomic, strong) LKBaseView *cardContainerView;
 
 @property(nonatomic, copy) NSArray<LookinAttributesGroup *> *groupList;
-/// key 是 group.uniqueKey
+/// key 是 _cardKeyForGroup:index:
 @property(nonatomic, strong) NSMutableDictionary<NSString *, LKDashboardCardView *> *cardViews;
 
 @property(nonatomic, strong) LKBaseView *searchContainerView;
@@ -47,6 +47,10 @@
 @end
 
 @implementation LKDashboardViewController
+
+static BOOL LKDashboardAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
+    return group.isSwiftUIGroup || [group.userCustomTitle hasPrefix:@"SwiftUI"];
+}
 
 - (instancetype)initWithStaticDataSource:(LKStaticHierarchyDataSource *)dataSource {
     if (self = [self initWithContainerView:nil]) {
@@ -147,7 +151,7 @@
         __block CGFloat y = 0;
         
         [self.groupList enumerateObjectsUsingBlock:^(LookinAttributesGroup * _Nonnull group, NSUInteger idx, BOOL * _Nonnull stop) {
-            LKDashboardCardView *view = self.cardViews[group.uniqueKey];
+            LKDashboardCardView *view = self.cardViews[[self _cardKeyForGroup:group index:idx]];
             if (view && !view.hidden) {
                 $(view).width(contentWidth).y(y).heightToFit;
                 y = view.$maxY + verMargin;
@@ -192,14 +196,15 @@
     NSMutableArray<LKDashboardCardView *> *needlessViews = [self.cardViews allValues].mutableCopy;
     
     [list enumerateObjectsUsingBlock:^(LookinAttributesGroup * _Nonnull group, NSUInteger idx, BOOL * _Nonnull stop) {
-        LKDashboardCardView *cardView = self.cardViews[group.uniqueKey];
+        NSString *cardKey = [self _cardKeyForGroup:group index:idx];
+        LKDashboardCardView *cardView = self.cardViews[cardKey];
         if (cardView) {
             [needlessViews removeObject:cardView];
         } else {
             cardView = [LKDashboardCardView new];
             cardView.dashboardViewController = self;
             cardView.delegate = self;
-            self.cardViews[group.uniqueKey] = cardView;
+            self.cardViews[cardKey] = cardView;
             [self.cardContainerView addSubview:cardView];
         }
         cardView.hidden = NO;
@@ -213,6 +218,22 @@
     }];
 
     [self.view setNeedsLayout:YES];
+    [self _scrollDashboardToTopOnNextLayout];
+}
+
+- (NSString *)_cardKeyForGroup:(LookinAttributesGroup *)group index:(NSUInteger)index {
+    if (LKDashboardAttrGroupLooksLikeSwiftUI(group)) {
+        return [NSString stringWithFormat:@"%@#%@", group.uniqueKey, @(index)];
+    }
+    return group.uniqueKey;
+}
+
+- (void)_scrollDashboardToTopOnNextLayout {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.view layoutSubtreeIfNeeded];
+        [self.scrollView.contentView scrollToPoint:NSMakePoint(0, 0)];
+        [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
+    });
 }
 
 - (RACSignal *)modifyAttribute:(LookinAttribute *)attribute newValue:(id)newValue {
@@ -514,7 +535,8 @@
         NSAssert(NO, @"");
         return;
     }
-    LKDashboardCardView *targetCardView = self.cardViews[targetGroup.uniqueKey];
+    NSUInteger targetGroupIndex = [[self.currentDataSource.selectedItem queryAllAttrGroupList] indexOfObjectIdenticalTo:targetGroup];
+    LKDashboardCardView *targetCardView = self.cardViews[[self _cardKeyForGroup:targetGroup index:targetGroupIndex]];
     if (!targetCardView) {
         NSAssert(NO, @"");
         return;
