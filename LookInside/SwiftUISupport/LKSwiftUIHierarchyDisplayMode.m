@@ -30,4 +30,11 @@ static NSString *const kDefaultsKey = @"LookInside.SwiftUIHierarchyDisplayMode";
                                                       object:self.class];
 }
 
++ (void)swiftUIModeSegmentChanged:(NSSegmentedControl *)sender {
+    LKSwiftUIHierarchyDisplayMode mode = (sender.selectedSegment == 0)
+        ? LKSwiftUIHierarchyDisplayModeCompact
+        : LKSwiftUIHierarchyDisplayModeVerbose;
+    [self setCurrentMode:mode];
+}
+
 @end

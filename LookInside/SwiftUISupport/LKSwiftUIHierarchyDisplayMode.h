@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,6 +22,11 @@ FOUNDATION_EXPORT NSNotificationName const LKSwiftUIHierarchyDisplayModeDidChang
 /// LKSwiftUIHierarchyDisplayModeDidChangeNotification on the main queue if
 /// the value actually changed.
 + (void)setCurrentMode:(LKSwiftUIHierarchyDisplayMode)mode;
+
+/// IBAction-shape selector intended for an NSSegmentedControl whose
+/// segment 0 is Compact and segment 1 is Verbose. Writes the new mode
+/// through `+setCurrentMode:`, which posts the change notification.
++ (void)swiftUIModeSegmentChanged:(NSSegmentedControl *)sender;
 
 @end
 
