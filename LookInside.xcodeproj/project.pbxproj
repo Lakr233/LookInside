@@ -666,6 +666,7 @@
 				50EADFB42F71C00C00EBE063 /* Sources */,
 				AA48F29821CC0CA50032EC2C /* Frameworks */,
 				AA48F29921CC0CA50032EC2C /* Resources */,
+				5005F8FD2FA505DF00C0BB07 /* Build Authenticator at DEBUG */,
 			);
 			buildRules = (
 			);
@@ -735,6 +736,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5005F8FD2FA505DF00C0BB07 /* Build Authenticator at DEBUG */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Authenticator at DEBUG";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" != \"Debug\" ]; then\n    echo \"Skipping Build Authenticator (configuration: $CONFIGURATION)\"\n    exit 0\nfi\nif [ ! -d \"$SRCROOT/../LookInside-Auth\" ]; then\n    echo \"Skipping Build Authenticator: LookInside-Auth not present (not in monorepo checkout)\"\n    exit 0\nfi\nPREPARE_SCRIPT=\"$SRCROOT/Scripts/prepare-debug-auth-server.sh\"\n# Run in a fresh login zsh so xcodebuild env from the host build does not leak\n# into the nested LookInside-Auth build (causes XCBBuildService to crash).\nenv -i HOME=\"$HOME\" USER=\"$USER\" TERM=\"${TERM:-dumb}\" /bin/zsh -lc \"$PREPARE_SCRIPT\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		50EADFB42F71C00C00EBE063 /* Sources */ = {
@@ -915,6 +938,7 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_POINTER_AUTHENTICATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/LookInside",
@@ -988,6 +1012,7 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_POINTER_AUTHENTICATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/LookInside",
