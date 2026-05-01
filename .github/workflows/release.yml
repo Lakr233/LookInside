@@ -96,12 +96,19 @@ jobs:
             --tag "${{ needs.prepare.outputs.build_version }}" \
             --stage archive-app
 
+      - name: Package Unsigned Archive
+        run: |
+          set -euo pipefail
+          release_dir="build/releases/${{ needs.prepare.outputs.build_version }}"
+          tar -czf "${release_dir}/LookInside.xcarchive.tar.gz" \
+            -C "${release_dir}" \
+            LookInside.xcarchive
+
       - name: Upload Unsigned Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
-          path: |
-            build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive
+          path: build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive.tar.gz
           if-no-files-found: error
           retention-days: 7
 
@@ -122,7 +129,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
-          path: build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive
+          path: build/releases/${{ needs.prepare.outputs.build_version }}
+
+      - name: Extract Unsigned Archive
+        run: |
+          set -euo pipefail
+          release_dir="build/releases/${{ needs.prepare.outputs.build_version }}"
+          tar -xzf "${release_dir}/LookInside.xcarchive.tar.gz" \
+            -C "${release_dir}"
 
       - name: Setup Keychain and Signing Env
         id: setup_keychain
