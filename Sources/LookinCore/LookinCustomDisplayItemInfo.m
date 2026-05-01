@@ -30,6 +30,7 @@
     newInstance.subtitle = self.subtitle;
     newInstance.danceuiSource = self.danceuiSource;
     newInstance.isSwiftUI = self.isSwiftUI;
+    newInstance.swiftUIDisplayItemID = self.swiftUIDisplayItemID;
 
     return newInstance;
 }
@@ -40,15 +41,17 @@
     [aCoder encodeObject:self.subtitle forKey:@"subtitle"];
     [aCoder encodeObject:self.danceuiSource forKey:@"danceuiSource"];
     [aCoder encodeBool:self.isSwiftUI forKey:@"isSwiftUI"];
+    [aCoder encodeObject:self.swiftUIDisplayItemID forKey:@"swiftUIDisplayItemID"];
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
     if (self = [super init]) {
-        self.frameInWindow = [aDecoder decodeObjectForKey:@"frameInWindow"];
-        self.title = [aDecoder decodeObjectForKey:@"title"];
-        self.subtitle = [aDecoder decodeObjectForKey:@"subtitle"];
-        self.danceuiSource = [aDecoder decodeObjectForKey:@"danceuiSource"];
+        self.frameInWindow = [aDecoder decodeObjectOfClass:NSValue.class forKey:@"frameInWindow"];
+        self.title = [aDecoder decodeObjectOfClass:NSString.class forKey:@"title"];
+        self.subtitle = [aDecoder decodeObjectOfClass:NSString.class forKey:@"subtitle"];
+        self.danceuiSource = [aDecoder decodeObjectOfClass:NSString.class forKey:@"danceuiSource"];
         self.isSwiftUI = [aDecoder decodeBoolForKey:@"isSwiftUI"];
+        self.swiftUIDisplayItemID = [aDecoder decodeObjectOfClass:NSString.class forKey:@"swiftUIDisplayItemID"];
     }
     return self;
 }
