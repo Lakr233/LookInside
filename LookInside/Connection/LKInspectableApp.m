@@ -10,12 +10,16 @@
 #import "LKConnectionManager.h"
 #import "LookinConnectionResponseAttachment.h"
 #import "LKNavigationManager.h"
+#import "LKSwiftUIHierarchyDisplayMode.h"
 
 @implementation LKInspectableApp
 
 - (RACSignal *)fetchHierarchyData {
     /// Lookin 1.0.4 开始加入这个参数
-    NSDictionary *param = @{@"clientVersion": [LKHelper lookinReadableVersion]};
+    NSMutableDictionary *param = [NSMutableDictionary dictionaryWithDictionary:@{
+        @"clientVersion": [LKHelper lookinReadableVersion],
+    }];
+    param[LookinParam_SwiftUIDisplayMode] = @([LKSwiftUIHierarchyDisplayModeStore currentMode]);
     return [self _requestWithType:LookinRequestTypeHierarchy data:param];
 }
 
