@@ -577,20 +577,130 @@
     if (!app) {
         return;
     }
+
+    // Capture pre-fetch selection so we can restore (or migrate) after reload.
+    LookinDisplayItem *priorSelection = [LKStaticHierarchyDataSource sharedInstance].selectedItem;
+    NSString *priorSwiftUIID = priorSelection.customInfo.swiftUIDisplayItemID;
+    BOOL priorWasSwiftUI = [priorSwiftUIID hasPrefix:@"swiftui:"];
+
     [app cancelHierarchyDetailFetching];
     [self.viewController.progressView animateToProgress:InitialIndicatorProgressWhenFetchHierarchy];
     @weakify(self);
     [[app fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
         @strongify(self);
         // Mode toggle keeps the same target app, so keepState=YES preserves
-        // expansion / scroll where possible. Selection migration handled by
-        // Task 4.1.
+        // expansion / scroll where possible. Selection migration handled below.
         [self _applyHierarchyInfo:info forApp:app keepState:YES];
+
+        if (priorWasSwiftUI) {
+            [self _restoreSwiftUISelectionWithPriorID:priorSwiftUIID];
+        }
     } error:^(NSError *error) {
         @strongify(self);
         [self.viewController.progressView resetToZero];
         AlertError(error, self.window);
     }];
+}
+
+- (void)_restoreSwiftUISelectionWithPriorID:(NSString *)priorSelectionID {
+    if (priorSelectionID.length == 0) {
+        return;
+    }
+
+    NSArray<LookinDisplayItem *> *flatItems = [LKStaticHierarchyDataSource sharedInstance].displayingFlatItems;
+    LookinDisplayItem *(^findByID)(NSString *) = ^LookinDisplayItem *(NSString *targetID) {
+        for (LookinDisplayItem *item in flatItems) {
+            if ([item.customInfo.swiftUIDisplayItemID isEqualToString:targetID]) {
+                return item;
+            }
+        }
+        return nil;
+    };
+
+    LookinDisplayItem *match = findByID(priorSelectionID);
+    if (match) {
+        // ID preserved in new tree — restore exactly.
+        [LKStaticHierarchyDataSource sharedInstance].selectedItem = match;
+        return;
+    }
+
+    // ID gone (compact elided it). Find smallest pre-order index N greater
+    // than priorIndex that is present in the new tree.
+    NSInteger priorIndex = [self _swiftUIPreOrderIndexFromID:priorSelectionID];
+    if (priorIndex < 0) {
+        return;
+    }
+
+    LookinDisplayItem *fallback = nil;
+    NSInteger fallbackIndex = NSIntegerMax;
+    for (LookinDisplayItem *item in flatItems) {
+        NSString *itemID = item.customInfo.swiftUIDisplayItemID;
+        if (![itemID hasPrefix:@"swiftui:"]) {
+            continue;
+        }
+        NSInteger candidateIndex = [self _swiftUIPreOrderIndexFromID:itemID];
+        if (candidateIndex > priorIndex && candidateIndex < fallbackIndex) {
+            fallbackIndex = candidateIndex;
+            fallback = item;
+        }
+    }
+    if (fallback) {
+        [LKStaticHierarchyDataSource sharedInstance].selectedItem = fallback;
+        [self _showSelectionMigratedToastForItem:fallback];
+    }
+}
+
+/// `swiftui:<hostHash>:<index>` 中末段索引;解析失败返回 -1。
+- (NSInteger)_swiftUIPreOrderIndexFromID:(NSString *)displayItemID {
+    NSRange lastColon = [displayItemID rangeOfString:@":" options:NSBackwardsSearch];
+    if (lastColon.location == NSNotFound) {
+        return -1;
+    }
+    NSString *tail = [displayItemID substringFromIndex:NSMaxRange(lastColon)];
+    NSScanner *scanner = [NSScanner scannerWithString:tail];
+    NSInteger value = -1;
+    if (![scanner scanInteger:&value] || !scanner.atEnd) {
+        return -1;
+    }
+    return value;
+}
+
+/// 临时浮层 toast — 非阻塞,2 秒后 fade out 并自动清理。
+/// 不能用 NSAlert sheet,modal sheet 会在 dismiss 之前阻塞用户再次切 segmented control。
+- (void)_showSelectionMigratedToastForItem:(LookinDisplayItem *)item {
+    NSString *typeName = item.customInfo.title ?: @"SwiftUI item";
+    NSString *message = [NSString stringWithFormat:
+        NSLocalizedString(@"Selection moved to %@ (modifiers folded in compact mode).",
+                          @"hierarchy.swiftui.selection.migrated.body"),
+        typeName];
+
+    NSView *host = self.viewController.view;
+    NSTextField *toast = [NSTextField labelWithString:message];
+    toast.font = [NSFont systemFontOfSize:12 weight:NSFontWeightMedium];
+    toast.textColor = [NSColor whiteColor];
+    toast.alignment = NSTextAlignmentCenter;
+    toast.lineBreakMode = NSLineBreakByTruncatingTail;
+    toast.wantsLayer = YES;
+    toast.layer.backgroundColor = [[[NSColor blackColor] colorWithAlphaComponent:0.78] CGColor];
+    toast.layer.cornerRadius = 6;
+    toast.translatesAutoresizingMaskIntoConstraints = NO;
+    [host addSubview:toast];
+    [NSLayoutConstraint activateConstraints:@[
+        [toast.centerXAnchor constraintEqualToAnchor:host.centerXAnchor],
+        [toast.bottomAnchor constraintEqualToAnchor:host.bottomAnchor constant:-32],
+        [toast.widthAnchor constraintLessThanOrEqualToAnchor:host.widthAnchor multiplier:0.7],
+        [toast.heightAnchor constraintGreaterThanOrEqualToConstant:28],
+    ]];
+    // 2 秒后启动 0.3 秒 alpha → 0 动画,完成后 removeFromSuperview。
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [NSAnimationContext runAnimationGroup:^(NSAnimationContext *ctx) {
+            ctx.duration = 0.3;
+            toast.animator.alphaValue = 0;
+        } completionHandler:^{
+            [toast removeFromSuperview];
+        }];
+    });
 }
 
 - (void)dealloc {
