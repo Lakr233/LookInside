@@ -21,6 +21,12 @@
 /// indicating paid-feature data.
 @property(nonatomic, assign) BOOL isSwiftUI;
 
+/// 由 server 端生成的 SwiftUI 节点稳定 ID。仅当 isSwiftUI=YES 时有值,
+/// 形如 `swiftui:<host>:<preOrderIndex>`。compact / verbose 共享同一编号
+/// 空间, host 用它做 mode 切换时的 selection / scroll restore。详见 spec
+/// §ID 稳定性 + §Wire 协议 (spec 显式标注此字段为 `nullable`)。
+@property(nonatomic, copy, nullable) NSString *swiftUIDisplayItemID;
+
 @end
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */
