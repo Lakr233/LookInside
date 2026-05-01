@@ -266,6 +266,25 @@ is_mach_o_file() {
 	file -b "$path" 2>/dev/null | grep -q "Mach-O"
 }
 
+path_contains_symlink() {
+	local path="$1"
+	local current="$path"
+
+	while [[ "$current" != "/" && "$current" != "." ]]; do
+		[[ -L "$current" ]] && return 0
+		current="$(dirname "$current")"
+	done
+
+	return 1
+}
+
+should_skip_nested_code_path() {
+	local path="$1"
+
+	[[ "$path" == *"/Versions/Current"* ]] && return 0
+	path_contains_symlink "$path"
+}
+
 sign_code_path() {
 	local path="$1"
 
@@ -288,6 +307,7 @@ sign_nested_code() {
 
 	while IFS= read -r candidate; do
 		[[ "$candidate" == "$main_executable" ]] && continue
+		should_skip_nested_code_path "$candidate" && continue
 		if is_mach_o_file "$candidate"; then
 			mach_o_files+=("$candidate")
 		fi
@@ -309,6 +329,7 @@ sign_nested_code() {
 	done
 
 	for candidate in "${bundles[@]}"; do
+		should_skip_nested_code_path "$candidate" && continue
 		sign_code_path "$candidate"
 	done
 }
