@@ -785,6 +785,22 @@
         }
       }
     },
+    "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次加载 SwiftUI 相关信息时，LookInside 需要收集并匹配 SwiftUI 调试数据，耗时可能更长。"
+          }
+        }
+      }
+    },
     "Fail to inspect this target app due to a version problem." : {
       "localizations" : {
         "en" : {

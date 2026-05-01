@@ -90,6 +90,17 @@ static BOOL LKAllowSwiftUISupportAccessForDisplayItem(LookinDisplayItem *item, L
     return [[LKSwiftUISupportGatekeeper sharedInstance] allowProtectedFeatureAccessForWindow:CurrentKeyWindow];
 }
 
+static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *dataSource) {
+    __block BOOL containsSwiftUI = NO;
+    [dataSource.flatItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull item, NSUInteger idx, BOOL * _Nonnull stop) {
+        if ([item lk_isSwiftUISupportRelated]) {
+            containsSwiftUI = YES;
+            *stop = YES;
+        }
+    }];
+    return containsSwiftUI;
+}
+
 + (instancetype)sharedInstance {
     static dispatch_once_t onceToken;
     static LKStaticAsyncUpdateManager *instance = nil;
@@ -412,7 +423,11 @@ static BOOL LKAllowSwiftUISupportAccessForDisplayItem(LookinDisplayItem *item, L
         [self notifyTasksCountToDelegate];
         
         NSString *msgTitle = [NSString stringWithFormat:NSLocalizedString(@"Request timeout, layer data transmission failed.", nil)];
-        NSString *msgDetail = NSLocalizedString(@"Perhaps your iOS app is paused with breakpoint in Xcode, blocked by other tasks in main thread, or moved to background state.\nToo large screenshots may also lead to this error.", nil);
+        NSMutableString *msgDetail = [NSMutableString stringWithString:NSLocalizedString(@"Perhaps your iOS app is paused with breakpoint in Xcode, blocked by other tasks in main thread, or moved to background state.\nToo large screenshots may also lead to this error.", nil)];
+        if ([LKSwiftUISupportGatekeeper sharedInstance].activationState == LKSwiftUISupportActivationStateActivated &&
+            LKCurrentHierarchyContainsSwiftUIItems(self.dataSource)) {
+            [msgDetail appendFormat:@"\n%@", NSLocalizedString(@"First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data.", nil)];
+        }
         error = LookinErrorMake(msgTitle, msgDetail);
         [[RACScheduler mainThreadScheduler] afterDelay:1 schedule:^{
             // 此时可能 StaticViewController 还没来得及被初始化导致错误 tips 显示不出来，所以稍等一下

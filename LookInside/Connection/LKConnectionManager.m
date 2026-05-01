@@ -40,6 +40,16 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
     }
 }
 
+static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int requestType) {
+    switch (requestType) {
+        case LookinRequestTypeHierarchy:
+        case LookinRequestTypeHierarchyDetails:
+            return 15;
+        default:
+            return 5;
+    }
+}
+
 @interface Lookin_PTChannel (LKConnection)
 
 /// 已经发送但尚未收到全部回复的请求
@@ -383,7 +393,7 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
             }
 
             void (^dispatchRealRequest)(void) = ^{
-                [self _requestWithType:requestType channel:channel data:requestData timeoutInterval:5 succ:^(id responseData) {
+                [self _requestWithType:requestType channel:channel data:requestData timeoutInterval:LKRequestTimeoutIntervalForRequestType(requestType) succ:^(id responseData) {
                     RACTuple *tupleResult = [RACTuple tupleWithObjects:responseData, channel, nil];
                     [subscriber sendNext:tupleResult];
                 } fail:^(NSError *error) {
@@ -577,7 +587,8 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
 
 - (void)_handleActivationStateDidChange {
     NSArray<Lookin_PTChannel *> *channels = [self _connectedChannels];
-    if ([LKSwiftUISupportGatekeeper sharedInstance].activationState != LKSwiftUISupportActivationStateActivated) {
+    LKSwiftUISupportActivationState state = [LKSwiftUISupportGatekeeper sharedInstance].activationState;
+    if (state != LKSwiftUISupportActivationStateActivated) {
         [channels enumerateObjectsUsingBlock:^(Lookin_PTChannel *channel, __unused NSUInteger idx, __unused BOOL *stop) {
             channel.isLicenseVerified = NO;
         }];
@@ -793,12 +804,14 @@ static BOOL LKCanStartLicenseHandshakeForRequestType(unsigned int requestType) {
     }
 
     NSData *data = [NSData dataWithContentsOfDispatchData:payload.dispatchData];
-    NSError *unarchiveError = nil;
-    LookinConnectionResponseAttachment *attachment = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSObject class] fromData:data error:&unarchiveError];
-    if (unarchiveError) {
-        NSLog(@"Error:%@", unarchiveError);
-//        NSAssert(NO, @"");
-    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // Wire-compat with upstream Lookin / LookInside-Server send path: payload is a non-secure
+    // archive of LookinConnectionResponseAttachment whose `.data` is arbitrary id graphs
+    // (Lookin* model + Foundation collections). Using NSSecureCoding with [NSObject class]
+    // as the allow-list spams the runtime warning every frame, so we stay on the legacy API.
+    LookinConnectionResponseAttachment *attachment = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#pragma clang diagnostic pop
     
     if (attachment.appIsInBackground) {
         // app 处于后台模式
