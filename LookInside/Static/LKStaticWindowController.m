@@ -31,6 +31,7 @@
 #import "LKServerVersionRequestor.h"
 #import "LKVersionComparer.h"
 #import "LKHelper.h"
+#import "LKSwiftUIHierarchyDisplayMode.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 @interface LKStaticWindowController () <NSToolbarDelegate, LKStaticAsyncUpdateManagerDelegate>
@@ -59,6 +60,10 @@
     
     if (self = [self initWithWindow:window]) {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_handleInspectingAppDidEnd:) name:LKInspectingAppDidEndNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(_handleSwiftUIModeDidChange:)
+                                                     name:LKSwiftUIHierarchyDisplayModeDidChangeNotification
+                                                   object:nil];
         
         _viewController = [[LKStaticViewController alloc] init];
         window.contentView = self.viewController.view;
@@ -136,9 +141,7 @@
 
         BOOL isTheSameApp = [[LKAppsManager sharedInstance].inspectingApp.appInfo isEqualToAppInfo:targetApp.appInfo];
         [[targetApp fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
-            [self.viewController.progressView finishWithCompletion:nil];
-            [LKAppsManager sharedInstance].inspectingApp = targetApp;
-            [[LKStaticHierarchyDataSource sharedInstance] reloadWithHierarchyInfo:info keepState:isTheSameApp];
+            [self _applyHierarchyInfo:info forApp:targetApp keepState:isTheSameApp];
         } error:^(NSError * _Nullable error) {
             [self.viewController.progressView resetToZero];
             AlertError(error, self.window);
@@ -175,10 +178,7 @@
                 BOOL isTheSameApp = [[LKAppsManager sharedInstance].inspectingApp.appInfo isEqualToAppInfo:app.appInfo];
                 
                 [[app fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
-                    [self.viewController.progressView finishWithCompletion:nil];
-                    [LKAppsManager sharedInstance].inspectingApp = app;
-                    [[LKStaticHierarchyDataSource sharedInstance] reloadWithHierarchyInfo:info keepState:isTheSameApp];
-                    
+                    [self _applyHierarchyInfo:info forApp:app keepState:isTheSameApp];
                 } error:^(NSError * _Nullable error) {
                     AlertError(error, self.window);
                     [self.viewController.progressView resetToZero];
@@ -204,7 +204,7 @@
 }
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
-    NSMutableArray *ret = @[LKToolBarIdentifier_Reload, LKToolBarIdentifier_FastMode, LKToolBarIdentifier_App, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Dimension, LKToolBarIdentifier_Rotation, LKToolBarIdentifier_Setting, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Scale, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Measure, LKToolBarIdentifier_Console].mutableCopy;
+    NSMutableArray *ret = @[LKToolBarIdentifier_Reload, LKToolBarIdentifier_FastMode, LKToolBarIdentifier_App, LKToolBarIdentifier_SwiftUIMode, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Dimension, LKToolBarIdentifier_Rotation, LKToolBarIdentifier_Setting, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Scale, NSToolbarFlexibleSpaceItemIdentifier, LKToolBarIdentifier_Measure, LKToolBarIdentifier_Console].mutableCopy;
     if ([[[LKMessageManager sharedInstance] queryMessages] count] > 0) {
         [ret addObject:LKToolBarIdentifier_Message];
     }
@@ -562,6 +562,41 @@
 
 - (void)detailUpdateReceivedError:(NSError *)error {
     AlertError(error, self.window);
+}
+
+#pragma mark - Hierarchy Reload Helpers
+
+- (void)_applyHierarchyInfo:(LookinHierarchyInfo *)info forApp:(LKInspectableApp *)app keepState:(BOOL)keepState {
+    [self.viewController.progressView finishWithCompletion:nil];
+    [LKAppsManager sharedInstance].inspectingApp = app;
+    [[LKStaticHierarchyDataSource sharedInstance] reloadWithHierarchyInfo:info keepState:keepState];
+}
+
+- (void)_handleSwiftUIModeDidChange:(NSNotification *)note {
+    LKInspectableApp *app = [LKAppsManager sharedInstance].inspectingApp;
+    if (!app) {
+        return;
+    }
+    [app cancelHierarchyDetailFetching];
+    [self.viewController.progressView animateToProgress:InitialIndicatorProgressWhenFetchHierarchy];
+    @weakify(self);
+    [[app fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
+        @strongify(self);
+        // Mode toggle keeps the same target app, so keepState=YES preserves
+        // expansion / scroll where possible. Selection migration handled by
+        // Task 4.1.
+        [self _applyHierarchyInfo:info forApp:app keepState:YES];
+    } error:^(NSError *error) {
+        @strongify(self);
+        [self.viewController.progressView resetToZero];
+        AlertError(error, self.window);
+    }];
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self
+                                                  name:LKSwiftUIHierarchyDisplayModeDidChangeNotification
+                                                object:nil];
 }
 
 @end
