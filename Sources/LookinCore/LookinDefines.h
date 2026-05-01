@@ -102,6 +102,16 @@ static NSString * const LookinParam_SelectorName = @"sn";
 static NSString * const LookinParam_MethodType = @"mt";
 static NSString * const LookinParam_SelectorClassName = @"scn";
 
+/// SwiftUI hierarchy display mode payload key on `LookinRequestTypeHierarchy`.
+///
+/// NSNumber boxed:
+///   - 0 → verbose
+///   - 1 → compact
+///   - missing → server falls back to verbose (forward-compatible with old hosts)
+///
+/// Additive payload: server reads when present, ignores otherwise. No version bump.
+static NSString * const LookinParam_SwiftUIDisplayMode = @"swiftUIDisplayMode";
+
 static NSString * const LookinStringFlag_VoidReturn = @"LOOKIN_TAG_RETURN_VALUE_VOID";
 
 #pragma mark - Error
