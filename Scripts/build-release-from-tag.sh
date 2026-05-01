@@ -340,6 +340,9 @@ archive_app_unsigned() {
 
 	rm -rf "$archive_path" "$DERIVED_DATA_PATH"
 
+	log "Syncing derived source mirror"
+	bash Scripts/sync-derived-source.sh
+
 	log "Archiving app without Xcode signing"
 	xcodebuild "${xcodebuild_args[@]}" archive 2>&1 | format_output
 }
