@@ -194,6 +194,7 @@
 				Other/LKVersionComparer.m,
 				Preference/LKPreferencePopupView.m,
 				Preference/LKPreferenceSwitchView.m,
+				Preference/LKPreferenceView.swift,
 				Preference/LKPreferenceViewController.m,
 				Preference/LKPreferenceWindowController.m,
 				ReactiveObjC/extobjc/RACEXTRuntimeExtensions.m,
