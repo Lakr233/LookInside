@@ -1563,6 +1563,22 @@
         }
       }
     },
+    "License Timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License Timeout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License 超时"
+          }
+        }
+      }
+    },
     "Light Mode" : {
       "localizations" : {
         "en" : {
@@ -2371,6 +2387,22 @@
         }
       }
     },
+    "Hierarchy Timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hierarchy Timeout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "层级请求超时"
+          }
+        }
+      }
+    },
     "Request timeout" : {
       "localizations" : {
         "en" : {
@@ -3113,6 +3145,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在验证代码签名…"
+          }
+        }
+      }
+    },
+    "Timeout for license challenge and verification requests, in seconds. Default: 5s." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout for license challenge and verification requests, in seconds. Default: 5s."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License challenge 和 verify 请求的超时时间，单位秒。默认 5 秒。"
+          }
+        }
+      }
+    },
+    "Timeout for hierarchy and hierarchy-details requests, in seconds. Default: 15s." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout for hierarchy and hierarchy-details requests, in seconds. Default: 15s."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hierarchy 和 HierarchyDetails 请求的超时时间，单位秒。默认 15 秒。"
           }
         }
       }
