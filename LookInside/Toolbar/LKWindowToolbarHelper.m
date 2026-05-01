@@ -14,6 +14,7 @@
 #import "LKPreviewView.h"
 #import "LKWindowToolbarScaleView.h"
 #import "LKWindowToolbarAppButton.h"
+#import "LKSwiftUIHierarchyDisplayMode.h"
 
 NSToolbarItemIdentifier const LKToolBarIdentifier_Dimension = @"0";
 NSToolbarItemIdentifier const LKToolBarIdentifier_Scale = @"1";
@@ -173,14 +174,32 @@ static NSString * const Key_BindingAppInfo = @"AppInfo";
     if ([identifier isEqualToString:LKToolBarIdentifier_App]) {
         LKWindowToolbarAppButton *button = [LKWindowToolbarAppButton new];
         button.bezelStyle = NSBezelStyleTexturedRounded;
-        
+
         NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:LKToolBarIdentifier_App];
         item.label = NSLocalizedString(@"Select App", nil);
         item.view = button;
-        
+
         [[RACObserve([LKAppsManager sharedInstance], inspectingApp) takeUntil:item.rac_willDeallocSignal] subscribeNext:^(LKInspectableApp *app) {
             button.appInfo = app.appInfo;
         }];
+        return item;
+    }
+
+    if ([identifier isEqualToString:LKToolBarIdentifier_SwiftUIMode]) {
+        NSSegmentedControl *segmented = [NSSegmentedControl segmentedControlWithLabels:@[
+            NSLocalizedString(@"Compact", nil),
+            NSLocalizedString(@"Verbose", nil),
+        ]
+                                                                          trackingMode:NSSegmentSwitchTrackingSelectOne
+                                                                                target:LKSwiftUIHierarchyDisplayModeStore.class
+                                                                                action:@selector(swiftUIModeSegmentChanged:)];
+
+        LKSwiftUIHierarchyDisplayMode mode = [LKSwiftUIHierarchyDisplayModeStore currentMode];
+        segmented.selectedSegment = (mode == LKSwiftUIHierarchyDisplayModeCompact) ? 0 : 1;
+
+        NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:LKToolBarIdentifier_SwiftUIMode];
+        item.label = NSLocalizedString(@"SwiftUI", nil);
+        item.view = segmented;
         return item;
     }
     
