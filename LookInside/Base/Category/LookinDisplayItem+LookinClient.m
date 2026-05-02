@@ -8,6 +8,10 @@
 
 #import "LookinDisplayItem+LookinClient.h"
 #import "LookinIvarTrace.h"
+#import "LookinAttributesGroup.h"
+#import "LookinAttributesSection.h"
+#import "LookinAttribute.h"
+#include <stdint.h>
 
 enum {
     LKVisiblePixelSampleWidth = 16,
@@ -122,6 +126,34 @@ static BOOL LKObjectLooksLikeSwiftUISupport(LookinObject *object) {
         }
     }
     return NO;
+}
+
+static NSArray<LookinAttributesGroup *> *LKAllAttributeGroupsForItem(LookinDisplayItem *item) {
+    NSMutableArray<LookinAttributesGroup *> *groups = [NSMutableArray array];
+    if (item.attributesGroupList.count) {
+        [groups addObjectsFromArray:item.attributesGroupList];
+    }
+    if (item.customAttrGroupList.count) {
+        [groups addObjectsFromArray:item.customAttrGroupList];
+    }
+    return groups;
+}
+
+static void LKEnumerateAttributesInGroup(LookinAttributesGroup *group, void (^block)(LookinAttribute *attribute)) {
+    if (!block) {
+        return;
+    }
+    [group.attrSections enumerateObjectsUsingBlock:^(LookinAttributesSection * _Nonnull section, NSUInteger idx, BOOL * _Nonnull stop) {
+        [section.attributes enumerateObjectsUsingBlock:^(LookinAttribute * _Nonnull attribute, NSUInteger idx, BOOL * _Nonnull stop) {
+            block(attribute);
+        }];
+    }];
+}
+
+static void LKAddUniqueObject(NSMutableArray *array, id object) {
+    if (object && ![array containsObject:object]) {
+        [array addObject:object];
+    }
 }
 
 @implementation LookinDisplayItem (LookinClient)
@@ -408,6 +440,163 @@ static BOOL LKObjectLooksLikeSwiftUISupport(LookinObject *object) {
         return YES;
     }
     return NO;
+}
+
+- (NSArray<NSString *> *)lk_swiftUIBackingLayerMemoryAddresses {
+    NSMutableArray<NSString *> *addresses = [NSMutableArray array];
+    for (LookinAttributesGroup *group in LKAllAttributeGroupsForItem(self)) {
+        if (![group.userCustomTitle isEqualToString:@"SwiftUI Layers"]) {
+            continue;
+        }
+        LKEnumerateAttributesInGroup(group, ^(LookinAttribute *attribute) {
+            if (![attribute.displayTitle hasSuffix:@"Backed By"] || ![attribute.value isKindOfClass:NSString.class]) {
+                return;
+            }
+            NSString *address = [LookinDisplayItem lk_memoryAddressInObjectDescription:attribute.value];
+            LKAddUniqueObject(addresses, address);
+        });
+    }
+    return addresses;
+}
+
+- (NSArray<NSNumber *> *)lk_swiftUIBackingDisplayListIDs {
+    NSMutableArray<NSNumber *> *displayListIDs = [NSMutableArray array];
+    for (LookinAttributesGroup *group in LKAllAttributeGroupsForItem(self)) {
+        BOOL isLayersGroup = [group.userCustomTitle isEqualToString:@"SwiftUI Layers"];
+        BOOL isDisplayListGroup = [group.userCustomTitle isEqualToString:@"SwiftUI Display List"];
+        if (!isLayersGroup && !isDisplayListGroup) {
+            continue;
+        }
+        LKEnumerateAttributesInGroup(group, ^(LookinAttribute *attribute) {
+            if (![attribute.value isKindOfClass:NSString.class]) {
+                return;
+            }
+            BOOL isLayerDisplayListID = isLayersGroup && [attribute.displayTitle hasSuffix:@"Display List ID"];
+            BOOL isIdentityIDs = isDisplayListGroup && [attribute.displayTitle isEqualToString:@"Identity IDs"];
+            if (!isLayerDisplayListID && !isIdentityIDs) {
+                return;
+            }
+            for (NSNumber *displayListID in [LookinDisplayItem lk_validSwiftUIDisplayListIDsInString:attribute.value]) {
+                LKAddUniqueObject(displayListIDs, displayListID);
+            }
+        });
+    }
+    return displayListIDs;
+}
+
+- (NSNumber *)lk_swiftUILayerDisplayListID {
+    if (!self.layerObject) {
+        return nil;
+    }
+    for (LookinAttributesGroup *group in LKAllAttributeGroupsForItem(self)) {
+        if (![group.userCustomTitle isEqualToString:@"SwiftUI"]) {
+            continue;
+        }
+        __block NSNumber *result = nil;
+        LKEnumerateAttributesInGroup(group, ^(LookinAttribute *attribute) {
+            if (result || ![attribute.displayTitle isEqualToString:@"Display List ID"] || ![attribute.value isKindOfClass:NSString.class]) {
+                return;
+            }
+            result = [LookinDisplayItem lk_validSwiftUIDisplayListIDsInString:attribute.value].firstObject;
+        });
+        if (result) {
+            return result;
+        }
+    }
+    return nil;
+}
+
+- (NSArray<NSString *> *)lk_swiftUILayerSourceTypeNames {
+    NSMutableArray<NSString *> *sourceNames = [NSMutableArray array];
+    for (LookinAttributesGroup *group in LKAllAttributeGroupsForItem(self)) {
+        if (![group.userCustomTitle isEqualToString:@"SwiftUI"]) {
+            continue;
+        }
+        LKEnumerateAttributesInGroup(group, ^(LookinAttribute *attribute) {
+            if (([attribute.displayTitle isEqualToString:@"Source"] || [attribute.displayTitle isEqualToString:@"Full Source"]) &&
+                [attribute.value isKindOfClass:NSString.class]) {
+                LKAddUniqueObject(sourceNames, attribute.value);
+            }
+        });
+    }
+    return sourceNames;
+}
+
+- (NSArray<NSString *> *)lk_swiftUITypeNames {
+    NSMutableArray<NSString *> *typeNames = [NSMutableArray array];
+    LKAddUniqueObject(typeNames, self.customInfo.title);
+    for (LookinAttributesGroup *group in LKAllAttributeGroupsForItem(self)) {
+        if (![group.userCustomTitle isEqualToString:@"SwiftUI Type"]) {
+            continue;
+        }
+        LKEnumerateAttributesInGroup(group, ^(LookinAttribute *attribute) {
+            if (([attribute.displayTitle isEqualToString:@"Type"] || [attribute.displayTitle isEqualToString:@"Full Type"]) &&
+                [attribute.value isKindOfClass:NSString.class]) {
+                LKAddUniqueObject(typeNames, attribute.value);
+            }
+        });
+    }
+    return typeNames;
+}
+
++ (NSArray<NSNumber *> *)lk_validSwiftUIDisplayListIDsInString:(NSString *)string {
+    if (![string isKindOfClass:NSString.class] || string.length == 0) {
+        return @[];
+    }
+    NSMutableArray<NSNumber *> *result = [NSMutableArray array];
+    NSCharacterSet *separatorSet = [[NSCharacterSet alphanumericCharacterSet] invertedSet];
+    NSArray<NSString *> *tokens = [string componentsSeparatedByCharactersInSet:separatorSet];
+    for (NSString *rawToken in tokens) {
+        if (rawToken.length == 0) {
+            continue;
+        }
+
+        NSString *token = rawToken.lowercaseString;
+        unsigned long long value = 0;
+        NSScanner *scanner = nil;
+        if ([token hasPrefix:@"0x"]) {
+            scanner = [NSScanner scannerWithString:[token substringFromIndex:2]];
+            if (![scanner scanHexLongLong:&value] || !scanner.atEnd) {
+                continue;
+            }
+        } else {
+            scanner = [NSScanner scannerWithString:token];
+            if (![scanner scanUnsignedLongLong:&value] || !scanner.atEnd) {
+                continue;
+            }
+        }
+
+        if (value == 0 || value == UINT32_MAX || value > UINT32_MAX) {
+            continue;
+        }
+        LKAddUniqueObject(result, @(value));
+    }
+    return result;
+}
+
++ (NSString *)lk_memoryAddressInObjectDescription:(NSString *)description {
+    if (![description isKindOfClass:NSString.class] || description.length == 0) {
+        return nil;
+    }
+    NSRange prefixRange = [description rangeOfString:@"0x" options:NSCaseInsensitiveSearch];
+    if (prefixRange.location == NSNotFound) {
+        return nil;
+    }
+
+    NSUInteger start = prefixRange.location;
+    NSUInteger idx = NSMaxRange(prefixRange);
+    NSCharacterSet *hexSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789abcdefABCDEF"];
+    while (idx < description.length) {
+        unichar ch = [description characterAtIndex:idx];
+        if (![hexSet characterIsMember:ch]) {
+            break;
+        }
+        idx++;
+    }
+    if (idx <= NSMaxRange(prefixRange)) {
+        return nil;
+    }
+    return [[description substringWithRange:NSMakeRange(start, idx - start)] lowercaseString];
 }
 
 @end

@@ -9,12 +9,14 @@
 #import "LKHierarchyDataSource.h"
 #import "LookinHierarchyInfo.h"
 #import "LookinDisplayItem.h"
+#import "LookinAttribute.h"
 #import "LKPreferenceManager.h"
 #import "LKColorIndicatorLayer.h"
 #import "LKUserActionManager.h"
 #import "LookinDisplayItem+LookinClient.h"
 #import "LKDanceUIAttrMaker.h"
 #import "LKStaticAsyncUpdateManager.h"
+#include <math.h>
 
 @interface LKSelectColorItem : NSObject
 
@@ -71,6 +73,45 @@
 
 @end
 
+static NSInteger LKSwiftUILayerOrdinalFromAttributeTitle(NSString *title) {
+    if (![title hasPrefix:@"Layer "]) {
+        return NSNotFound;
+    }
+    NSScanner *scanner = [NSScanner scannerWithString:[title substringFromIndex:@"Layer ".length]];
+    NSInteger value = 0;
+    if (![scanner scanInteger:&value] || value <= 0) {
+        return NSNotFound;
+    }
+    return value - 1;
+}
+
+static void LKAddUniqueDisplayItem(NSMutableArray<LookinDisplayItem *> *items, LookinDisplayItem *item) {
+    if (item && ![items containsObject:item]) {
+        [items addObject:item];
+    }
+}
+
+static BOOL LKRectsAlmostEqual(CGRect lhs, CGRect rhs) {
+    CGFloat tolerance = 1.0;
+    return fabs(lhs.origin.x - rhs.origin.x) <= tolerance &&
+           fabs(lhs.origin.y - rhs.origin.y) <= tolerance &&
+           fabs(lhs.size.width - rhs.size.width) <= tolerance &&
+           fabs(lhs.size.height - rhs.size.height) <= tolerance;
+}
+
+static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSString *> *sourceTypes) {
+    if (sourceTypes.count == 0) {
+        return YES;
+    }
+    NSArray<NSString *> *itemTypes = [item lk_swiftUITypeNames];
+    for (NSString *sourceType in sourceTypes) {
+        if ([itemTypes containsObject:sourceType]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 @interface LKHierarchyDataSource ()
 @property(nonatomic, assign) LKHierarchyDataSourceState state;
 
@@ -92,6 +133,11 @@
  
  */
 @property(nonatomic, strong) NSDictionary<NSString *, NSArray<NSString *> *> *colorToAliasMap;
+
+- (LookinDisplayItem *)_layerItemWithMemoryAddress:(NSString *)memoryAddress;
+- (LookinDisplayItem *)_layerItemWithDisplayListID:(NSNumber *)displayListID;
+- (LookinDisplayItem *)_swiftUIItemWithDisplayListID:(NSNumber *)displayListID;
+- (LookinDisplayItem *)_swiftUIItemForLayerItemByFrameAndSource:(LookinDisplayItem *)layerItem;
 
 @end
 
@@ -529,6 +575,85 @@
     return item;
 }
 
+- (void)selectAndRevealItem:(LookinDisplayItem *)item {
+    if (!item) {
+        return;
+    }
+    if (![self.flatItems containsObject:item]) {
+        if (self.state == LKHierarchyDataSourceStateSearch) {
+            [self endSearch];
+        } else if (self.state == LKHierarchyDataSourceStateFocus) {
+            [self endFocus];
+        }
+    }
+    if (![self.flatItems containsObject:item]) {
+        return;
+    }
+    if (!item.displayingInHierarchy) {
+        [self expandToShowItem:item];
+    }
+    self.selectedItem = item;
+}
+
+- (NSArray<LookinDisplayItem *> *)swiftUIBackingLayerItemsForItem:(LookinDisplayItem *)item {
+    NSMutableArray<LookinDisplayItem *> *result = [NSMutableArray array];
+    for (NSString *address in [item lk_swiftUIBackingLayerMemoryAddresses]) {
+        LKAddUniqueDisplayItem(result, [self _layerItemWithMemoryAddress:address]);
+    }
+    for (NSNumber *displayListID in [item lk_swiftUIBackingDisplayListIDs]) {
+        LKAddUniqueDisplayItem(result, [self _layerItemWithDisplayListID:displayListID]);
+    }
+    return result;
+}
+
+- (LookinDisplayItem *)swiftUISourceItemForLayerItem:(LookinDisplayItem *)item {
+    NSNumber *displayListID = [item lk_swiftUILayerDisplayListID];
+    if (!displayListID) {
+        return nil;
+    }
+    return [self _swiftUIItemWithDisplayListID:displayListID] ?: [self _swiftUIItemForLayerItemByFrameAndSource:item];
+}
+
+- (LookinDisplayItem *)swiftUIJumpTargetForAttribute:(LookinAttribute *)attribute {
+    LookinDisplayItem *sourceItem = attribute.targetDisplayItem;
+    if (!sourceItem || ![attribute.value isKindOfClass:NSString.class]) {
+        return nil;
+    }
+
+    NSString *title = attribute.displayTitle;
+    NSString *value = attribute.value;
+    BOOL sourceIsSwiftUI = sourceItem.customInfo.isSwiftUI || [sourceItem lk_swiftUIBackingDisplayListIDs].count || [sourceItem lk_swiftUIBackingLayerMemoryAddresses].count;
+
+    if (sourceIsSwiftUI) {
+        if ([title hasSuffix:@"Backed By"]) {
+            return [self _layerItemWithMemoryAddress:[LookinDisplayItem lk_memoryAddressInObjectDescription:value]];
+        }
+        if ([title hasSuffix:@"Display List ID"] || [title isEqualToString:@"Identity IDs"]) {
+            for (NSNumber *displayListID in [LookinDisplayItem lk_validSwiftUIDisplayListIDsInString:value]) {
+                LookinDisplayItem *target = [self _layerItemWithDisplayListID:displayListID];
+                if (target) {
+                    return target;
+                }
+            }
+            NSInteger layerIndex = LKSwiftUILayerOrdinalFromAttributeTitle(title);
+            NSArray<LookinDisplayItem *> *layerItems = [self swiftUIBackingLayerItemsForItem:sourceItem];
+            if (layerIndex != NSNotFound && [layerItems lookin_hasIndex:layerIndex]) {
+                return layerItems[layerIndex];
+            }
+        }
+        return nil;
+    }
+
+    if (sourceItem.layerObject && [title isEqualToString:@"Display List ID"]) {
+        NSNumber *displayListID = [LookinDisplayItem lk_validSwiftUIDisplayListIDsInString:value].firstObject;
+        if (!displayListID) {
+            displayListID = [sourceItem lk_swiftUILayerDisplayListID];
+        }
+        return [self _swiftUIItemWithDisplayListID:displayListID] ?: [self _swiftUIItemForLayerItemByFrameAndSource:sourceItem];
+    }
+    return nil;
+}
+
 - (void)setRawFlatItems:(NSArray<LookinDisplayItem *> *)rawFlatItems {
     _rawFlatItems = rawFlatItems.copy;
     
@@ -545,6 +670,73 @@
         }
     }];
     self.oidToDisplayItemMap = map;
+}
+
+- (LookinDisplayItem *)_layerItemWithMemoryAddress:(NSString *)memoryAddress {
+    if (memoryAddress.length == 0) {
+        return nil;
+    }
+    NSString *normalizedAddress = memoryAddress.lowercaseString;
+    for (LookinDisplayItem *item in self.rawFlatItems) {
+        if ([item.layerObject.memoryAddress.lowercaseString isEqualToString:normalizedAddress]) {
+            return item;
+        }
+    }
+    return nil;
+}
+
+- (LookinDisplayItem *)_layerItemWithDisplayListID:(NSNumber *)displayListID {
+    if (!displayListID) {
+        return nil;
+    }
+    for (LookinDisplayItem *item in self.rawFlatItems) {
+        if (!item.layerObject) {
+            continue;
+        }
+        if ([[item lk_swiftUILayerDisplayListID] isEqualToNumber:displayListID]) {
+            return item;
+        }
+    }
+    return nil;
+}
+
+- (LookinDisplayItem *)_swiftUIItemWithDisplayListID:(NSNumber *)displayListID {
+    if (!displayListID) {
+        return nil;
+    }
+    LookinDisplayItem *result = nil;
+    for (LookinDisplayItem *item in self.rawFlatItems) {
+        if ([[item lk_swiftUIBackingDisplayListIDs] containsObject:displayListID]) {
+            if (!result || item.indentLevel > result.indentLevel) {
+                result = item;
+            }
+        }
+    }
+    return result;
+}
+
+- (LookinDisplayItem *)_swiftUIItemForLayerItemByFrameAndSource:(LookinDisplayItem *)layerItem {
+    if (!layerItem.layerObject) {
+        return nil;
+    }
+    CGRect layerFrame = [layerItem calculateFrameToRoot];
+    NSArray<NSString *> *sourceTypes = [layerItem lk_swiftUILayerSourceTypeNames];
+    LookinDisplayItem *result = nil;
+    for (LookinDisplayItem *item in self.rawFlatItems) {
+        if (!item.customInfo.isSwiftUI || ![item hasValidFrameToRoot]) {
+            continue;
+        }
+        if (!LKSwiftUIItemMatchesSourceTypes(item, sourceTypes)) {
+            continue;
+        }
+        if (!LKRectsAlmostEqual(layerFrame, [item calculateFrameToRoot])) {
+            continue;
+        }
+        if (!result || item.indentLevel > result.indentLevel) {
+            result = item;
+        }
+    }
+    return result;
 }
 
 - (void)buildDisplayingFlatItems {

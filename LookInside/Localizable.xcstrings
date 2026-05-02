@@ -1394,6 +1394,15 @@
         }
       }
     },
+    "Jump in hierarchy" : {
+
+    },
+    "Jump to backing CALayer" : {
+
+    },
+    "Jump to SwiftUI node" : {
+
+    },
     "Later" : {
       "localizations" : {
         "en" : {
