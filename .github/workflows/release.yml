@@ -15,6 +15,21 @@ on:
         required: false
         default: false
         type: boolean
+      publish_release:
+        description: Create or update the GitHub release for a manual run.
+        required: false
+        default: false
+        type: boolean
+      prune_appcast_versions:
+        description: Comma-separated versions to remove from the Sparkle appcast before signing.
+        required: false
+        default: ""
+        type: string
+      prune_appcast_deltas:
+        description: Remove existing Sparkle delta archives while pruning the appcast.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -33,6 +48,8 @@ jobs:
       publish_release: ${{ steps.context.outputs.publish_release }}
       publish_appcast: ${{ steps.context.outputs.publish_appcast }}
       artifact_name: ${{ steps.context.outputs.artifact_name }}
+      prune_appcast_versions: ${{ steps.context.outputs.prune_appcast_versions }}
+      prune_appcast_deltas: ${{ steps.context.outputs.prune_appcast_deltas }}
 
     steps:
       - name: Validate Trigger Actor
@@ -83,11 +100,16 @@ jobs:
             echo "publish_release=true" >> "${GITHUB_OUTPUT}"
             echo "publish_appcast=true" >> "${GITHUB_OUTPUT}"
             echo "artifact_name=LookInside-${GITHUB_REF_NAME}-release" >> "${GITHUB_OUTPUT}"
+            echo "prune_appcast_versions=" >> "${GITHUB_OUTPUT}"
+            echo "prune_appcast_deltas=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
           VERSION="${{ inputs.version }}"
           PUBLISH_APPCAST="${{ inputs.publish_appcast }}"
+          PUBLISH_RELEASE="${{ inputs.publish_release }}"
+          PRUNE_APPCAST_VERSIONS="${{ inputs.prune_appcast_versions }}"
+          PRUNE_APPCAST_DELTAS="${{ inputs.prune_appcast_deltas }}"
           if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Manual run version must match x.y.z or vX.Y.Z" >&2
             exit 1
@@ -96,10 +118,20 @@ jobs:
             echo "publish_appcast must be true or false." >&2
             exit 1
           fi
+          if [[ "${PUBLISH_RELEASE}" != "true" && "${PUBLISH_RELEASE}" != "false" ]]; then
+            echo "publish_release must be true or false." >&2
+            exit 1
+          fi
+          if [[ "${PRUNE_APPCAST_DELTAS}" != "true" && "${PRUNE_APPCAST_DELTAS}" != "false" ]]; then
+            echo "prune_appcast_deltas must be true or false." >&2
+            exit 1
+          fi
 
           echo "build_version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "publish_release=false" >> "${GITHUB_OUTPUT}"
+          echo "publish_release=${PUBLISH_RELEASE}" >> "${GITHUB_OUTPUT}"
           echo "publish_appcast=${PUBLISH_APPCAST}" >> "${GITHUB_OUTPUT}"
+          echo "prune_appcast_versions=${PRUNE_APPCAST_VERSIONS}" >> "${GITHUB_OUTPUT}"
+          echo "prune_appcast_deltas=${PRUNE_APPCAST_DELTAS}" >> "${GITHUB_OUTPUT}"
           if [[ "${PUBLISH_APPCAST}" == "true" ]]; then
             echo "artifact_name=LookInside-${VERSION}-release" >> "${GITHUB_OUTPUT}"
           else
@@ -262,7 +294,7 @@ jobs:
         if: needs.prepare.outputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare.outputs.build_version }}
           generate_release_notes: true
           files: |
             dist/*.zip
@@ -331,7 +363,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${{ needs.prepare.outputs.publish_release }}" == "true" ]]; then
-            gh release view "${{ github.ref_name }}" \
+            gh release view "${{ needs.prepare.outputs.build_version }}" \
               --repo "${{ github.repository }}" \
               --json body \
               --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
@@ -359,6 +391,9 @@ jobs:
           echo "tools_dir=$tools_dir" >> "$GITHUB_OUTPUT"
 
       - name: Publish Appcast Into Web Repository
+        env:
+          PRUNE_APPCAST_VERSIONS: ${{ needs.prepare.outputs.prune_appcast_versions }}
+          PRUNE_APPCAST_DELTAS: ${{ needs.prepare.outputs.prune_appcast_deltas }}
         run: |
           set -euo pipefail
           bash app/Scripts/publish-sparkle-appcast-to-web.sh \

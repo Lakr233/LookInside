@@ -10,6 +10,8 @@ PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://lookinside-app.com}"
 RELEASE_NOTES_FILE=""
 RELEASE_VERSION=""
 MAX_STATIC_ASSET_BYTES="${MAX_STATIC_ASSET_BYTES:-25165824}"
+PRUNE_APPCAST_VERSIONS="${PRUNE_APPCAST_VERSIONS:-}"
+PRUNE_APPCAST_DELTAS="${PRUNE_APPCAST_DELTAS:-false}"
 
 usage() {
 	cat <<'EOF'
@@ -38,6 +40,49 @@ file_size() {
 		stat -f%z "$path"
 	else
 		stat -c%s "$path"
+	fi
+}
+
+trim_whitespace() {
+	local value="$1"
+	value="${value#"${value%%[![:space:]]*}"}"
+	value="${value%"${value##*[![:space:]]}"}"
+	printf '%s' "$value"
+}
+
+prune_appcast_assets() {
+	local prune_versions="$1"
+	local prune_deltas="$2"
+	local should_regenerate_cleanly="false"
+	local old_ifs version normalized
+
+	if [[ -n "$prune_versions" ]]; then
+		should_regenerate_cleanly="true"
+		old_ifs="$IFS"
+		IFS=","
+		read -ra versions <<<"$prune_versions"
+		IFS="$old_ifs"
+
+		for version in "${versions[@]}"; do
+			normalized="$(trim_whitespace "$version")"
+			normalized="${normalized#v}"
+			[[ -n "$normalized" ]] || continue
+			[[ "$normalized" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
+				fail "Invalid prune appcast version: $version"
+
+			rm -f \
+				"$updates_dir/LookInside-${normalized}-macOS-app.zip" \
+				"$updates_dir/LookInside-${normalized}-macOS-app.md"
+		done
+	fi
+
+	if [[ "$prune_deltas" == "true" ]]; then
+		should_regenerate_cleanly="true"
+		find "$updates_dir" -maxdepth 1 -type f -name '*.delta' -delete
+	fi
+
+	if [[ "$should_regenerate_cleanly" == "true" ]]; then
+		rm -f "$public_dir/appcast.xml"
 	fi
 }
 
@@ -118,6 +163,8 @@ else
 	display_version="${RELEASE_VERSION:-${zip_name}}"
 	printf '# LookInside %s\n\nRelease notes are available on GitHub.\n' "$display_version" >"$published_notes"
 fi
+
+prune_appcast_assets "$PRUNE_APPCAST_VERSIONS" "$PRUNE_APPCAST_DELTAS"
 
 while IFS= read -r oversized; do
 	fail "Static asset exceeds ${MAX_STATIC_ASSET_BYTES} bytes: $oversized"

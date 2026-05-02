@@ -74,6 +74,12 @@ private struct LKSwiftUISupportSignChallengeResponsePayload: Decodable {
     }
 }
 
+private struct LKSwiftUISupportUserAlertPayload: Encodable {
+    let title: String
+    let message: String
+    let style: String
+}
+
 private struct LKSwiftUISupportAuthServerRequestEnvelope<Payload: Encodable>: Encodable {
     let protocolVersion: Int
     let requestID: String
@@ -184,6 +190,7 @@ private final class LKSwiftUISupportAuthServerBridge {
     private var activationState: LKSwiftUISupportActivationState = .unknown
     private var activationStatusSummary: String?
     private var activationStateRefreshInFlight = false
+    private var licenseStatusRefreshInFlight = false
     private var activationStatePollingStarted = false
     private var activationStatePollingTimer: DispatchSourceTimer?
 
@@ -266,21 +273,22 @@ private final class LKSwiftUISupportAuthServerBridge {
                 self?.lock.withLock { self?.activationStateRefreshInFlight = false }
             }
             guard let self else { return }
-            #if DEBUG
-                let installation: LKSwiftUISupportAuthServerInstallation
-                do {
+            let installation: LKSwiftUISupportAuthServerInstallation
+            do {
+                switch LKSwiftUISupportActivationStateRefreshPolicy.startupAction {
+                case .installAndLaunch:
                     installation = try self.ensureInstalledAndRunning(window: nil)
-                } catch {
-                    LKSwiftUISupportLogger.authServer.info(
-                        "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                case .launchInstalledHelper:
+                    installation = try self.ensureServerAvailable(
+                        using: self.resolveInstallation()
                     )
-                    return
                 }
-            #else
-                guard let installation = try? self.resolveInstallation() else {
-                    return
-                }
-            #endif
+            } catch {
+                LKSwiftUISupportLogger.authServer.info(
+                    "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                )
+                return
+            }
             do {
                 let response = try self.sendRequest(
                     method: "license.check_access",
@@ -388,28 +396,62 @@ private final class LKSwiftUISupportAuthServerBridge {
         )
     }
 
+    func showActivationPrompt(from window: NSWindow?) {
+        performVoidRequest(
+            method: "ui.show_activation_prompt",
+            payload: LKSwiftUISupportClientProcessPayload(
+                lookInsideProcessID: ProcessInfo.processInfo.processIdentifier
+            ),
+            from: window
+        )
+    }
+
     func showLicenseWindow(from window: NSWindow?) {
         performVoidRequest(method: "ui.show_license", from: window)
     }
 
     func refreshLicenseStatus(from window: NSWindow?) {
-        do {
-            let payload: LKSwiftUISupportAuthServerAccessDecisionPayload = try runWithAutoRefresh(window: window) { installation in
-                let response = try self.sendRequest(
-                    method: "license.refresh_status",
-                    payload: LKSwiftUISupportEmptyPayload(),
-                    installation: installation,
-                    responseType: LKSwiftUISupportAuthServerAccessDecisionPayload.self
-                )
-                guard let payload = response.payload else {
-                    throw LKSwiftUISupportAuthServerError.invalidResponse("Missing access decision payload.")
-                }
-                return payload
+        let shouldStart: Bool = lock.withLock {
+            guard !licenseStatusRefreshInFlight else {
+                return false
             }
-            recordAccessDecision(payload)
-            presentAccessAlert(title: payload.title, detail: payload.message, window: window)
-        } catch {
-            presentRuntimeAlert(title: NSLocalizedString("LookInside Auth Server Required", comment: ""), detail: error.localizedDescription, window: window)
+            licenseStatusRefreshInFlight = true
+            return true
+        }
+        guard shouldStart else {
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            defer {
+                self?.lock.withLock {
+                    self?.licenseStatusRefreshInFlight = false
+                }
+            }
+            guard let self else { return }
+
+            do {
+                let payload: LKSwiftUISupportAuthServerAccessDecisionPayload = try self.runWithAutoRefresh(window: window) { installation in
+                    let response = try self.sendRequest(
+                        method: "license.refresh_status",
+                        payload: LKSwiftUISupportEmptyPayload(),
+                        installation: installation,
+                        responseType: LKSwiftUISupportAuthServerAccessDecisionPayload.self
+                    )
+                    guard let payload = response.payload else {
+                        throw LKSwiftUISupportAuthServerError.invalidResponse("Missing access decision payload.")
+                    }
+                    return payload
+                }
+                self.recordAccessDecision(payload)
+                self.presentAccessAlert(title: payload.title, detail: payload.message, window: nil)
+            } catch {
+                self.presentRuntimeAlert(
+                    title: NSLocalizedString("LookInside Auth Server Required", comment: ""),
+                    detail: error.localizedDescription,
+                    window: nil
+                )
+            }
         }
     }
 
@@ -781,7 +823,7 @@ private final class LKSwiftUISupportAuthServerBridge {
         presentAlert(title: title, detail: detail, window: window, deduplicate: false)
     }
 
-    private func presentAlert(title: String, detail: String, window: NSWindow?, deduplicate: Bool) {
+    private func presentAlert(title: String, detail: String, window _: NSWindow?, deduplicate: Bool) {
         if deduplicate {
             let shouldPresent = lock.withLock {
                 if lastPresentedErrorDescription == detail {
@@ -796,22 +838,31 @@ private final class LKSwiftUISupportAuthServerBridge {
             }
         }
 
-        let block = {
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = detail
-            alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
-            if let window {
-                alert.beginSheetModal(for: window, completionHandler: nil)
-            } else {
-                alert.runModal()
-            }
-        }
+        presentAuthenticatorAlert(title: title, detail: detail)
+    }
 
-        if Thread.isMainThread {
-            block()
-        } else {
-            DispatchQueue.main.async(execute: block)
+    private func presentAuthenticatorAlert(title: String, detail: String) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            do {
+                let installation = try self.ensureServerAvailable(
+                    using: self.resolveInstallation()
+                )
+                _ = try self.sendRequest(
+                    method: "ui.show_alert",
+                    payload: LKSwiftUISupportUserAlertPayload(
+                        title: title,
+                        message: detail,
+                        style: "warning"
+                    ),
+                    installation: installation,
+                    responseType: LKSwiftUISupportEmptyPayload.self
+                )
+            } catch {
+                LKSwiftUISupportLogger.authServer.error(
+                    "authenticator alert delivery failed: \(error.localizedDescription, privacy: .public)"
+                )
+            }
         }
     }
 
@@ -1010,26 +1061,7 @@ public final class LKSwiftUISupportGatekeeper: NSObject {
     }
 
     private func presentSwiftUISupportActivationPrompt(window: NSWindow?) {
-        let alert = NSAlert()
-        alert.messageText = NSLocalizedString("Activate LookInside Pro?", comment: "")
-        alert.informativeText = NSLocalizedString(
-            "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details.",
-            comment: ""
-        )
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: NSLocalizedString("Activate", comment: ""))
-        alert.addButton(withTitle: NSLocalizedString("Later", comment: ""))
-
-        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
-            guard response == .alertFirstButtonReturn else { return }
-            self?.runtimeBridge.showActivationWindow(from: window ?? NSApp.keyWindow)
-        }
-
-        if let window {
-            alert.beginSheetModal(for: window, completionHandler: completion)
-        } else {
-            completion(alert.runModal())
-        }
+        runtimeBridge.showActivationPrompt(from: window)
     }
 
     @objc(showLicenseWindow)

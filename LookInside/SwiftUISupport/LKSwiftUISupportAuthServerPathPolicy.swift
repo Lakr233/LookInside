@@ -40,3 +40,18 @@ enum LKSwiftUISupportAuthServerPathPolicy {
         return launchEnvironment
     }
 }
+
+enum LKSwiftUISupportActivationStateRefreshStartupAction: Equatable {
+    case installAndLaunch
+    case launchInstalledHelper
+}
+
+enum LKSwiftUISupportActivationStateRefreshPolicy {
+    static var startupAction: LKSwiftUISupportActivationStateRefreshStartupAction {
+        #if DEBUG
+            return .installAndLaunch
+        #else
+            return .launchInstalledHelper
+        #endif
+    }
+}
