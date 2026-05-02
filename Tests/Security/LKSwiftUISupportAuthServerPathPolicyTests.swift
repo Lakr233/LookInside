@@ -33,11 +33,19 @@ struct LKSwiftUISupportAuthServerPathPolicyTests {
             expect(socket.path == "/tmp/attacker.sock", "debug socket override")
             expect(launchEnvironment["LOOKINSIDE_AUTH_SERVER_PATH"] == "/tmp/attacker-helper", "debug keeps helper path")
             expect(launchEnvironment["LOOKINSIDE_AUTH_SERVER_VERSION"] == "999.0.0", "debug keeps helper version")
+            expect(
+                LKSwiftUISupportActivationStateRefreshPolicy.startupAction == .installAndLaunch,
+                "debug activation refresh can install and launch helper"
+            )
         #else
             expect(executable == defaultExecutable, "release executable uses installed helper")
             expect(socket == defaultSocket, "release socket uses installed socket")
             expect(launchEnvironment["LOOKINSIDE_AUTH_SERVER_PATH"] == nil, "release strips helper path")
             expect(launchEnvironment["LOOKINSIDE_AUTH_SERVER_VERSION"] == nil, "release strips helper version")
+            expect(
+                LKSwiftUISupportActivationStateRefreshPolicy.startupAction == .launchInstalledHelper,
+                "release activation refresh launches installed helper"
+            )
         #endif
 
         expect(launchEnvironment["KEEP"] == "1", "unrelated env preserved")

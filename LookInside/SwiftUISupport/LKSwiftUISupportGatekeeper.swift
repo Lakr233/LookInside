@@ -266,21 +266,22 @@ private final class LKSwiftUISupportAuthServerBridge {
                 self?.lock.withLock { self?.activationStateRefreshInFlight = false }
             }
             guard let self else { return }
-            #if DEBUG
-                let installation: LKSwiftUISupportAuthServerInstallation
-                do {
+            let installation: LKSwiftUISupportAuthServerInstallation
+            do {
+                switch LKSwiftUISupportActivationStateRefreshPolicy.startupAction {
+                case .installAndLaunch:
                     installation = try self.ensureInstalledAndRunning(window: nil)
-                } catch {
-                    LKSwiftUISupportLogger.authServer.info(
-                        "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                case .launchInstalledHelper:
+                    installation = try self.ensureServerAvailable(
+                        using: self.resolveInstallation()
                     )
-                    return
                 }
-            #else
-                guard let installation = try? self.resolveInstallation() else {
-                    return
-                }
-            #endif
+            } catch {
+                LKSwiftUISupportLogger.authServer.info(
+                    "activation state refresh setup failed: \(error.localizedDescription, privacy: .public)"
+                )
+                return
+            }
             do {
                 let response = try self.sendRequest(
                     method: "license.check_access",
