@@ -261,6 +261,79 @@ sign_cli() {
 	codesign --verify --verbose=2 "$cli_binary"
 }
 
+is_mach_o_file() {
+	local path="$1"
+	file -b "$path" 2>/dev/null | grep -q "Mach-O"
+}
+
+path_contains_symlink() {
+	local path="$1"
+	local current="$path"
+
+	while [[ "$current" != "/" && "$current" != "." ]]; do
+		[[ -L "$current" ]] && return 0
+		current="$(dirname "$current")"
+	done
+
+	return 1
+}
+
+should_skip_nested_code_path() {
+	local path="$1"
+
+	[[ "$path" == *"/Versions/Current"* ]] && return 0
+	path_contains_symlink "$path"
+}
+
+sign_code_path() {
+	local path="$1"
+
+	log "Signing nested code: ${path#$PROJECT_ROOT/}"
+	codesign \
+		--sign "$SIGNING_IDENTITY" \
+		--options runtime \
+		--timestamp \
+		--verbose=4 \
+		--force \
+		"$path"
+}
+
+sign_nested_code() {
+	local app_path="$1"
+	local main_executable="$app_path/Contents/MacOS/LookInside"
+	local mach_o_files=()
+	local bundles=()
+	local candidate
+
+	while IFS= read -r candidate; do
+		[[ "$candidate" == "$main_executable" ]] && continue
+		should_skip_nested_code_path "$candidate" && continue
+		if is_mach_o_file "$candidate"; then
+			mach_o_files+=("$candidate")
+		fi
+	done < <(find "$app_path/Contents" -type f -print)
+
+	while IFS= read -r candidate; do
+		bundles+=("$candidate")
+	done < <(
+		find "$app_path/Contents" -type d \
+			\( -name "*.app" -o -name "*.appex" -o -name "*.bundle" -o -name "*.framework" -o -name "*.xpc" \) \
+			-print |
+			awk '{ print length, $0 }' |
+			sort -rn |
+			cut -d' ' -f2-
+	)
+
+	for candidate in "${mach_o_files[@]}"; do
+		sign_code_path "$candidate"
+	done
+
+	for candidate in "${bundles[@]}"; do
+		should_skip_nested_code_path "$candidate" && continue
+		sign_code_path "$candidate"
+	done
+}
+
 package_cli() {
 	local cli_binary="$1"
 	local cli_zip="$2"
@@ -271,20 +344,28 @@ package_cli() {
 
 archive_app_unsigned() {
 	local archive_path="$1"
+	local xcodebuild_args=(
+		-skipMacroValidation
+		-project "$PROJECT_FILE"
+		-scheme "$SCHEME"
+		-configuration "$CONFIGURATION"
+		-destination "generic/platform=macOS"
+		-derivedDataPath "$DERIVED_DATA_PATH"
+		-archivePath "$archive_path"
+		CODE_SIGNING_ALLOWED=NO
+	)
+
+	if [[ -n "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
+		xcodebuild_args+=(SPARKLE_PUBLIC_ED_KEY="$SPARKLE_PUBLIC_ED_KEY")
+	fi
 
 	rm -rf "$archive_path" "$DERIVED_DATA_PATH"
 
+	log "Syncing derived source mirror"
+	bash Scripts/sync-derived-source.sh
+
 	log "Archiving app without Xcode signing"
-	xcodebuild \
-		-skipMacroValidation \
-		-project "$PROJECT_FILE" \
-		-scheme "$SCHEME" \
-		-configuration "$CONFIGURATION" \
-		-destination "generic/platform=macOS" \
-		-derivedDataPath "$DERIVED_DATA_PATH" \
-		-archivePath "$archive_path" \
-		CODE_SIGNING_ALLOWED=NO \
-		archive 2>&1 | format_output
+	xcodebuild "${xcodebuild_args[@]}" archive 2>&1 | format_output
 }
 
 sign_app_bundle() {
@@ -299,6 +380,9 @@ sign_app_bundle() {
 
 	chmod 755 "$app_path/Contents/MacOS/LookInside"
 	[[ -x "$app_path/Contents/MacOS/LookInside" ]] || fail "Main app executable is not executable: $app_path/Contents/MacOS/LookInside"
+
+	log "Signing nested app code"
+	sign_nested_code "$app_path"
 
 	log "Signing app bundle"
 	print_signing_context
@@ -483,6 +567,7 @@ require_command shasum
 require_command security
 require_command spctl
 require_command find
+require_command file
 
 mkdir -p "$ARCHIVE_ROOT"
 init_release_paths

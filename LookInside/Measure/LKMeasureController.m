@@ -13,7 +13,6 @@
 #import "LKTextFieldView.h"
 #import "LKMeasureResultView.h"
 #import "LKNavigationManager.h"
-#import "LKPreferenceSwitchView.h"
 
 @interface LKMeasureController ()
 

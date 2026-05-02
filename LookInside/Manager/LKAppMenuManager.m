@@ -11,6 +11,7 @@
 #import "LKPreferenceManager.h"
 #import "LKWindowController.h"
 #import "LookInside-Swift.h"
+#import <Sparkle/Sparkle.h>
 
 static NSUInteger const kTag_About = 11;
 static NSUInteger const kTag_Preferences = 12;
@@ -22,8 +23,8 @@ static NSUInteger const kTag_PurchaseSwiftUISupport = 17;
 static NSUInteger const kTag_SwiftUISupportCustomerSupport = 18;
 static NSUInteger const kTag_SwiftUISupportSubmenu = 19;
 
-static NSString *const kSwiftUISupportPurchaseURL = @"https://example.com/";
-static NSString *const kSwiftUISupportCustomerSupportURL = @"https://example.com/";
+static NSString *const kSwiftUISupportPurchaseURL = @"https://lookinside-app.com/purchase";
+static NSString *const kSwiftUISupportCustomerSupportURL = @"mailto:support@lookinside-app.com";
 
 static NSUInteger const kTag_Reload = 21;
 static NSUInteger const kTag_Dimension = 22;
@@ -57,18 +58,11 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 @property(nonatomic, copy) NSDictionary<NSNumber *, NSString *> *delegatingTagToSelMap;
 @property(nonatomic, strong) NSMenu *recentDocumentsMenu;
+@property(nonatomic, strong) SPUStandardUpdaterController *updaterController;
 
 @end
 
 @implementation LKAppMenuManager
-
-- (void)_showDisabledExternalLinkAlert:(NSString *)message {
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = NSLocalizedString(@"Link Disabled", nil);
-    alert.informativeText = message;
-    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-    [alert runModal];
-}
 
 + (instancetype)sharedInstance {
     static dispatch_once_t onceToken;
@@ -190,7 +184,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (NSMenu *)_buildSwiftUIPluginSubmenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"SwiftUI Support"];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"LookInside Pro"];
     [self _populateSwiftUIPluginSubmenu:menu];
     return menu;
 }
@@ -201,12 +195,12 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     LKSwiftUISupportActivationState state = [LKSwiftUISupportGatekeeper sharedInstance].activationState;
 
     if (state == LKSwiftUISupportActivationStateActivated) {
-        [menu addItem:LKMenuItem(@"SwiftUI Support License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
+        [menu addItem:LKMenuItem(@"LookInside Pro License…", nil, @"", 0, kTag_SwiftUISupportLicense)];
         [menu addItem:LKMenuItem(@"Refresh License Status", nil, @"", 0, kTag_RefreshSwiftUISupportLicense)];
         [menu addItem:[NSMenuItem separatorItem]];
         [menu addItem:LKMenuItem(@"Customer Support…", nil, @"", 0, kTag_SwiftUISupportCustomerSupport)];
     } else {
-        [menu addItem:LKMenuItem(@"Activate SwiftUI Support…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
+        [menu addItem:LKMenuItem(@"Activate LookInside Pro…", nil, @"", 0, kTag_ActivateSwiftUISupport)];
         [menu addItem:[NSMenuItem separatorItem]];
         [menu addItem:LKMenuItem(@"Purchase…", nil, @"", 0, kTag_PurchaseSwiftUISupport)];
     }
@@ -238,7 +232,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 
 - (NSMenu *)_buildPluginsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Plugins"];
-    [menu addItem:LKSubmenuItem(@"SwiftUI Support", [self _buildSwiftUIPluginSubmenu], kTag_SwiftUISupportSubmenu)];
+    [menu addItem:LKSubmenuItem(@"LookInside Pro", [self _buildSwiftUIPluginSubmenu], kTag_SwiftUISupportSubmenu)];
     return menu;
 }
 
@@ -279,6 +273,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (void)setup {
+    self.updaterController = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:nil userDriverDelegate:nil];
     [self _installMainMenu];
 
     self.delegatingTagToSelMap = @{
@@ -367,7 +362,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
         return;
     }
 
-    if ([menu.title isEqualToString:@"SwiftUI Support"]) {
+    if ([menu.title isEqualToString:@"LookInside Pro"]) {
         [[LKSwiftUISupportGatekeeper sharedInstance] refreshActivationStateInBackground];
         [self _populateSwiftUIPluginSubmenu:menu];
         return;
@@ -438,7 +433,7 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
 }
 
 - (void)_handleCheckUpdates {
-    [self _showDisabledExternalLinkAlert:NSLocalizedString(@"Automatic update checks are disabled in this community build.", nil)];
+    [self.updaterController checkForUpdates:nil];
 }
 
 - (void)_handleAbout {

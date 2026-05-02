@@ -153,7 +153,7 @@ static BOOL LKAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
     accent.hidden = !isSwiftUIGroup;
     accent.image = isSwiftUIGroup ? [LKDashboardCardView swiftUIAccentImage] : nil;
     self.titleControl.toolTip = isSwiftUIGroup
-        ? NSLocalizedString(@"SwiftUI Support · Activated", nil)
+        ? NSLocalizedString(@"LookInside Pro · Activated", nil)
         : nil;
     [self.titleControl setNeedsLayout:YES];
     

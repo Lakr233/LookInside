@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "%@ active apps were found" : {
       "localizations" : {
         "en" : {
@@ -81,18 +84,18 @@
         }
       }
     },
-    "Activate SwiftUI Support?" : {
+    "Activate LookInside Pro?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activate SwiftUI Support?"
+            "value" : "Activate LookInside Pro?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "激活 SwiftUI 支持？"
+            "value" : "激活 LookInside Pro？"
           }
         }
       }
@@ -162,6 +165,7 @@
       }
     },
     "Automatic update checks are disabled in this community build." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -269,22 +273,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "切换 App"
-          }
-        }
-      }
-    },
-    "Check out version updates on GitHub…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check out version updates on GitHub…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "前往 GitHub 查看版本更新…"
           }
         }
       }
@@ -788,22 +776,6 @@
         }
       }
     },
-    "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "首次加载 SwiftUI 相关信息时，LookInside 需要收集并匹配 SwiftUI 调试数据，耗时可能更长。"
-          }
-        }
-      }
-    },
     "Fail to inspect this target app due to a version problem." : {
       "localizations" : {
         "en" : {
@@ -1044,6 +1016,22 @@
         }
       }
     },
+    "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First-time loading of SwiftUI details may take longer because LookInside needs to collect and match SwiftUI debug data."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次加载 SwiftUI 相关信息时，LookInside 需要收集并匹配 SwiftUI 调试数据，耗时可能更长。"
+          }
+        }
+      }
+    },
     "Focus" : {
       "localizations" : {
         "en" : {
@@ -1120,6 +1108,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本次隐藏截图"
+          }
+        }
+      }
+    },
+    "Hierarchy Timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hierarchy Timeout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "层级请求超时"
           }
         }
       }
@@ -1486,22 +1490,6 @@
         }
       }
     },
-    "Legacy release history links are disabled in this community build." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legacy release history links are disabled in this community build."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此社区版本已停用旧版发布历史链接。"
-          }
-        }
-      }
-    },
     "Legacy Swift integration guides are disabled in this community build. See the repository README instead." : {
       "localizations" : {
         "en" : {
@@ -1562,6 +1550,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "许可证签名失败。"
+          }
+        }
+      }
+    },
+    "License Timeout" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License Timeout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License 超时"
           }
         }
       }
@@ -1816,6 +1821,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "LookInside 许可证校验失败。"
+          }
+        }
+      }
+    },
+    "LookInside Pro · Activated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LookInside Pro · Activated"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LookInside Pro · 已激活"
           }
         }
       }
@@ -2972,18 +2993,18 @@
         }
       }
     },
-    "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details." : {
+    "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This target app includes SwiftUI support. Activate LookInside SwiftUI Support to inspect SwiftUI view details."
+            "value" : "This target app includes SwiftUI views. Activate LookInside Pro to inspect SwiftUI view details."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此目标 App 内含 SwiftUI 支持。激活 LookInside SwiftUI 支持后可查看 SwiftUI 视图详情。"
+            "value" : "目标 App 内含 SwiftUI 视图。激活 LookInside Pro 后可查看 SwiftUI 视图详情。"
           }
         }
       }
@@ -3000,6 +3021,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此构建中无法使用该上游社区链接。"
+          }
+        }
+      }
+    },
+    "Timeout for hierarchy and hierarchy-details requests, in seconds. Default: 15s." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout for hierarchy and hierarchy-details requests, in seconds. Default: 15s."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hierarchy 和 HierarchyDetails 请求的超时时间，单位秒。默认 15 秒。"
+          }
+        }
+      }
+    },
+    "Timeout for license challenge and verification requests, in seconds. Default: 5s." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout for license challenge and verification requests, in seconds. Default: 5s."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "License challenge 和 verify 请求的超时时间，单位秒。默认 5 秒。"
           }
         }
       }
@@ -3193,38 +3247,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的 iOS 项目似乎使用了 Swift，但你还没有为 LookInside 开启 Swift 优化。"
-          }
-        }
-      }
-    },
-    "Your iOS project uses an outdated version of the LookinServer SDK. It is recommended to upgrade to the latest version %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your iOS project uses an outdated version of the LookinServer SDK. It is recommended to upgrade to the latest version %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的 iOS 项目使用的 LookinServer SDK 版本已过旧，建议升级到最新版本 %1$@。"
-          }
-        }
-      }
-    },
-    "Your iOS project uses version %@ of the LookinServer SDK, while the latest version online is %@, it is recommended to upgrade." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your iOS project uses version %1$@ of the LookinServer SDK, while the latest version online is %2$@, it is recommended to upgrade."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的 iOS 项目当前使用的 LookinServer SDK 版本为 %1$@，而线上最新版本为 %2$@，建议尽快升级。"
           }
         }
       }

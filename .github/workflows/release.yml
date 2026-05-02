@@ -10,12 +10,17 @@ on:
         description: Version to stamp into the release build, for example 2.2.0.
         required: true
         type: string
+      publish_appcast:
+        description: Publish the signed app to the Sparkle appcast.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_version: ${{ steps.context.outputs.build_version }}
+      build_number: ${{ steps.context.outputs.build_number }}
       publish_release: ${{ steps.context.outputs.publish_release }}
+      publish_appcast: ${{ steps.context.outputs.publish_appcast }}
       artifact_name: ${{ steps.context.outputs.artifact_name }}
 
     steps:
@@ -39,27 +46,73 @@ jobs:
         id: context
         run: |
           set -euo pipefail
+          APPCAST_URL="https://lookinside-app.com/appcast.xml"
+          APPCAST_PATH="${RUNNER_TEMP}/lookinside-appcast.xml"
+          curl -fsSL "${APPCAST_URL}" -o "${APPCAST_PATH}"
+          BUILD_NUMBER="$(
+            python3 - "${APPCAST_PATH}" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse(sys.argv[1]).getroot()
+          sparkle_ns = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
+          versions = []
+
+          def collect(value):
+              value = (value or "").strip()
+              if value.isdecimal():
+                  versions.append(int(value))
+
+          for element in root.iter():
+              if element.tag == f"{sparkle_ns}version":
+                  collect(element.text)
+              collect(element.attrib.get(f"{sparkle_ns}version"))
+
+          print((max(versions) if versions else 0) + 1)
+          PY
+          )"
+          if [[ ! "${BUILD_NUMBER}" =~ ^[0-9]+$ ]]; then
+            echo "Could not resolve next Sparkle build number from ${APPCAST_URL}." >&2
+            exit 1
+          fi
+          echo "Resolved Sparkle build number ${BUILD_NUMBER} from ${APPCAST_URL}."
+          echo "build_number=${BUILD_NUMBER}" >> "${GITHUB_OUTPUT}"
+
           if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             echo "build_version=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
             echo "publish_release=true" >> "${GITHUB_OUTPUT}"
+            echo "publish_appcast=true" >> "${GITHUB_OUTPUT}"
             echo "artifact_name=LookInside-${GITHUB_REF_NAME}-release" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
           VERSION="${{ inputs.version }}"
+          PUBLISH_APPCAST="${{ inputs.publish_appcast }}"
           if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Manual run version must match x.y.z or vX.Y.Z" >&2
+            exit 1
+          fi
+          if [[ "${PUBLISH_APPCAST}" != "true" && "${PUBLISH_APPCAST}" != "false" ]]; then
+            echo "publish_appcast must be true or false." >&2
             exit 1
           fi
 
           echo "build_version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "publish_release=false" >> "${GITHUB_OUTPUT}"
-          echo "artifact_name=LookInside-${VERSION}-notarize-test" >> "${GITHUB_OUTPUT}"
+          echo "publish_appcast=${PUBLISH_APPCAST}" >> "${GITHUB_OUTPUT}"
+          if [[ "${PUBLISH_APPCAST}" == "true" ]]; then
+            echo "artifact_name=LookInside-${VERSION}-release" >> "${GITHUB_OUTPUT}"
+          else
+            echo "artifact_name=LookInside-${VERSION}-notarize-test" >> "${GITHUB_OUTPUT}"
+          fi
 
   build_package:
     needs: prepare
     runs-on: macos-26
     timeout-minutes: 60
+    env:
+      SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+      RELEASE_BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
 
     steps:
       - name: Checkout
@@ -73,11 +126,19 @@ jobs:
       - name: Install xcbeautify
         run: brew install xcbeautify
 
+      - name: Validate Sparkle Public Key
+        run: |
+          set -euo pipefail
+          if [[ -z "${SPARKLE_PUBLIC_ED_KEY}" ]]; then
+            echo "SPARKLE_PUBLIC_ED_KEY secret is required for release builds." >&2
+            exit 1
+          fi
+
       - name: Generate Xcode Configuration
         run: |
           bash Scripts/write-github-action-xcconfig.sh \
             --version "${{ needs.prepare.outputs.build_version }}" \
-            --build-number 0
+            --build-number "${RELEASE_BUILD_NUMBER}"
 
       - name: Archive App
         timeout-minutes: 30
@@ -86,12 +147,19 @@ jobs:
             --tag "${{ needs.prepare.outputs.build_version }}" \
             --stage archive-app
 
+      - name: Package Unsigned Archive
+        run: |
+          set -euo pipefail
+          release_dir="build/releases/${{ needs.prepare.outputs.build_version }}"
+          tar -czf "${release_dir}/LookInside.xcarchive.tar.gz" \
+            -C "${release_dir}" \
+            LookInside.xcarchive
+
       - name: Upload Unsigned Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
-          path: |
-            build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive
+          path: build/releases/${{ needs.prepare.outputs.build_version }}/LookInside.xcarchive.tar.gz
           if-no-files-found: error
           retention-days: 7
 
@@ -113,6 +181,13 @@ jobs:
         with:
           name: lookinside-${{ needs.prepare.outputs.build_version }}-unsigned
           path: build/releases/${{ needs.prepare.outputs.build_version }}
+
+      - name: Extract Unsigned Archive
+        run: |
+          set -euo pipefail
+          release_dir="build/releases/${{ needs.prepare.outputs.build_version }}"
+          tar -xzf "${release_dir}/LookInside.xcarchive.tar.gz" \
+            -C "${release_dir}"
 
       - name: Setup Keychain and Signing Env
         id: setup_keychain
@@ -192,3 +267,118 @@ jobs:
           files: |
             dist/*.zip
             dist/checksums.txt
+
+  publish_appcast:
+    needs: [prepare, collect_release]
+    if: needs.prepare.outputs.publish_appcast == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout App Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: app
+
+      - name: Download Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact_name }}
+          path: dist
+
+      - name: Resolve App Zip
+        id: artifact
+        run: |
+          set -euo pipefail
+          app_zip="$(find dist -maxdepth 1 -type f -name 'LookInside-*-macOS-app.zip' -print -quit)"
+          if [[ -z "$app_zip" ]]; then
+            echo "No LookInside app zip found in release artifact." >&2
+            exit 1
+          fi
+          echo "app_zip=$app_zip" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Sparkle Publishing Secrets
+        env:
+          LOOKINSIDE_WEB_RELEASE_TOKEN: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+          LOOKINSIDE_SECRETS_READ_TOKEN: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}
+          SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE: ${{ secrets.SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [[ -n "$LOOKINSIDE_WEB_RELEASE_TOKEN" ]] || { echo "LOOKINSIDE_WEB_RELEASE_TOKEN secret is required." >&2; exit 1; }
+          [[ -n "$LOOKINSIDE_SECRETS_READ_TOKEN" ]] || { echo "LOOKINSIDE_SECRETS_READ_TOKEN secret is required." >&2; exit 1; }
+          [[ -n "$SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE" ]] || { echo "SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE secret is required." >&2; exit 1; }
+
+      - name: Checkout Web Repository
+        uses: actions/checkout@v4
+        with:
+          repository: LookInsideApp/LookInside-Web
+          ref: main
+          path: web
+          token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+
+      - name: Checkout Secrets Repository
+        uses: actions/checkout@v4
+        with:
+          repository: LookInsideApp/LookInside-Secret
+          ref: main
+          path: secrets
+          token: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}
+
+      - name: Export GitHub Release Notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ needs.prepare.outputs.publish_release }}" == "true" ]]; then
+            gh release view "${{ github.ref_name }}" \
+              --repo "${{ github.repository }}" \
+              --json body \
+              --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
+          fi
+          if [[ ! -f "$RUNNER_TEMP/release-notes.md" || ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
+            printf '# LookInside %s\n\nSparkle update build.\n' "${{ needs.prepare.outputs.build_version }}" > "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      - name: Decrypt Sparkle Private Key
+        env:
+          SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE: ${{ secrets.SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          command -v gpg >/dev/null 2>&1 || brew install gnupg
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$SPARKLE_PRIVATE_KEY_GPG_PASSPHRASE" \
+            --decrypt secrets/sparkle/private-ed-key.txt.gpg > "$RUNNER_TEMP/sparkle-private-ed-key.txt"
+          chmod 600 "$RUNNER_TEMP/sparkle-private-ed-key.txt"
+
+      - name: Install Sparkle Tools
+        id: sparkle
+        run: |
+          set -euo pipefail
+          tools_dir="$(bash app/Scripts/install-sparkle-tools.sh --version 2.9.1)"
+          echo "tools_dir=$tools_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Appcast Into Web Repository
+        run: |
+          set -euo pipefail
+          bash app/Scripts/publish-sparkle-appcast-to-web.sh \
+            --web-dir web \
+            --app-zip "${{ steps.artifact.outputs.app_zip }}" \
+            --private-key-file "$RUNNER_TEMP/sparkle-private-ed-key.txt" \
+            --sparkle-tools-dir "${{ steps.sparkle.outputs.tools_dir }}" \
+            --release-notes-file "$RUNNER_TEMP/release-notes.md" \
+            --version "${{ needs.prepare.outputs.build_version }}"
+
+      - name: Commit Web Appcast
+        working-directory: web
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/appcast.xml public/downloads/lookinside
+          if git diff --cached --quiet; then
+            echo "No Web appcast changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish LookInside ${{ needs.prepare.outputs.build_version }} appcast"
+          git push origin HEAD:main

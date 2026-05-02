@@ -11,7 +11,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSString *const LKMessage_Jobs;
-extern NSString *const LKMessage_NewServerVersion;
 extern NSString *const LKMessage_SwiftSubspec;
 
 @interface LKMessageManager : NSObject

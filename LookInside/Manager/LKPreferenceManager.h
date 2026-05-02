@@ -17,6 +17,10 @@ extern NSString *const LKWindowSizeName_Static;
 /// 初始的 preview scale
 extern const CGFloat LKInitialPreviewScale;
 
+/// 默认的层级请求超时时间，单位秒。
+extern const NSTimeInterval LKDefaultHierarchyRequestTimeoutInterval;
+extern const NSTimeInterval LKDefaultLicenseHandshakeTimeoutInterval;
+
 typedef NS_ENUM(NSInteger, LookinPreferredAppeanranceType) {
     LookinPreferredAppeanranceTypeDark,
     LookinPreferredAppeanranceTypeLight,
@@ -75,6 +79,10 @@ typedef NS_ENUM(NSInteger, LookinMeasureState) {
 @property(nonatomic, copy) NSArray<LookinAttrGroupIdentifier> *collapsedAttrGroups;
 
 @property(nonatomic, assign) CGFloat preferredExportCompression;
+
+@property(nonatomic, assign) NSTimeInterval hierarchyRequestTimeoutInterval;
+
+@property(nonatomic, assign) NSTimeInterval licenseHandshakeTimeoutInterval;
 
 @property(nonatomic, strong, readonly) LookinBOOLMsgAttribute *freeRotation;
 
