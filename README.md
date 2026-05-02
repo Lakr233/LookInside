@@ -2,7 +2,7 @@
 
 A macOS UI inspector for debuggable macOS and iOS apps. Click a view, see its layer tree, frames, and resolved properties live.
 
-![Preview](./Resources/SCR-20260330-ccud.png)
+![Preview](./Resources/SCR-20260502-svqx.jpeg)
 
 Website · [lookinside-app.com](https://lookinside-app.com)
 Server library · [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server)
@@ -15,10 +15,10 @@ LookInside is a community continuation of [Lookin](https://github.com/QMUI/Looki
 ## How it works (at a glance)
 
 ```
-┌────────────┐    Peertalk over TCP loopback / USB    ┌──────────────┐
-│ LookInside │ ◄────── 47164–47179 (per platform) ──► │  Your app    │
-│  (macOS)   │       NSKeyedArchiver framing           │ + LookinServer│
-└────────────┘                                          └──────────────┘
+┌────────────┐    Peertalk over TCP loopback / USB    ┌───────────────┐
+│ LookInside │ ◄────── 47164–47179 (per platform) ──► │  Your app     │
+│  (macOS)   │       NSKeyedArchiver framing          │ + LookinServer│
+└────────────┘                                        └───────────────┘
 ```
 
 1. You embed [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server) into the app you want to inspect (debug builds only).
