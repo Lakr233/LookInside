@@ -53,9 +53,11 @@ trim_whitespace() {
 prune_appcast_assets() {
 	local prune_versions="$1"
 	local prune_deltas="$2"
+	local should_regenerate_cleanly="false"
 	local old_ifs version normalized
 
 	if [[ -n "$prune_versions" ]]; then
+		should_regenerate_cleanly="true"
 		old_ifs="$IFS"
 		IFS=","
 		read -ra versions <<<"$prune_versions"
@@ -75,7 +77,12 @@ prune_appcast_assets() {
 	fi
 
 	if [[ "$prune_deltas" == "true" ]]; then
+		should_regenerate_cleanly="true"
 		find "$updates_dir" -maxdepth 1 -type f -name '*.delta' -delete
+	fi
+
+	if [[ "$should_regenerate_cleanly" == "true" ]]; then
+		rm -f "$public_dir/appcast.xml"
 	fi
 }
 
