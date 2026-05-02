@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
     "%@ active apps were found" : {
       "localizations" : {
         "en" : {
@@ -1395,13 +1392,52 @@
       }
     },
     "Jump in hierarchy" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jump in hierarchy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在层级中跳转"
+          }
+        }
+      }
     },
     "Jump to backing CALayer" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jump to backing CALayer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳转到对应 CALayer"
+          }
+        }
+      }
     },
     "Jump to SwiftUI node" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jump to SwiftUI node"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳转到 SwiftUI 节点"
+          }
+        }
+      }
     },
     "Later" : {
       "localizations" : {
