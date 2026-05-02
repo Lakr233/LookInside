@@ -23,8 +23,8 @@ static NSUInteger const kTag_PurchaseSwiftUISupport = 17;
 static NSUInteger const kTag_SwiftUISupportCustomerSupport = 18;
 static NSUInteger const kTag_SwiftUISupportSubmenu = 19;
 
-static NSString *const kSwiftUISupportPurchaseURL = @"https://example.com/";
-static NSString *const kSwiftUISupportCustomerSupportURL = @"https://example.com/";
+static NSString *const kSwiftUISupportPurchaseURL = @"https://lookinside-app.com/purchase";
+static NSString *const kSwiftUISupportCustomerSupportURL = @"mailto:support@lookinside-app.com";
 
 static NSUInteger const kTag_Reload = 21;
 static NSUInteger const kTag_Dimension = 22;
