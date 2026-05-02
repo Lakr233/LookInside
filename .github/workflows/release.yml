@@ -79,6 +79,7 @@ jobs:
     timeout-minutes: 60
     env:
       SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+      RELEASE_BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
       - name: Checkout
@@ -104,7 +105,7 @@ jobs:
         run: |
           bash Scripts/write-github-action-xcconfig.sh \
             --version "${{ needs.prepare.outputs.build_version }}" \
-            --build-number 0
+            --build-number "${RELEASE_BUILD_NUMBER}"
 
       - name: Archive App
         timeout-minutes: 30
