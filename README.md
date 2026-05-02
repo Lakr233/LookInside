@@ -4,11 +4,10 @@ A macOS UI inspector for debuggable macOS and iOS apps. Click a view, see its la
 
 ![Preview](./Resources/SCR-20260502-svqx.jpeg)
 
-Website · [lookinside-app.com](https://lookinside-app.com)
-Server library · [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server)
-Upstream · [QMUI/LookinServer](https://github.com/QMUI/LookinServer)
+- Website · [lookinside-app.com](https://lookinside-app.com)
+- Swift Package · [LookInside-Server](https://github.com/LookInsideApp/LookInside-Server)
 
-LookInside is a community continuation of [Lookin](https://github.com/QMUI/LookinServer). It ships with no telemetry, no crash upload, and no auto-update service.
+LookInside is a community continuation of [Lookin](https://lookin.work/).
 
 ---
 
@@ -32,7 +31,7 @@ LookInside is a community continuation of [Lookin](https://github.com/QMUI/Looki
 
 ### 1. Install
 
-Grab a notarized build from the [Releases page](https://github.com/LookInsideApp/LookInside/releases) or the [website](https://lookinside-app.com).
+Grab a notarized build from the [Releases page](https://github.com/LookInsideApp/LookInside/releases).
 
 ### 2. Embed the server in your app
 
@@ -44,74 +43,7 @@ Launch LookInside, run your debug build, pick the target from the sidebar.
 
 ---
 
-## Build from source
-
-Requirements:
-
-- macOS 14 or later
-- Xcode + command-line tools
-- a debuggable target app to inspect
-
-Build the macOS app:
-
-```bash
-bash Scripts/sync-derived-source.sh
-xcodebuild -skipMacroValidation \
-           -project LookInside.xcodeproj \
-           -scheme LookInside \
-           -configuration Debug \
-           -derivedDataPath /tmp/LookInsideDerivedData \
-           CODE_SIGNING_ALLOWED=NO build
-```
-
-The sync step mirrors shared Swift sources from [`Sources/`](Sources/) into [`LookInside/DerivedSource`](LookInside/DerivedSource). If you change shared code, edit it under [`Sources/`](Sources/) and re-sync.
-
-### Code signing
-
-Xcode build settings live under [`Configuration/`](Configuration/). The checked-in defaults use automatic signing with an empty development team.
-
-For signed local builds, create `Configuration/custom.xcconfig`. Debug and Release both include it automatically when it exists, and it is ignored by git:
-
-```xcconfig
-DEVELOPMENT_TEAM = YOURTEAMID
-```
-
-### Cut a signed local release
-
-```bash
-bash Scripts/build-and-release.sh           # auto-bumps patch + build number
-bash Scripts/build-and-release.sh --version 1.2.3
-```
-
-This bumps the version, notarizes, pushes the tag, and publishes a GitHub Release from your machine.
-
----
-
-## Repository layout
-
-| Path                                       | What lives there                                         |
-| ------------------------------------------ | -------------------------------------------------------- |
-| [`LookInside/`](LookInside/)               | macOS app target — AppKit shell, sidebar, hierarchy view |
-| [`Sources/`](Sources/)                     | Canonical shared sources mirrored into the app target    |
-| [`Sources/LookinCore`](Sources/LookinCore) | Inspection primitives, Peertalk transport                |
-| [`Resources/`](Resources/)                 | Assets and preserved third-party license notices         |
-
-Module names like `LookinServer`, `LookinShared`, `LookinCore` are intentionally preserved from upstream Lookin to keep migrations painless.
-
----
-
 ## License
 
 GPL-3.0 — see [`LICENSE`](LICENSE).
 
-Bundled components keep their original notices in [`Resources/Licenses/`](Resources/Licenses/):
-
-- `ReactiveObjC` — MIT
-- `Peertalk` — MIT
-- `LookinServer` — MIT
-- `ShortCocoa` — GPL-3.0 (matches upstream Lookin)
-- `Lookin` upstream client code — GPL-3.0
-
-## Acknowledgements
-
-Built on top of [`QMUI/LookinServer`](https://github.com/QMUI/LookinServer) and [`CocoaUIInspector/Lookin`](https://github.com/CocoaUIInspector/Lookin). Thank you to the original authors.
