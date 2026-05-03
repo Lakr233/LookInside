@@ -394,6 +394,7 @@ jobs:
         env:
           PRUNE_APPCAST_VERSIONS: ${{ needs.prepare.outputs.prune_appcast_versions }}
           PRUNE_APPCAST_DELTAS: ${{ needs.prepare.outputs.prune_appcast_deltas }}
+          ASSET_DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.build_version }}/LookInside-${{ needs.prepare.outputs.build_version }}-macOS-app.zip
         run: |
           set -euo pipefail
           bash app/Scripts/publish-sparkle-appcast-to-web.sh \
@@ -402,7 +403,8 @@ jobs:
             --private-key-file "$RUNNER_TEMP/sparkle-private-ed-key.txt" \
             --sparkle-tools-dir "${{ steps.sparkle.outputs.tools_dir }}" \
             --release-notes-file "$RUNNER_TEMP/release-notes.md" \
-            --version "${{ needs.prepare.outputs.build_version }}"
+            --version "${{ needs.prepare.outputs.build_version }}" \
+            --asset-download-url "$ASSET_DOWNLOAD_URL"
 
       - name: Commit Web Appcast
         working-directory: web
@@ -410,7 +412,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/appcast.xml public/downloads/lookinside
+          git add public/appcast.xml public/downloads/manifest.json public/downloads/lookinside
           if git diff --cached --quiet; then
             echo "No Web appcast changes to publish."
             exit 0
