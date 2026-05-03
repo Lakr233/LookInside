@@ -804,7 +804,7 @@ static NSTimeInterval LKRequestTimeoutIntervalForRequestType(unsigned int reques
     NSData *data = [NSData dataWithContentsOfDispatchData:payload.dispatchData];
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    // Wire-compat with upstream Lookin / LookInside-Server send path: payload is a non-secure
+    // Wire-compat with upstream Lookin / LookInsideServer send path: payload is a non-secure
     // archive of LookinConnectionResponseAttachment whose `.data` is arbitrary id graphs
     // (Lookin* model + Foundation collections). Using NSSecureCoding with [NSObject class]
     // as the allow-list spams the runtime warning every frame, so we stay on the legacy API.

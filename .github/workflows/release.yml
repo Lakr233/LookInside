@@ -344,7 +344,7 @@ jobs:
       - name: Checkout Web Repository
         uses: actions/checkout@v4
         with:
-          repository: LookInsideApp/LookInside-Web
+          repository: ${{ secrets.WEB_TARGET_REPO }}
           ref: main
           path: web
           token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
@@ -352,7 +352,7 @@ jobs:
       - name: Checkout Secrets Repository
         uses: actions/checkout@v4
         with:
-          repository: LookInsideApp/LookInside-Secret
+          repository: ${{ secrets.SECRETS_SOURCE_REPO }}
           ref: main
           path: secrets
           token: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}

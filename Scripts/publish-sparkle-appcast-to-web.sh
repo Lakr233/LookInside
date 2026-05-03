@@ -18,7 +18,7 @@ usage() {
 Usage: bash Scripts/publish-sparkle-appcast-to-web.sh --web-dir <path> --app-zip <path> --private-key-file <path> [options]
 
 Options:
-  --web-dir <path>             Checkout path of LookInside-Web.
+  --web-dir <path>             Checkout path of the website target repo.
   --app-zip <path>             Signed, notarized LookInside app zip.
   --private-key-file <path>    Plaintext Sparkle private EdDSA key file, usually decrypted into RUNNER_TEMP.
   --sparkle-tools-dir <path>   Sparkle distribution directory containing bin/generate_appcast.
