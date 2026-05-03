@@ -19,6 +19,7 @@
 #import "LKStaticAsyncUpdateManager.h"
 #import "LKAppsManager.h"
 #import "LKInspectableApp.h"
+#import "LookinDisplayItem+LookinClient.h"
 
 static NSString * const kMenuBindKey_RowView = @"view";
 static CGFloat const kRowHeight = 28;
@@ -37,6 +38,8 @@ extern NSString *const LKAppShowConsoleNotificationName;
 @property(nonatomic, copy) NSArray<LookinDisplayItem *> *displayItems;
 
 @property(nonatomic, assign) NSInteger minIndentLevel;
+
+- (NSMenuItem *)_jumpMenuItemWithTitle:(NSString *)title targetItem:(LookinDisplayItem *)targetItem;
 
 @end
 
@@ -379,6 +382,28 @@ extern NSString *const LKAppShowConsoleNotificationName;
             item;
         })];
     }];
+
+    NSArray<LookinDisplayItem *> *backingLayerItems = [self.dataSource swiftUIBackingLayerItemsForItem:displayItem];
+    LookinDisplayItem *swiftUISourceItem = [self.dataSource swiftUISourceItemForLayerItem:displayItem];
+    if (backingLayerItems.count || swiftUISourceItem) {
+        [menu addItem:[NSMenuItem separatorItem]];
+        if (backingLayerItems.count == 1) {
+            [menu addItem:[self _jumpMenuItemWithTitle:NSLocalizedString(@"Jump to backing CALayer", nil) targetItem:backingLayerItems.firstObject]];
+        } else if (backingLayerItems.count > 1) {
+            NSMenuItem *submenuItem = [NSMenuItem new];
+            submenuItem.title = NSLocalizedString(@"Jump to backing CALayer", nil);
+            NSMenu *submenu = [NSMenu new];
+            [backingLayerItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull item, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSString *title = [NSString stringWithFormat:@"%@ %@", item.title ?: @"CALayer", item.layerObject.memoryAddress ?: @""];
+                [submenu addItem:[self _jumpMenuItemWithTitle:title targetItem:item]];
+            }];
+            submenuItem.submenu = submenu;
+            [menu addItem:submenuItem];
+        }
+        if (swiftUISourceItem) {
+            [menu addItem:[self _jumpMenuItemWithTitle:NSLocalizedString(@"Jump to SwiftUI node", nil) targetItem:swiftUISourceItem]];
+        }
+    }
     
     [menu addItem:[NSMenuItem separatorItem]];
 
@@ -493,6 +518,20 @@ extern NSString *const LKAppShowConsoleNotificationName;
         return;
     }
     [self.dataSource focusDisplayItem:item];
+}
+
+- (NSMenuItem *)_jumpMenuItemWithTitle:(NSString *)title targetItem:(LookinDisplayItem *)targetItem {
+    NSMenuItem *item = [NSMenuItem new];
+    item.target = self;
+    item.action = @selector(_handleJumpToDisplayItem:);
+    item.title = title;
+    item.representedObject = targetItem;
+    return item;
+}
+
+- (void)_handleJumpToDisplayItem:(NSMenuItem *)menuItem {
+    LookinDisplayItem *targetItem = menuItem.representedObject;
+    [self.dataSource selectAndRevealItem:targetItem];
 }
 
 - (void)_handleSearchCloseButton {

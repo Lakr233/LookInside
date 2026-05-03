@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class LookinHierarchyInfo, LookinDisplayItem, LKPreferenceManager;
+@class LookinHierarchyInfo, LookinDisplayItem, LKPreferenceManager, LookinAttribute;
 
 typedef NS_ENUM(NSUInteger, LKHierarchyDataSourceState) {
     LKHierarchyDataSourceStateNormal,
@@ -84,6 +84,18 @@ typedef NS_ENUM(NSUInteger, LKHierarchyDataSourceState) {
 
 /// 通过 oid 找到对应的 displayItem
 - (LookinDisplayItem *)displayItemWithOid:(unsigned long)oid;
+
+/// 选择目标 item，并确保它的祖先在 hierarchy 中展开可见。
+- (void)selectAndRevealItem:(LookinDisplayItem *)item;
+
+/// SwiftUI 节点 -> 已匹配的 CALayer 节点。返回空数组表示没有可跳转目标。
+- (NSArray<LookinDisplayItem *> *)swiftUIBackingLayerItemsForItem:(LookinDisplayItem *)item;
+
+/// CALayer 节点 -> 对应的 SwiftUI 节点。返回 nil 表示没有可跳转目标。
+- (LookinDisplayItem *)swiftUISourceItemForLayerItem:(LookinDisplayItem *)item;
+
+/// Dashboard row -> 对应的 SwiftUI/CALayer 跳转目标。返回 nil 表示该 row 不支持跳转。
+- (LookinDisplayItem *)swiftUIJumpTargetForAttribute:(LookinAttribute *)attribute;
 
 @property(nonatomic, strong, readonly) LookinHierarchyInfo *rawHierarchyInfo;
 

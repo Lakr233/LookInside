@@ -8,15 +8,20 @@
 
 #import "LKDashboardAttributeTextView.h"
 #import "LKDashboardViewController.h"
+#import "LKHierarchyDataSource.h"
 #import "LookinDashboardBlueprint.h"
+#import "LookinDisplayItem.h"
 
 @interface LKDashboardAttributeTextView () <NSTextViewDelegate>
 
 @property(nonatomic, strong) LKLabel *titleLabel;
 @property(nonatomic, strong) NSScrollView *scrollView;
 @property(nonatomic, strong) NSTextView *textView;
+@property(nonatomic, strong) NSButton *jumpButton;
 
 @property(nonatomic, copy) NSString *initialText;
+
+- (LookinDisplayItem *)_jumpTargetItem;
 
 @end
 
@@ -45,19 +50,30 @@
         self.textView.textContainerInset = NSMakeSize(2, 4);
         self.textView.delegate = self;
         [self addSubview:self.scrollView];
+
+        self.jumpButton = [NSButton buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
+        self.jumpButton.bezelStyle = NSBezelStyleRoundRect;
+        self.jumpButton.bordered = NO;
+        self.jumpButton.toolTip = NSLocalizedString(@"Jump in hierarchy", nil);
+        self.jumpButton.hidden = YES;
+        [self addSubview:self.jumpButton];
     }
     return self;
 }
 
 - (void)layout {
     [super layout];
+    CGFloat jumpButtonWidth = self.jumpButton.isHidden ? 0 : 24;
     if (self.titleLabel.isHidden) {
-        $(self.scrollView).fullFrame;
+        $(self.scrollView).fullFrame.toRight(jumpButtonWidth);
     } else {
         CGFloat titleHeight = [self.titleLabel sizeThatFits:NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX)].height;
         $(self.titleLabel).x(7).toRight(7).heightToFit.y(4);
         CGFloat scrollY = 4 + titleHeight + 1;
-        $(self.scrollView).x(0).toRight(0).y(scrollY).toBottom(0);
+        $(self.scrollView).x(0).toRight(jumpButtonWidth).y(scrollY).toBottom(0);
+    }
+    if (!self.jumpButton.isHidden) {
+        $(self.jumpButton).width(20).height(20).right(2).midY(self.scrollView.$midY);
     }
 }
 
@@ -81,6 +97,8 @@
     self.initialText = self.attribute.value ? : @"";
     self.textView.string = self.initialText;
     self.textView.editable = self.canEdit;
+    self.jumpButton.hidden = ([self _jumpTargetItem] == nil);
+    [self setNeedsLayout:YES];
 }
 
 - (NSSize)sizeThatFits:(NSSize)limitedSize {
@@ -104,6 +122,16 @@
 - (void)setDashboardViewController:(LKDashboardViewController *)dashboardViewController {
     [super setDashboardViewController:dashboardViewController];
     self.backgroundColorName = @"DashboardCardValueBGColor";
+}
+
+- (LookinDisplayItem *)_jumpTargetItem {
+    LKHierarchyDataSource *dataSource = [self.dashboardViewController currentDataSource];
+    return [dataSource swiftUIJumpTargetForAttribute:self.attribute];
+}
+
+- (void)_handleJumpButton:(NSButton *)button {
+    LookinDisplayItem *targetItem = [self _jumpTargetItem];
+    [[self.dashboardViewController currentDataSource] selectAndRevealItem:targetItem];
 }
 
 #pragma mark - <NSTextViewDelegate>

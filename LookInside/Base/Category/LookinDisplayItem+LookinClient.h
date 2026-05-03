@@ -60,6 +60,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)lk_isSwiftUISupportRelated;
 
+- (NSArray<NSString *> *)lk_swiftUIBackingLayerMemoryAddresses;
+- (NSArray<NSNumber *> *)lk_swiftUIBackingDisplayListIDs;
+- (nullable NSNumber *)lk_swiftUILayerDisplayListID;
+- (NSArray<NSString *> *)lk_swiftUILayerSourceTypeNames;
+- (NSArray<NSString *> *)lk_swiftUITypeNames;
+
++ (NSArray<NSNumber *> *)lk_validSwiftUIDisplayListIDsInString:(NSString *)string;
++ (nullable NSString *)lk_memoryAddressInObjectDescription:(NSString *)description;
+
 @end
 
 NS_ASSUME_NONNULL_END
