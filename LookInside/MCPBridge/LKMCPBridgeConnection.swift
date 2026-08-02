@@ -10,6 +10,17 @@
 // Buffering is line-oriented: bytes accumulate in a buffer until a `\n`
 // separator is found; partial frames are tolerated across read events but
 // individual frames must fit within the buffer's high-water mark.
+//
+// Concurrency: every piece of mutable state here — the read buffer, the
+// closed flag, the read source — and every `write(2)` on the socket is
+// confined to `connectionQueue`, a serial queue private to this
+// connection. The serialization is load-bearing rather than defensive:
+// requests are dispatched concurrently (each inbound frame spawns its
+// own `Task`), so without it two responses could interleave their
+// `write(2)` calls mid-frame and hand the peer a corrupt JSON line.
+// Large frames — screenshots above all — widen that window enough to
+// make it routine. The queue targets the shared I/O queue supplied by
+// the server, so distinct connections still proceed in parallel.
 
 import Darwin
 import Dispatch
@@ -27,10 +38,12 @@ public final class LKMCPBridgeConnection {
     private static let logger = Logger(subsystem: "com.lookinside.app", category: "MCPBridge.Connection")
 
     private let fileDescriptor: Int32
-    private let queue: DispatchQueue
+    private let connectionQueue: DispatchQueue
     private let requestHandler: RequestHandler
     private let onClose: @Sendable (LKMCPBridgeConnection) -> Void
 
+    /// All three are `connectionQueue`-confined; never touch them from
+    /// another thread.
     private var readSource: DispatchSourceRead?
     private var readBuffer = Data()
     private var isClosed = false
@@ -42,25 +55,44 @@ public final class LKMCPBridgeConnection {
         onClose: @escaping @Sendable (LKMCPBridgeConnection) -> Void
     ) {
         self.fileDescriptor = fileDescriptor
-        self.queue = queue
+        self.connectionQueue = DispatchQueue(
+            label: "com.lookinside.mcp-bridge.connection.\(fileDescriptor)",
+            target: queue
+        )
         self.requestHandler = requestHandler
         self.onClose = onClose
     }
 
     public func start() {
-        let source = DispatchSource.makeReadSource(fileDescriptor: fileDescriptor, queue: queue)
-        source.setEventHandler { [weak self] in
-            self?.handleReadable()
-        }
-        source.setCancelHandler { [weak self] in
+        connectionQueue.async { [weak self] in
             guard let self else { return }
-            Darwin.close(self.fileDescriptor)
+            let source = DispatchSource.makeReadSource(
+                fileDescriptor: self.fileDescriptor,
+                queue: self.connectionQueue
+            )
+            source.setEventHandler { [weak self] in
+                self?.handleReadable()
+            }
+            source.setCancelHandler { [weak self] in
+                guard let self else { return }
+                Darwin.close(self.fileDescriptor)
+            }
+            self.readSource = source
+            source.resume()
         }
-        readSource = source
-        source.resume()
     }
 
+    /// Closes the connection. Safe to call from any thread; the actual
+    /// teardown hops onto `connectionQueue`.
     public func close(reason: String) {
+        connectionQueue.async { [weak self] in
+            self?.closeOnConnectionQueue(reason: reason)
+        }
+    }
+
+    /// Teardown proper. Callers must already be on `connectionQueue`.
+    private func closeOnConnectionQueue(reason: String) {
+        dispatchPrecondition(condition: .onQueue(connectionQueue))
         guard isClosed == false else { return }
         isClosed = true
         Self.logger.notice("Connection closed: \(reason, privacy: .public)")
@@ -72,13 +104,14 @@ public final class LKMCPBridgeConnection {
     // MARK: - Read path
 
     private func handleReadable() {
+        dispatchPrecondition(condition: .onQueue(connectionQueue))
         guard isClosed == false else { return }
         var buffer = [UInt8](repeating: 0, count: 4096)
         let bytesRead = buffer.withUnsafeMutableBufferPointer { pointer -> ssize_t in
             return read(fileDescriptor, pointer.baseAddress, pointer.count)
         }
         if bytesRead == 0 {
-            close(reason: "peer closed (EOF)")
+            closeOnConnectionQueue(reason: "peer closed (EOF)")
             return
         }
         if bytesRead < 0 {
@@ -86,12 +119,12 @@ public final class LKMCPBridgeConnection {
             if errorNumber == EAGAIN || errorNumber == EWOULDBLOCK {
                 return
             }
-            close(reason: "read failed (errno \(errorNumber))")
+            closeOnConnectionQueue(reason: "read failed (errno \(errorNumber))")
             return
         }
         readBuffer.append(buffer, count: bytesRead)
         if readBuffer.count > Self.maximumFrameBytes {
-            close(reason: "frame buffer exceeded \(Self.maximumFrameBytes) bytes")
+            closeOnConnectionQueue(reason: "frame buffer exceeded \(Self.maximumFrameBytes) bytes")
             return
         }
         drainFrames()
@@ -140,19 +173,25 @@ public final class LKMCPBridgeConnection {
     }
 
     private func sendCodable(_ value: some Encodable) {
-        guard isClosed == false else { return }
+        // Encoding is pure CPU work over a local value, so it stays on
+        // the calling thread; only the socket write is serialized.
+        let data: Data
         do {
-            var data = try JSONEncoder().encode(value)
-            data.append(UInt8(ascii: "\n"))
-            queue.async { [weak self] in
-                self?.writeAll(data)
-            }
+            var encoded = try JSONEncoder().encode(value)
+            encoded.append(UInt8(ascii: "\n"))
+            data = encoded
         } catch {
             Self.logger.error("Failed to encode outbound frame: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        connectionQueue.async { [weak self] in
+            guard let self, self.isClosed == false else { return }
+            self.writeAll(data)
         }
     }
 
     private func writeAll(_ data: Data) {
+        dispatchPrecondition(condition: .onQueue(connectionQueue))
         guard isClosed == false else { return }
         var remaining = data
         while remaining.isEmpty == false {
@@ -166,10 +205,10 @@ public final class LKMCPBridgeConnection {
                 if errorNumber == EAGAIN || errorNumber == EWOULDBLOCK {
                     // Socket buffer full; in v0 we just close. A future revision
                     // can switch to non-blocking writes with a deferred queue.
-                    close(reason: "write would block (errno \(errorNumber))")
+                    closeOnConnectionQueue(reason: "write would block (errno \(errorNumber))")
                     return
                 }
-                close(reason: "write failed (errno \(errorNumber))")
+                closeOnConnectionQueue(reason: "write failed (errno \(errorNumber))")
                 return
             }
             remaining.removeFirst(written)
