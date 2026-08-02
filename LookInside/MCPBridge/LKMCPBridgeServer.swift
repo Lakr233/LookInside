@@ -124,44 +124,16 @@ public final class LKMCPBridgeServer: NSObject {
     private func bindAndListen() throws {
         let socketURL = Self.socketURL
         try ensureRuntimeDirectory(at: socketURL.deletingLastPathComponent())
-        unlink(socketURL.path)
 
-        let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard descriptor >= 0 else {
-            throw MCPBridgeServerError(message: "socket(AF_UNIX) failed (errno \(errno))")
-        }
+        // Socket creation lives in LKMCPBridgeListenSocket so its
+        // blocking mode — which `acceptPendingConnections()` depends on
+        // for loop termination — can be asserted by a test that does not
+        // need the whole inspection stack. See that file's header.
+        let descriptor = try LKMCPBridgeListenSocket.makeListening(
+            atPath: socketURL.path,
+            backlog: Self.listenBacklog
+        )
         listenFileDescriptor = descriptor
-
-        var address = sockaddr_un()
-        address.sun_family = sa_family_t(AF_UNIX)
-        let pathBytes = Array(socketURL.path.utf8)
-        let pathCapacity = MemoryLayout.size(ofValue: address.sun_path)
-        if pathBytes.count >= pathCapacity {
-            throw MCPBridgeServerError(message: "Socket path is longer than the kernel's sun_path limit (\(pathCapacity) bytes).")
-        }
-        withUnsafeMutableBytes(of: &address.sun_path) { pathBuffer in
-            for index in 0..<pathBytes.count {
-                pathBuffer[index] = pathBytes[index]
-            }
-            pathBuffer[pathBytes.count] = 0
-        }
-
-        let bindResult = withUnsafePointer(to: &address) { addressPointer -> Int32 in
-            return addressPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
-                return Darwin.bind(descriptor, rebound, socklen_t(MemoryLayout<sockaddr_un>.size))
-            }
-        }
-        if bindResult != 0 {
-            throw MCPBridgeServerError(message: "bind() failed (errno \(errno))")
-        }
-
-        if chmod(socketURL.path, 0o600) != 0 {
-            Self.logger.warning("chmod 0600 on socket failed (errno \(errno)); continuing with default permissions")
-        }
-
-        if listen(descriptor, Self.listenBacklog) != 0 {
-            throw MCPBridgeServerError(message: "listen() failed (errno \(errno))")
-        }
 
         let source = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: stateQueue)
         source.setEventHandler { [weak self] in
@@ -355,11 +327,4 @@ public final class LKMCPBridgeServer: NSObject {
             .appendingPathComponent("run", isDirectory: true)
             .appendingPathComponent("lookinside-host-mcp.sock", isDirectory: false)
     }()
-}
-
-// MARK: - Local error type
-
-private struct MCPBridgeServerError: LocalizedError {
-    let message: String
-    var errorDescription: String? { return message }
 }

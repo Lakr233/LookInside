@@ -216,6 +216,7 @@
 				MCPBridge/LKMCPBridgeInspectionModels.swift,
 				MCPBridge/LKMCPBridgeInspectionService.swift,
 				MCPBridge/LKMCPBridgeInvocationService.swift,
+				MCPBridge/LKMCPBridgeListenSocket.swift,
 				MCPBridge/LKMCPBridgeLiveDocumentLookup.swift,
 				MCPBridge/LKMCPBridgeModificationService.swift,
 				MCPBridge/LKMCPBridgeRACBridge.swift,
