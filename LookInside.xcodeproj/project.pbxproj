@@ -219,6 +219,7 @@
 				MCPBridge/LKMCPBridgeLiveDocumentLookup.swift,
 				MCPBridge/LKMCPBridgeModificationService.swift,
 				MCPBridge/LKMCPBridgeRACBridge.swift,
+				MCPBridge/LKMCPBridgeScreenshotService.swift,
 				MCPBridge/LKMCPBridgeSecureContentDetector.swift,
 				MCPBridge/LKMCPBridgeServer.swift,
 				Measure/LKMeasureController.m,

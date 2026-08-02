@@ -320,4 +320,61 @@ public struct LKMCPBridgeDetailsReadResult: Sendable, Codable {
     public let failedIdentifiers: [String]
 }
 
+// MARK: - Screenshot
+
+/// Result envelope for `screenshot.read`. Carries the image inline as
+/// base64 rather than as a URI: the bridge has no static file server,
+/// and the consuming MCP shim needs the bytes anyway to build an image
+/// content block.
+public struct LKMCPBridgeScreenshotResult: Sendable, Codable {
+    /// The object actually captured. Differs from the request when the
+    /// caller omitted `objectIdentifier` and the service resolved the
+    /// key window on their behalf.
+    public let objectIdentifier: String
+
+    /// `solo` (view alone, subviews hidden) or `group` (view plus its
+    /// whole subtree). Echoed so callers that relied on the default can
+    /// see which one they got.
+    public let mode: String
+
+    /// Base64-encoded image bytes.
+    public let imageData: String
+
+    /// IANA media type for `imageData`. Always `image/png` today.
+    public let mimeType: String
+
+    /// Pixel dimensions of the returned image, after any downscale.
+    public let pixelWidth: Int
+    public let pixelHeight: Int
+
+    /// Pixel dimensions as captured, before any downscale. Equal to
+    /// `pixelWidth` / `pixelHeight` when no downscale was applied.
+    /// Agents can compare the two to know whether fine detail was lost
+    /// and re-request with a larger `maximumPixelDimension`.
+    public let sourcePixelWidth: Int
+    public let sourcePixelHeight: Int
+
+    /// Decoded (pre-base64) size of `imageData`, in bytes.
+    public let byteCount: Int
+
+    /// Frame of the captured view in the hierarchy's root coordinate
+    /// space, in points. Lets an agent map pixel coordinates in the
+    /// image back onto the coordinates `hierarchy.read` reports.
+    public let frame: LKMCPBridgeRect
+
+    /// `true` when the image came from the host's existing cache rather
+    /// than a fresh render in the target app. Cached images can lag
+    /// behind the live UI — notably right after `attribute.modify`.
+    public let servedFromCache: Bool
+
+    /// `true` when the captured region includes a view the secure-content
+    /// detector flags (for `group`, anywhere in the subtree).
+    ///
+    /// Screenshots are NOT redacted: unlike attribute strings, there is
+    /// no way to blank a value without destroying the picture. This flag
+    /// is the honest signal that the returned pixels may show sensitive
+    /// user input, so the caller can decide whether to keep it.
+    public let containsSecureContent: Bool
+}
+
 

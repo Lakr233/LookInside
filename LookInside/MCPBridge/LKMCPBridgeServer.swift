@@ -37,6 +37,13 @@ public final class LKMCPBridgeServer: NSObject {
     // MARK: - State
 
     private let stateQueue = DispatchQueue(label: "com.lookinside.mcp-bridge.state")
+
+    /// Shared parent for every connection's private serial queue. Kept
+    /// concurrent so separate connections make progress independently;
+    /// each `LKMCPBridgeConnection` targets its own serial queue at this
+    /// one, which is what keeps a single connection's frames from
+    /// interleaving. Do not hand this queue to a connection as its
+    /// working queue directly.
     private let ioQueue = DispatchQueue(
         label: "com.lookinside.mcp-bridge.io",
         qos: .userInitiated,
@@ -55,10 +62,10 @@ public final class LKMCPBridgeServer: NSObject {
     /// requires main-thread isolation.
     private var inspectionService: LKMCPBridgeInspectionService?
 
-    /// Routes mutating / RPC-emitting methods (`invoke.method`, future
-    /// `screenshot.read`). Kept separate from `inspectionService` so the
-    /// inspection surface stays read-only even as new mutating verbs
-    /// land; lazily constructed on the main actor on first use.
+    /// Routes mutating / RPC-emitting methods (`invoke.method`). Kept
+    /// separate from `inspectionService` so the inspection surface stays
+    /// read-only even as new mutating verbs land; lazily constructed on
+    /// the main actor on first use.
     private var invocationService: LKMCPBridgeInvocationService?
 
     /// Routes `attribute.modify` (RPC 204 InbuiltAttrModification).
@@ -71,6 +78,12 @@ public final class LKMCPBridgeServer: NSObject {
     /// details.read actively pumps the Peertalk channel rather than
     /// reading cached state.
     private var detailsService: LKMCPBridgeDetailsService?
+
+    /// Routes `screenshot.read` (RPC 203 with a Solo/Group task type).
+    /// Separate from `detailsService` because the two ask the same RPC
+    /// for entirely different payloads — attribute groups versus image
+    /// bytes — and their error vocabularies differ accordingly.
+    private var screenshotService: LKMCPBridgeScreenshotService?
 
     // MARK: - Lifecycle
 
@@ -231,6 +244,8 @@ public final class LKMCPBridgeServer: NSObject {
             return await modificationDispatch(request: request)
         case "details.read":
             return await detailsDispatch(request: request)
+        case "screenshot.read":
+            return await screenshotDispatch(request: request)
         default:
             return await inspectionDispatch(request: request)
         }
@@ -279,6 +294,18 @@ public final class LKMCPBridgeServer: NSObject {
             }
             let created = LKMCPBridgeDetailsService()
             self.detailsService = created
+            return created
+        }
+        return await service.handle(request: request)
+    }
+
+    private func screenshotDispatch(request: LKMCPBridgeRequest) async -> LKMCPBridgeResponse {
+        let service = await MainActor.run { () -> LKMCPBridgeScreenshotService in
+            if let existing = self.screenshotService {
+                return existing
+            }
+            let created = LKMCPBridgeScreenshotService()
+            self.screenshotService = created
             return created
         }
         return await service.handle(request: request)
