@@ -148,13 +148,12 @@ public final class LKMCPBridgeServer: NSObject {
 
     private func acceptPendingConnections() {
         while true {
-            var clientAddress = sockaddr_un()
-            var addressLength = socklen_t(MemoryLayout<sockaddr_un>.size)
-            let clientDescriptor = withUnsafeMutablePointer(to: &clientAddress) { addressPointer -> Int32 in
-                return addressPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
-                    return accept(listenFileDescriptor, rebound, &addressLength)
-                }
-            }
+            // Goes through LKMCPBridgeListenSocket because the accepted
+            // descriptor has to be put back into blocking mode; see that
+            // method's documentation.
+            let clientDescriptor = LKMCPBridgeListenSocket.acceptConnection(
+                listenDescriptor: listenFileDescriptor
+            )
             if clientDescriptor < 0 {
                 let errorNumber = errno
                 if errorNumber == EAGAIN || errorNumber == EWOULDBLOCK {

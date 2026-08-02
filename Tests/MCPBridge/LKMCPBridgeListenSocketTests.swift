@@ -19,6 +19,7 @@ struct LKMCPBridgeListenSocketTests {
         testDescriptorIsNonBlocking()
         testAcceptWithNoPendingConnectionsReturnsImmediately()
         testSecondAcceptReturnsPromptly()
+        testAcceptedConnectionIsBlocking()
         testSocketFileIsOwnerOnly()
         testStaleSocketFileIsReplaced()
         print("MCPBridge listen socket tests passed")
@@ -115,6 +116,41 @@ struct LKMCPBridgeListenSocketTests {
         expect(
             savedErrorNumber == EAGAIN || savedErrorNumber == EWOULDBLOCK,
             "the second accept must report EAGAIN, got errno \(savedErrorNumber)"
+        )
+    }
+
+    /// The listening socket must be non-blocking, but the connections
+    /// it hands out must not be.
+    ///
+    /// On BSD-derived systems -- macOS included -- accept(2) inherits
+    /// O_NONBLOCK from the listener, the opposite of Linux. Connection
+    /// writes are blocking by design (`LKMCPBridgeConnection.writeAll`
+    /// treats EAGAIN as fatal and closes), so an inherited flag turns
+    /// any response larger than the socket send buffer into a dropped
+    /// connection. Small frames still work, which is what makes this
+    /// fail so selectively: hierarchy reads are fine and screenshots
+    /// kill the connection.
+    private static func testAcceptedConnectionIsBlocking() {
+        let socketPath = makeTemporarySocketPath()
+        defer { unlink(socketPath) }
+
+        guard let listenDescriptor = try? LKMCPBridgeListenSocket.makeListening(atPath: socketPath, backlog: 16) else {
+            fail("makeListening should succeed on a fresh path")
+        }
+        defer { Darwin.close(listenDescriptor) }
+
+        guard let clientDescriptor = connectClient(toPath: socketPath) else {
+            fail("test client should connect to the listening socket")
+        }
+        defer { Darwin.close(clientDescriptor) }
+
+        let accepted = LKMCPBridgeListenSocket.acceptConnection(listenDescriptor: listenDescriptor)
+        expect(accepted >= 0, "the pending client connection must be accepted")
+        defer { Darwin.close(accepted) }
+
+        expect(
+            LKMCPBridgeListenSocket.isNonBlocking(descriptor: accepted) == false,
+            "accepted connections must be blocking; a non-blocking one drops any frame larger than the send buffer"
         )
     }
 

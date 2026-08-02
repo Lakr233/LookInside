@@ -106,6 +106,41 @@ enum LKMCPBridgeListenSocket {
         return descriptor
     }
 
+    /// Accepts one pending connection, returning a **blocking**
+    /// descriptor, or a negative value when there is nothing to accept
+    /// (`errno` is `EAGAIN` in that case) or the call failed.
+    ///
+    /// The blocking mode is the whole reason this wraps `accept(2)`.
+    /// On BSD-derived systems — macOS included — the accepted socket
+    /// inherits `O_NONBLOCK` from the listener, which is the opposite
+    /// of Linux and the opposite of what POSIX requires. Since the
+    /// listener has to be non-blocking (see `makeListening`), every
+    /// connection would silently come out non-blocking too.
+    ///
+    /// That matters because `LKMCPBridgeConnection` writes responses
+    /// with a blocking `write(2)` loop and treats `EAGAIN` as fatal.
+    /// On a non-blocking descriptor, any response larger than the
+    /// socket send buffer hits `EAGAIN` partway through and the
+    /// connection is torn down mid-frame. Small responses still work,
+    /// so the symptom is selective and confusing: hierarchy reads
+    /// succeed, screenshots drop the connection.
+    static func acceptConnection(listenDescriptor: Int32) -> Int32 {
+        var clientAddress = sockaddr_un()
+        var addressLength = socklen_t(MemoryLayout<sockaddr_un>.size)
+        let descriptor = withUnsafeMutablePointer(to: &clientAddress) { addressPointer -> Int32 in
+            return addressPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
+                return accept(listenDescriptor, rebound, &addressLength)
+            }
+        }
+        guard descriptor >= 0 else { return descriptor }
+
+        let flags = fcntl(descriptor, F_GETFL)
+        if flags >= 0 && (flags & O_NONBLOCK) != 0 {
+            _ = fcntl(descriptor, F_SETFL, flags & ~O_NONBLOCK)
+        }
+        return descriptor
+    }
+
     /// Whether `descriptor` is in non-blocking mode. Exists so the
     /// property can be asserted directly rather than inferred from
     /// timing.

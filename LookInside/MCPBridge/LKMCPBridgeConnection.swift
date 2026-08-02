@@ -203,8 +203,15 @@ public final class LKMCPBridgeConnection {
                 let errorNumber = errno
                 if errorNumber == EINTR { continue }
                 if errorNumber == EAGAIN || errorNumber == EWOULDBLOCK {
-                    // Socket buffer full; in v0 we just close. A future revision
-                    // can switch to non-blocking writes with a deferred queue.
+                    // Unreachable while the descriptor is blocking, which
+                    // `LKMCPBridgeListenSocket.acceptConnection` guarantees --
+                    // and that guarantee is load-bearing: on macOS accept(2)
+                    // inherits O_NONBLOCK from the (necessarily non-blocking)
+                    // listener, and a non-blocking descriptor lands here
+                    // partway through any response larger than the socket send
+                    // buffer, tearing the connection down mid-frame. Kept as a
+                    // backstop; if it ever fires, fix the descriptor's mode
+                    // rather than making this branch retry.
                     closeOnConnectionQueue(reason: "write would block (errno \(errorNumber))")
                     return
                 }
