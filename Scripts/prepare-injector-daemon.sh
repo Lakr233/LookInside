@@ -50,6 +50,36 @@ esac
 
 DERIVED_DATA="$INJECTOR_REPO/build/host-derived/$CONFIGURATION"
 LOG="$DERIVED_DATA/xcodebuild.log"
+TOOLCHAIN_STAMP="$DERIVED_DATA/.toolchain-stamp"
+
+# Reset the nested build's derived data whenever the Swift toolchain
+# changes.
+#
+# This derived data path is fixed rather than Xcode-managed, so it
+# survives Xcode upgrades -- and one thing inside it must not. For macro
+# support, SwiftPM caches a prebuilt swift-syntax under
+# SourcePackages/prebuilts/ in a directory named after the compiler that
+# produced it (e.g. swiftlang-6.3.2.1.108-macosx26.5-MacroSupport). That
+# cache is not invalidated on upgrade, so the next Xcode feeds its own
+# compiler a swiftmodule built by the previous one and every macro
+# target dies with "Unable to resolve Swift module dependency to a
+# compatible module: 'SwiftDiagnostics'".
+#
+# Deleting just the prebuilts directory is not enough: the build
+# description is cached as well, so the already-planned compile commands
+# keep the now-missing -I path and the failure only changes shape
+# ("unable to resolve module dependency"). Wiping the whole derived data
+# is the reliable reset.
+current_toolchain="$(xcrun swiftc -version 2>/dev/null | head -1)"
+if [ -z "$current_toolchain" ]; then
+    echo "warning: could not determine the Swift toolchain version; leaving $DERIVED_DATA as-is" >&2
+elif [ ! -f "$TOOLCHAIN_STAMP" ] || [ "$(cat "$TOOLCHAIN_STAMP")" != "$current_toolchain" ]; then
+    if [ -d "$DERIVED_DATA" ]; then
+        echo "note: Swift toolchain changed; resetting $DERIVED_DATA" >&2
+    fi
+    rm -rf "$DERIVED_DATA"
+fi
+
 mkdir -p "$DERIVED_DATA"
 
 if [ ! -d "$WORKSPACE" ]; then
@@ -84,6 +114,13 @@ if [ "$build_status" -ne 0 ]; then
     echo "lookinside-injector $CONFIGURATION build failed. Log: $LOG" >&2
     tail -80 "$LOG" >&2 || true
     exit "$build_status"
+fi
+
+# Record the toolchain only after a successful build, so a build that
+# failed for unrelated reasons does not leave a stamp claiming this
+# derived data is good for the current compiler.
+if [ -n "$current_toolchain" ]; then
+    printf '%s' "$current_toolchain" > "$TOOLCHAIN_STAMP"
 fi
 
 built_binary="$(find "$DERIVED_DATA/Build/Products" -type f -name 'lookinside-injector' -perm +111 | head -1)"
