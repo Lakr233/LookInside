@@ -19,6 +19,11 @@
 #import "LookinDisplayItemDetail.h"
 #import "LookinStaticAsyncUpdateTask.h"
 #import "LookinDisplayItem.h"
+// Client-side display helpers (row title / subtitle, ancestor + subtree
+// walks, class-chain predicates). The MCPBridge search route needs the
+// same title and ancestry the inspector shows, and reimplementing them in
+// Swift would fork the display logic.
+#import "LookinDisplayItem+LookinClient.h"
 #import "LookinObject.h"
 #import "LookinAppInfo.h"
 #import "LookinHierarchyInfo.h"

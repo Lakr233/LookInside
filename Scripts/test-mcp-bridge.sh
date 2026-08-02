@@ -21,4 +21,10 @@ LISTEN_SOCKET_TEST="$ROOT/Tests/MCPBridge/LKMCPBridgeListenSocketTests.swift"
 swiftc -parse-as-library "$LISTEN_SOCKET" "$LISTEN_SOCKET_TEST" -o "$TMPDIR/listen-socket-test"
 "$TMPDIR/listen-socket-test"
 
+SEARCH_QUERY="$ROOT/LookInside/MCPBridge/LKMCPBridgeSearchQuery.swift"
+SEARCH_QUERY_TEST="$ROOT/Tests/MCPBridge/LKMCPBridgeSearchQueryTests.swift"
+
+swiftc -parse-as-library "$SEARCH_QUERY" "$SEARCH_QUERY_TEST" -o "$TMPDIR/search-query-test"
+"$TMPDIR/search-query-test"
+
 echo "MCPBridge tests passed"

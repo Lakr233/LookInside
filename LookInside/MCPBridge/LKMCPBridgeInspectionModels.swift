@@ -377,4 +377,113 @@ public struct LKMCPBridgeScreenshotResult: Sendable, Codable {
     public let containsSecureContent: Bool
 }
 
+// MARK: - Hierarchy search
+
+/// One hit in a `hierarchy.find` response.
+///
+/// Carries enough context to act on the result without a follow-up
+/// `hierarchy.read`: the identifier for subsequent calls, the ancestor
+/// chain for orientation, and the fields that matched so the caller can
+/// tell a class-name hit apart from an incidental substring in a subtitle.
+public struct LKMCPBridgeSearchMatch: Sendable, Codable {
+    public let objectIdentifier: String
+
+    /// Leaf Objective-C class name, matching `hierarchy.read`'s field of
+    /// the same name.
+    public let className: String
+
+    /// The host inspector's row label. `null` when the secure-content
+    /// detector flagged this view.
+    public let title: String?
+
+    /// The host inspector's secondary label. `null` when the
+    /// secure-content detector flagged this view.
+    public let subtitle: String?
+
+    /// Frame in the hierarchy's root coordinate space, in points.
+    public let frame: LKMCPBridgeRect
+
+    public let isHidden: Bool
+    public let alpha: Double
+
+    /// Nesting level, `0` for a window / scene root. Equal to the number
+    /// of entries in `ancestorObjectIdentifiers`.
+    public let depth: Int
+
+    /// Ancestor identifiers ordered root first, parent last. Feed any of
+    /// them to `hierarchy.read`'s `rootObjectIdentifier` to inspect the
+    /// surrounding subtree.
+    public let ancestorObjectIdentifiers: [String]
+
+    /// Human-readable ancestry, e.g. `NSWindow > NSView > NSButton`,
+    /// ending with this node. For orientation in a log or a reply; do not
+    /// parse it — use `ancestorObjectIdentifiers`.
+    public let pathDescription: String
+
+    /// Which searchable fields contained the query, in canonical order.
+    /// Never empty for a returned match.
+    public let matchedFields: [String]
+
+    /// `true` when the secure-content detector flagged this view, which
+    /// is also why `title` / `subtitle` may be `null`.
+    public let secureContent: Bool
+}
+
+/// Envelope for `hierarchy.find`.
+///
+/// `totalMatchCount` counts every hit in the searched scope, so a caller
+/// that receives `truncated: true` knows how much it is not seeing and
+/// can narrow the query rather than paginate blindly.
+public struct LKMCPBridgeSearchResult: Sendable, Codable {
+    public let matches: [LKMCPBridgeSearchMatch]
+
+    /// Hits found before `limit` was applied.
+    public let totalMatchCount: Int
+
+    /// `true` when `matches.count < totalMatchCount`.
+    public let truncated: Bool
+
+    /// Nodes examined. Equals the whole tree unless the caller scoped the
+    /// search with `rootObjectIdentifier`.
+    public let searchedNodeCount: Int
+
+    /// The fields actually searched, after defaulting.
+    public let searchedFields: [String]
+}
+
+// MARK: - Selector listing
+
+/// Envelope for `selectors.list`.
+///
+/// The server walks the entire class chain up to `NSObject`, so
+/// `totalCount` on a UIKit / AppKit view runs into four digits. Callers
+/// are expected to narrow with `nameFilter` rather than raise `limit`.
+public struct LKMCPBridgeSelectorListResult: Sendable, Codable {
+    /// The class actually queried. Differs from the request when the
+    /// caller passed `objectIdentifier` and the service resolved the leaf
+    /// class on their behalf.
+    public let className: String
+
+    /// Selector names in the order the target app produced them: by
+    /// class, most-derived first. Not sorted alphabetically — position is
+    /// the only signal about where a method came from. Coarse rather than
+    /// exact: within a single class the order is arbitrary.
+    public let selectors: [String]
+
+    /// Matching selectors before `limit` was applied.
+    public let totalCount: Int
+
+    /// `true` when `selectors.count < totalCount`.
+    public let truncated: Bool
+
+    /// `true` when selectors taking arguments were included. When
+    /// `false`, every entry is callable through `invoke.method`.
+    public let includesArguments: Bool
+
+    /// The resolved object's full class chain, present only when the
+    /// caller passed `objectIdentifier`. Tells the caller which classes
+    /// the flat `selectors` list spans.
+    public let classChain: [String]?
+}
+
 

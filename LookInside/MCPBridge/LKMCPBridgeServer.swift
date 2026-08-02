@@ -85,6 +85,17 @@ public final class LKMCPBridgeServer: NSObject {
     /// bytes — and their error vocabularies differ accordingly.
     private var screenshotService: LKMCPBridgeScreenshotService?
 
+    /// Routes `hierarchy.find`. Kept apart from `inspectionService`
+    /// even though both only read cached state, because search owns a
+    /// parameter vocabulary of its own (match fields, limits) and its
+    /// own error namespace.
+    private var searchService: LKMCPBridgeSearchService?
+
+    /// Routes `selectors.list` (RPC 213 AllSelectorNames). Read-only,
+    /// so kept out of `invocationService` even though the two serve the
+    /// same workflow — discovering a method, then calling it.
+    private var selectorService: LKMCPBridgeSelectorService?
+
     // MARK: - Lifecycle
 
     @objc public func start() {
@@ -217,6 +228,10 @@ public final class LKMCPBridgeServer: NSObject {
             return await detailsDispatch(request: request)
         case "screenshot.read":
             return await screenshotDispatch(request: request)
+        case "hierarchy.find":
+            return await searchDispatch(request: request)
+        case "selectors.list":
+            return await selectorDispatch(request: request)
         default:
             return await inspectionDispatch(request: request)
         }
@@ -277,6 +292,30 @@ public final class LKMCPBridgeServer: NSObject {
             }
             let created = LKMCPBridgeScreenshotService()
             self.screenshotService = created
+            return created
+        }
+        return await service.handle(request: request)
+    }
+
+    private func searchDispatch(request: LKMCPBridgeRequest) async -> LKMCPBridgeResponse {
+        let service = await MainActor.run { () -> LKMCPBridgeSearchService in
+            if let existing = self.searchService {
+                return existing
+            }
+            let created = LKMCPBridgeSearchService()
+            self.searchService = created
+            return created
+        }
+        return await service.handle(request: request)
+    }
+
+    private func selectorDispatch(request: LKMCPBridgeRequest) async -> LKMCPBridgeResponse {
+        let service = await MainActor.run { () -> LKMCPBridgeSelectorService in
+            if let existing = self.selectorService {
+                return existing
+            }
+            let created = LKMCPBridgeSelectorService()
+            self.selectorService = created
             return created
         }
         return await service.handle(request: request)
