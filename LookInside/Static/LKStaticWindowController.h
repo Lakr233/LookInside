@@ -9,7 +9,26 @@
 #import "LKWindowController.h"
 #import "LKMenuPopoverAppsListController.h"
 
-@class LKStaticViewController, LKStaticHierarchyDataSource, LKStaticAsyncUpdateManager, LKInspectableApp;
+@class LKStaticViewController, LKStaticHierarchyDataSource, LKStaticAsyncUpdateManager, LKInspectableApp, RACSignal;
+
+/// Error domain for the refusals `-reloadHierarchySignal` raises on its own
+/// behalf. Errors forwarded from the Peertalk round-trip keep their original
+/// `LookinErrorDomain` code, so callers can tell "the host would not start a
+/// reload" apart from "the target app failed the reload".
+extern NSErrorDomain const LKStaticWindowControllerReloadErrorDomain;
+
+typedef NS_ENUM(NSInteger, LKStaticWindowControllerReloadErrorCode) {
+    /// A hierarchy fetch is already in flight on this window.
+    LKStaticWindowControllerReloadErrorAlreadyInProgress = 1,
+    /// The async detail sync is running. Reloading now would throw away
+    /// work already paid for, so the caller has to stop it first.
+    LKStaticWindowControllerReloadErrorDetailSyncInProgress = 2,
+    /// No inspectable app is bound to this window.
+    LKStaticWindowControllerReloadErrorNoInspectableApp = 3,
+    /// The window went away while the fetch was in flight, leaving no data
+    /// source to absorb the result.
+    LKStaticWindowControllerReloadErrorWindowClosed = 4,
+};
 
 @interface LKStaticWindowController : LKWindowController
 
@@ -31,5 +50,23 @@
 - (instancetype)initWithInspectableApp:(LKInspectableApp *)app;
 
 - (void)popupAllInspectableAppsWithSource:(MenuPopoverAppsListControllerEventSource)source;
+
+/// Reloads this window's hierarchy the way the toolbar reload button does:
+/// same re-entrancy gate, same progress indicator, same `keepState:YES`
+/// hand-off to the data source. The one thing it does NOT do is put up the
+/// modal error sheet — that stays in the button's own handler, so callers
+/// arriving from outside the UI (the MCPBridge `hierarchy.refresh` route)
+/// can never drop a dialog on a user who did not ask for one.
+///
+/// The fetch starts when this method is called, not when the returned
+/// signal is subscribed to, and the result is replayed to every subscriber.
+/// Sends the reloaded `LookinHierarchyInfo` once and completes; by the time
+/// that value arrives `hierarchyDataSource` has already absorbed it, so
+/// subscribers observe a settled hierarchy rather than racing it.
+///
+/// Errors either in `LKStaticWindowControllerReloadErrorDomain` (this
+/// window refused to start) or in `LookinErrorDomain` (the target app
+/// failed the fetch).
+- (RACSignal *)reloadHierarchySignal;
 
 @end

@@ -69,6 +69,9 @@
         }
       }
     },
+    "A hierarchy reload is already running for this window." : {
+
+    },
     "A public project website is not configured for this build yet." : {
       "localizations" : {
         "en" : {
@@ -1032,6 +1035,9 @@
           }
         }
       }
+    },
+    "Detail synchronization is still running. Wait for it to finish before reloading." : {
+
     },
     "Details" : {
       "localizations" : {
@@ -4722,6 +4728,9 @@
         }
       }
     },
+    "The inspector window closed while the hierarchy was being fetched." : {
+
+    },
     "The layout of selected view is not affected by this constraint." : {
       "localizations" : {
         "en" : {
@@ -5062,6 +5071,9 @@
           }
         }
       }
+    },
+    "This window is not attached to an app." : {
+
     },
     "Timeout for hierarchy and hierarchy-details requests, in seconds. Default: 15s." : {
       "localizations" : {

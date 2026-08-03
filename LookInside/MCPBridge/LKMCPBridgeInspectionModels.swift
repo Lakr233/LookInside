@@ -486,4 +486,34 @@ public struct LKMCPBridgeSelectorListResult: Sendable, Codable {
     public let classChain: [String]?
 }
 
+// MARK: - Hierarchy refresh
+
+/// Envelope for `hierarchy.refresh`.
+///
+/// The interesting field is `previousNodeCount`: LookInside only learns the
+/// target's UI changed when someone asks it to look, so a caller has no way
+/// to tell a refresh that found a whole new screen from one that found the
+/// same screen it already had. Reporting both counts answers that without a
+/// follow-up `hierarchy.read`.
+public struct LKMCPBridgeRefreshResult: Sendable, Codable {
+    /// Echo of the requested target.
+    public let targetIdentifier: String
+
+    /// Top-level windows / scenes after the reload. Usable directly as
+    /// `hierarchy.read`'s `rootObjectIdentifier`.
+    public let rootObjectIdentifiers: [String]
+
+    /// Nodes in the tree after the reload.
+    public let nodeCount: Int
+
+    /// Nodes in the tree before it. Equal counts do not prove the UI is
+    /// unchanged — the same number of views can be an entirely different
+    /// screen — but a difference does prove it changed.
+    public let previousNodeCount: Int
+
+    /// Wall-clock cost of the round-trip, so callers can judge how
+    /// expensive repeating this would be.
+    public let durationMilliseconds: Int
+}
+
 

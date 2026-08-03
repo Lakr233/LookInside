@@ -30,5 +30,10 @@
 #import "LKInspectableApp.h"
 #import "LKHierarchyDataSource.h"
 #import "LKStaticHierarchyDataSource.h"
+// The MCPBridge refresh route drives -reloadHierarchySignal, which lives on
+// the window controller rather than the data source because the reload gate
+// and the progress indicator it shares with the toolbar button are window
+// state.
+#import "LKStaticWindowController.h"
 #import "LookinLiveDocument.h"
 #import "LookinLiveDocumentController.h"

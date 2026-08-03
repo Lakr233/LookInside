@@ -96,6 +96,12 @@ public final class LKMCPBridgeServer: NSObject {
     /// same workflow — discovering a method, then calling it.
     private var selectorService: LKMCPBridgeSelectorService?
 
+    /// Routes `hierarchy.refresh` (RPC 202 Hierarchy). Kept out of the
+    /// inspection service because refreshing round-trips to the target
+    /// and replaces host state, which would break that service's
+    /// "cached reads only, never emits RPC" property.
+    private var refreshService: LKMCPBridgeRefreshService?
+
     // MARK: - Lifecycle
 
     @objc public func start() {
@@ -232,6 +238,8 @@ public final class LKMCPBridgeServer: NSObject {
             return await searchDispatch(request: request)
         case "selectors.list":
             return await selectorDispatch(request: request)
+        case "hierarchy.refresh":
+            return await refreshDispatch(request: request)
         default:
             return await inspectionDispatch(request: request)
         }
@@ -316,6 +324,18 @@ public final class LKMCPBridgeServer: NSObject {
             }
             let created = LKMCPBridgeSelectorService()
             self.selectorService = created
+            return created
+        }
+        return await service.handle(request: request)
+    }
+
+    private func refreshDispatch(request: LKMCPBridgeRequest) async -> LKMCPBridgeResponse {
+        let service = await MainActor.run { () -> LKMCPBridgeRefreshService in
+            if let existing = self.refreshService {
+                return existing
+            }
+            let created = LKMCPBridgeRefreshService()
+            self.refreshService = created
             return created
         }
         return await service.handle(request: request)

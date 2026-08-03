@@ -39,6 +39,13 @@ NS_ASSUME_NONNULL_BEGIN
 /// before -makeWindowControllers has run.
 @property(nonatomic, weak, readonly, nullable) LKStaticAsyncUpdateManager *asyncUpdateManager;
 
+/// This document's window controller. Returns nil before
+/// -makeWindowControllers has run. Exposed so callers that need a whole
+/// window-level operation rather than one of its parts — the MCPBridge
+/// `hierarchy.refresh` route reaching -reloadHierarchySignal — do not have
+/// to re-derive it from `windowControllers`.
+@property(nonatomic, weak, readonly, nullable) LKStaticWindowController *staticWindowController;
+
 /// Designated initializer. Returns nil with `outError` populated when `app`
 /// is nil. Phase B does not establish or validate the channel here; that is
 /// the caller's responsibility.

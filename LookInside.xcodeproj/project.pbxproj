@@ -220,6 +220,7 @@
 				MCPBridge/LKMCPBridgeLiveDocumentLookup.swift,
 				MCPBridge/LKMCPBridgeModificationService.swift,
 				MCPBridge/LKMCPBridgeRACBridge.swift,
+				MCPBridge/LKMCPBridgeRefreshService.swift,
 				MCPBridge/LKMCPBridgeScreenshotService.swift,
 				MCPBridge/LKMCPBridgeSearchQuery.swift,
 				MCPBridge/LKMCPBridgeSearchService.swift,

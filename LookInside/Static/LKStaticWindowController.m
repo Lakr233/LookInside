@@ -36,6 +36,14 @@
 #import "LKSwiftUIHierarchyDisplayMode.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
+NSErrorDomain const LKStaticWindowControllerReloadErrorDomain = @"LKStaticWindowControllerReloadErrorDomain";
+
+static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowControllerReloadErrorCode code, NSString *description) {
+    return [NSError errorWithDomain:LKStaticWindowControllerReloadErrorDomain
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
+
 @interface LKStaticWindowController () <NSToolbarDelegate, LKStaticAsyncUpdateManagerDelegate>
 
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSToolbarItem *> *toolbarItemsMap;
@@ -354,6 +362,10 @@
 #pragma mark - Event Handler
 
 - (void)_handleReload {
+    // The button carries two behaviors the shared core deliberately does
+    // not: while details are syncing it doubles as a stop button, and with
+    // no app bound it opens the app picker. Both are answers only a click
+    // deserves — a programmatic caller gets an error instead.
     if (self.isFetchingDetails) {
         // 停止拉取
         [self.asyncUpdateManager endUpdating];
@@ -361,37 +373,80 @@
     }
 
     // Phase F: this window's bound app is the only source of truth.
-    LKInspectableApp *app = self.inspectableApp;
-    if (!app) {
+    if (!self.inspectableApp) {
         [self popupAllInspectableAppsWithSource:MenuPopoverAppsListControllerEventSourceReloadButton];
         return;
     }
-    
+
     if (self.isFetchingHierarchy) {
         return;
     }
-    
+
+    @weakify(self);
+    [[self reloadHierarchySignal] subscribeError:^(NSError * _Nullable error) {
+        @strongify(self);
+        [[NSAlert alertWithError:error] beginSheetModalForWindow:self.window completionHandler:nil];
+    }];
+}
+
+- (RACSignal *)reloadHierarchySignal {
+    if (self.isFetchingHierarchy) {
+        return [RACSignal error:LKStaticWindowControllerReloadErrorMake(
+                                    LKStaticWindowControllerReloadErrorAlreadyInProgress,
+                                    NSLocalizedString(@"A hierarchy reload is already running for this window.", nil))];
+    }
+    if (self.isFetchingDetails) {
+        return [RACSignal error:LKStaticWindowControllerReloadErrorMake(
+                                    LKStaticWindowControllerReloadErrorDetailSyncInProgress,
+                                    NSLocalizedString(@"Detail synchronization is still running. Wait for it to finish before reloading.", nil))];
+    }
+    LKInspectableApp *app = self.inspectableApp;
+    if (!app) {
+        return [RACSignal error:LKStaticWindowControllerReloadErrorMake(
+                                    LKStaticWindowControllerReloadErrorNoInspectableApp,
+                                    NSLocalizedString(@"This window is not attached to an app.", nil))];
+    }
+
     self.isFetchingHierarchy = YES;
-    
+
     [self.viewController.progressView animateToProgress:InitialIndicatorProgressWhenFetchHierarchy];
-    
+
     [LKPerformanceReporter.sharedInstance willStartReload];
+
+    // Replay rather than -createSignal: the fetch is already under way by
+    // the time this returns, so a subscriber that arrives late still gets
+    // the outcome, and two subscribers never mean two round-trips.
+    RACReplaySubject *resultSubject = [RACReplaySubject replaySubjectWithCapacity:1];
     @weakify(self);
     [[app fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
+        @strongify(self);
+        if (!self) {
+            // No data source left to hand the hierarchy to. Reporting
+            // success here would tell the caller the host holds this tree
+            // when nothing does.
+            [resultSubject sendError:LKStaticWindowControllerReloadErrorMake(
+                                         LKStaticWindowControllerReloadErrorWindowClosed,
+                                         NSLocalizedString(@"The inspector window closed while the hierarchy was being fetched.", nil))];
+            return;
+        }
         [self.viewController.progressView finishWithCompletion:nil];
         [self.hierarchyDataSource reloadWithHierarchyInfo:info keepState:YES];
         self.isFetchingHierarchy = NO;
 
         [LKPerformanceReporter.sharedInstance didFetchHierarchy];
-        
+
+        [resultSubject sendNext:info];
+        [resultSubject sendCompleted];
+
     } error:^(NSError * _Nullable error) {
         // error
         @strongify(self);
         [self.viewController.progressView resetToZero];
         self.isFetchingHierarchy = NO;
-        
-        [[NSAlert alertWithError:error] beginSheetModalForWindow:self.window completionHandler:nil];
+
+        [resultSubject sendError:error ?: LookinErr_Inner];
     }];
+    return resultSubject;
 }
 
 - (void)_handleApp {

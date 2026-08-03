@@ -72,20 +72,20 @@
     return nil;
 }
 
-- (LKStaticHierarchyDataSource *)hierarchyDataSource {
+- (LKStaticWindowController *)staticWindowController {
     LKStaticWindowController *wc = (LKStaticWindowController *)self.windowControllers.firstObject;
     if ([wc isKindOfClass:[LKStaticWindowController class]]) {
-        return wc.hierarchyDataSource;
+        return wc;
     }
     return nil;
 }
 
+- (LKStaticHierarchyDataSource *)hierarchyDataSource {
+    return self.staticWindowController.hierarchyDataSource;
+}
+
 - (LKStaticAsyncUpdateManager *)asyncUpdateManager {
-    LKStaticWindowController *wc = (LKStaticWindowController *)self.windowControllers.firstObject;
-    if ([wc isKindOfClass:[LKStaticWindowController class]]) {
-        return wc.asyncUpdateManager;
-    }
-    return nil;
+    return self.staticWindowController.asyncUpdateManager;
 }
 
 #pragma mark - NSDocument overrides
