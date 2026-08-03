@@ -55,6 +55,8 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
 @property(nonatomic, strong, readwrite) LKStaticHierarchyDataSource *hierarchyDataSource;
 @property(nonatomic, strong, readwrite) LKStaticAsyncUpdateManager *asyncUpdateManager;
 
+@property(nonatomic, assign, readwrite) LKHierarchyReloadInitiator lastReloadInitiator;
+
 @end
 
 @implementation LKStaticWindowController
@@ -383,13 +385,13 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
     }
 
     @weakify(self);
-    [[self reloadHierarchySignal] subscribeError:^(NSError * _Nullable error) {
+    [[self reloadHierarchySignalWithInitiator:LKHierarchyReloadInitiatorHost] subscribeError:^(NSError * _Nullable error) {
         @strongify(self);
         [[NSAlert alertWithError:error] beginSheetModalForWindow:self.window completionHandler:nil];
     }];
 }
 
-- (RACSignal *)reloadHierarchySignal {
+- (RACSignal *)reloadHierarchySignalWithInitiator:(LKHierarchyReloadInitiator)initiator {
     if (self.isFetchingHierarchy) {
         return [RACSignal error:LKStaticWindowControllerReloadErrorMake(
                                     LKStaticWindowControllerReloadErrorAlreadyInProgress,
@@ -407,6 +409,10 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
                                     NSLocalizedString(@"This window is not attached to an app.", nil))];
     }
 
+    // Recorded here rather than at the top of the method: every path above
+    // returns without starting anything, and stamping the initiator on a
+    // refused request would misattribute the reload that refused it.
+    self.lastReloadInitiator = initiator;
     self.isFetchingHierarchy = YES;
 
     [self.viewController.progressView animateToProgress:InitialIndicatorProgressWhenFetchHierarchy];

@@ -212,6 +212,7 @@
 				MCPBridge/LKMCPBridgeAttributeValueDecoder.swift,
 				MCPBridge/LKMCPBridgeConnection.swift,
 				MCPBridge/LKMCPBridgeDetailsService.swift,
+				MCPBridge/LKMCPBridgeEventPublisher.swift,
 				MCPBridge/LKMCPBridgeFrame.swift,
 				MCPBridge/LKMCPBridgeInspectionModels.swift,
 				MCPBridge/LKMCPBridgeInspectionService.swift,

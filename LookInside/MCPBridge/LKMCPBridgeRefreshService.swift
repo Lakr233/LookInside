@@ -100,7 +100,11 @@ public final class LKMCPBridgeRefreshService {
         // left to compare against.
         let previousNodeCount = document.hierarchyDataSource?.rawFlatItems?.count ?? 0
 
-        guard let signal = windowController.reloadHierarchySignal() else {
+        // Stamps `lastReloadInitiator` on the window controller, which is
+        // what lets the event publisher label the resulting
+        // `hierarchy.reloaded` event as the caller's own echo rather than
+        // as news about the app.
+        guard let signal = windowController.reloadHierarchySignal(with: .agent) else {
             return .failure(
                 identifier: identifier,
                 error: LKMCPBridgeErrorPayload(

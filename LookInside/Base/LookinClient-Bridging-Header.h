@@ -28,6 +28,14 @@
 #import "LookinAppInfo.h"
 #import "LookinHierarchyInfo.h"
 #import "LKInspectableApp.h"
+// The MCPBridge event publisher watches this manager's two RACSubjects
+// (channelWillEnd, didReceivePush) to turn target disconnects and
+// server-initiated pushes into bridge events. The channel type comes
+// along because both signals carry one, and without the type visible
+// Swift cannot see any API that mentions it -- including
+// `-[LookinLiveDocumentController liveDocumentForChannel:]`.
+#import "Lookin_PTChannel.h"
+#import "LKConnectionManager.h"
 #import "LKHierarchyDataSource.h"
 #import "LKStaticHierarchyDataSource.h"
 // The MCPBridge refresh route drives -reloadHierarchySignal, which lives on

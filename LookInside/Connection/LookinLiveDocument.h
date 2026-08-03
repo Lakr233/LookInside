@@ -14,6 +14,22 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// Posted (object = the document) once a Live Doc has been added to the
+/// shared document controller and its window controllers exist, so an
+/// observer can read `inspectableApp` / `hierarchyDataSource` right away.
+///
+/// `NSDocumentController` vends no such notification of its own, and the
+/// MCPBridge event publisher needs both a "a target attached" signal and a
+/// place to hook each document's own reload subject. Rather than have that
+/// publisher reach into the document controller, the two moments announce
+/// themselves.
+extern NSNotificationName const LookinLiveDocumentDidOpenNotification;
+
+/// Posted (object = the document) at the start of `-close`, while the
+/// document is still fully formed. Observers must not assume anything
+/// about it survives the return of this notification.
+extern NSNotificationName const LookinLiveDocumentWillCloseNotification;
+
 @interface LookinLiveDocument : NSDocument
 
 /// The inspectable app this document represents. Stable for callers in the

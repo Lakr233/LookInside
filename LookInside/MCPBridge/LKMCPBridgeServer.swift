@@ -102,6 +102,11 @@ public final class LKMCPBridgeServer: NSObject {
     /// "cached reads only, never emits RPC" property.
     private var refreshService: LKMCPBridgeRefreshService?
 
+    /// Translates host state changes into pushed event frames. Main-actor
+    /// isolated (every signal it watches is published there) and owned
+    /// here so its lifetime matches the socket's.
+    @MainActor private static var eventPublisher: LKMCPBridgeEventPublisher?
+
     // MARK: - Lifecycle
 
     @objc public func start() {
@@ -112,6 +117,7 @@ public final class LKMCPBridgeServer: NSObject {
                 try self.bindAndListen()
                 self.isRunning = true
                 Self.logger.notice("MCPBridge started at \(LKMCPBridgeServer.socketURL.path, privacy: .public)")
+                self.startEventPublisher()
             } catch {
                 Self.logger.error("MCPBridge failed to start: \(error.localizedDescription, privacy: .public)")
                 self.cleanUpListenSocket()
@@ -133,6 +139,38 @@ public final class LKMCPBridgeServer: NSObject {
             self.openConnections.removeAll()
             self.activeConnections.removeAll()
             Self.logger.notice("MCPBridge stopped")
+            Task { @MainActor in
+                Self.eventPublisher?.stop()
+                Self.eventPublisher = nil
+            }
+        }
+    }
+
+    // MARK: - Event push
+
+    /// Pushes an unsolicited frame to every open connection.
+    ///
+    /// No subscription filtering happens here on purpose. The host has no
+    /// idea how many bridge clients are attached or what any of them care
+    /// about, and teaching it would drag Model Context Protocol concepts
+    /// into this GPL layer. Clients filter; the host broadcasts.
+    public func broadcast(event: LKMCPBridgeEvent) {
+        stateQueue.async { [weak self] in
+            guard let self, self.isRunning else { return }
+            for connection in self.openConnections.values {
+                connection.send(event: event)
+            }
+        }
+    }
+
+    private func startEventPublisher() {
+        Task { @MainActor in
+            if Self.eventPublisher == nil {
+                Self.eventPublisher = LKMCPBridgeEventPublisher(broadcast: { event in
+                    LKMCPBridgeServer.sharedInstance.broadcast(event: event)
+                })
+            }
+            Self.eventPublisher?.start()
         }
     }
 
