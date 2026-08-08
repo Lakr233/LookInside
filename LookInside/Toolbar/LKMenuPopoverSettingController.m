@@ -10,6 +10,7 @@
 #import "LKPreferenceManager.h"
 #import "LKNavigationManager.h"
 #import "LKPreviewView.h"
+#import "LKHelper.h"
 
 @interface LKMenuPopoverSettingController ()
 
@@ -27,7 +28,7 @@
 
 @implementation LKMenuPopoverSettingController
 
-- (instancetype)initWithPreferenceManager:(LKPreferenceManager *)manager {
+- (instancetype)initWithPreferenceManager:(LKPreferenceManager *)manager isMacTarget:(BOOL)isMacTarget {
     if (self = [self initWithContainerView:nil]) {
         self.manager = manager;
         
@@ -46,7 +47,8 @@
         
         self.showInvisiblesButton = [NSButton new];
         self.showInvisiblesButton.font = NSFontMake(14);
-        self.showInvisiblesButton.title = NSLocalizedString(@"Show hidden UIView and CALayer", nil);
+        self.showInvisiblesButton.title = [NSString stringWithFormat:NSLocalizedString(@"Show hidden %@ and CALayer", nil),
+                                           [LKHelper viewClassNameForMacTarget:isMacTarget]];
         [self.showInvisiblesButton setButtonType:NSButtonTypeSwitch];
         self.showInvisiblesButton.target = self;
         self.showInvisiblesButton.action = @selector(_handleShowInvisiblesControl);

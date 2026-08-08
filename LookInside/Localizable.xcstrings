@@ -4406,18 +4406,19 @@
         }
       }
     },
-    "Show hidden UIView and CALayer" : {
+    "Show hidden %@ and CALayer" : {
+      "comment" : "%@ is NSView or UIView, depending on the inspected app",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show hidden UIView and CALayer"
+            "value" : "Show hidden %@ and CALayer"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示隐藏的 UIView 和 CALayer"
+            "value" : "显示隐藏的 %@ 和 CALayer"
           }
         }
       }
@@ -5007,18 +5008,19 @@
         }
       }
     },
-    "This object may not be a UIView or CALayer." : {
+    "This object may not be a %@ or CALayer." : {
+      "comment" : "%@ is NSView or UIView, depending on the inspected app",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This object may not be a UIView or CALayer."
+            "value" : "This object may not be a %@ or CALayer."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "该对象可能不是 UIView 或 CALayer。"
+            "value" : "该对象可能不是 %@ 或 CALayer。"
           }
         }
       }

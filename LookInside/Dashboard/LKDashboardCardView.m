@@ -24,6 +24,8 @@
 #import "LookinAttributesGroup+LookinClient.h"
 #import "LookinAttributesSection+LookinClient.h"
 #import "LKDashboardSectionViewPool.h"
+#import "LKHierarchyDataSource.h"
+#import "LookinHierarchyInfo.h"
 
 // Wire-compat fallback for v8 servers (no isSwiftUIGroup flag yet).
 // LKS_SwiftUIAttrGroupsMaker emits user-custom groups whose userCustomTitle
@@ -143,7 +145,9 @@ static BOOL LKAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
         _contentsY = 35;
     }
     
-    self.titleControl.label.stringValue = [self.attrGroup queryDisplayTitle];
+    LookinAppInfo *inspectedAppInfo = self.dashboardViewController.currentDataSource.rawHierarchyInfo.appInfo;
+    BOOL isMacTarget = [LKHelper appInfoLooksLikeMacTarget:inspectedAppInfo];
+    self.titleControl.label.stringValue = [self.attrGroup queryDisplayTitleForMacTarget:isMacTarget];
     self.titleControl.iconImageView.image = [LKDashboardCardView imageWithAttrGroup:self.attrGroup];
 
     // Cards are reused via cardViews[uniqueKey] in LKDashboardViewController; clear
