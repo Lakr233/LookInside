@@ -13,6 +13,8 @@
 #import "LookinAppInfo.h"
 #import "LKS_MultiplatformAdapter.h"
 
+#import <sys/sysctl.h>
+
 static NSString * const CodingKey_AppIcon = @"1";
 static NSString * const CodingKey_Screenshot = @"2";
 static NSString * const CodingKey_DeviceDescription = @"3";
@@ -22,6 +24,24 @@ static NSString * const CodingKey_ScreenWidth = @"6";
 static NSString * const CodingKey_ScreenHeight = @"7";
 static NSString * const CodingKey_DeviceType = @"8";
 
+/// Reads a sysctl entry as a string, or nil when it is unavailable or empty.
+static NSString *LookinAppInfoSysctlStringValue(const char *sysctlName) {
+    size_t valueSize = 0;
+    if (sysctlbyname(sysctlName, NULL, &valueSize, NULL, 0) != 0 || valueSize == 0) {
+        return nil;
+    }
+    char *valueBuffer = malloc(valueSize);
+    if (valueBuffer == NULL) {
+        return nil;
+    }
+    NSString *value = nil;
+    if (sysctlbyname(sysctlName, valueBuffer, &valueSize, NULL, 0) == 0) {
+        value = [NSString stringWithUTF8String:valueBuffer];
+    }
+    free(valueBuffer);
+    return value.length ? value : nil;
+}
+
 @implementation LookinAppInfo
 
 - (id)copyWithZone:(NSZone *)zone {
@@ -29,6 +49,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     newAppInfo.appIcon = self.appIcon;
     newAppInfo.appName = self.appName;
     newAppInfo.deviceDescription = self.deviceDescription;
+    newAppInfo.deviceModelIdentifier = self.deviceModelIdentifier;
     newAppInfo.osDescription = self.osDescription;
     newAppInfo.osMainVersion = self.osMainVersion;
     newAppInfo.deviceType = self.deviceType;
@@ -55,6 +76,7 @@ static NSString * const CodingKey_DeviceType = @"8";
         self.appName = [aDecoder decodeObjectForKey:CodingKey_AppName];
         self.appBundleIdentifier = [aDecoder decodeObjectForKey:@"appBundleIdentifier"];
         self.deviceDescription = [aDecoder decodeObjectForKey:CodingKey_DeviceDescription];
+        self.deviceModelIdentifier = [aDecoder decodeObjectForKey:@"deviceModelIdentifier"];
         self.osDescription = [aDecoder decodeObjectForKey:CodingKey_OsDescription];
         self.osMainVersion = [aDecoder decodeIntegerForKey:@"osMainVersion"];
         self.deviceType = [aDecoder decodeIntegerForKey:CodingKey_DeviceType];
@@ -89,6 +111,7 @@ static NSString * const CodingKey_DeviceType = @"8";
     [aCoder encodeObject:self.appName forKey:CodingKey_AppName];
     [aCoder encodeObject:self.appBundleIdentifier forKey:@"appBundleIdentifier"];
     [aCoder encodeObject:self.deviceDescription forKey:CodingKey_DeviceDescription];
+    [aCoder encodeObject:self.deviceModelIdentifier forKey:@"deviceModelIdentifier"];
     [aCoder encodeObject:self.osDescription forKey:CodingKey_OsDescription];
     [aCoder encodeInteger:self.osMainVersion forKey:@"osMainVersion"];
     [aCoder encodeInteger:self.deviceType forKey:CodingKey_DeviceType];
@@ -162,6 +185,7 @@ static NSString * const CodingKey_DeviceType = @"8";
 #if TARGET_OS_OSX
     info.deviceDescription = [NSHost currentHost].localizedName;
 #endif
+    info.deviceModelIdentifier = [self currentDeviceModelIdentifier];
     info.appBundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
     if ([self isSimulator]) {
         info.deviceType = LookinAppInfoDeviceSimulator;
@@ -288,6 +312,27 @@ static NSString * const CodingKey_DeviceType = @"8";
         return YES;
     }
     return NO;
+}
+
+/// The hardware model identifier of the device this process runs on, e.g. @"iPhone16,2".
+/// Returns nil when it cannot be determined, which callers must tolerate.
++ (NSString *)currentDeviceModelIdentifier {
+    static dispatch_once_t onceToken;
+    static NSString *modelIdentifier = nil;
+    dispatch_once(&onceToken, ^{
+#if TARGET_OS_SIMULATOR
+        // hw.machine reports the *host* Mac's architecture ("arm64") inside a simulator,
+        // which identifies no device at all. The simulated model is only available from
+        // the environment simctl prepares for the process.
+        modelIdentifier = [[NSProcessInfo processInfo].environment[@"SIMULATOR_MODEL_IDENTIFIER"] copy];
+#elif TARGET_OS_OSX || TARGET_OS_MACCATALYST
+        // On macOS hw.machine is the CPU architecture; the Mac model lives in hw.model.
+        modelIdentifier = LookinAppInfoSysctlStringValue("hw.model");
+#else
+        modelIdentifier = LookinAppInfoSysctlStringValue("hw.machine");
+#endif
+    });
+    return modelIdentifier;
 }
 
 

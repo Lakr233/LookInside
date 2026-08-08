@@ -43,6 +43,11 @@ typedef NS_ENUM(NSInteger, LookinAppInfoDevice) {
 @property(nonatomic, copy) NSString *appBundleIdentifier;
 /// @"iPhone X"
 @property(nonatomic, copy) NSString *deviceDescription;
+/// The hardware model identifier, e.g. @"iPhone16,2", @"iPad14,3", @"Mac15,7".
+/// On a simulator this is the *simulated* device's identifier, not the host CPU
+/// architecture. Nil whenever the model cannot be determined, and always nil when the
+/// peer runs a LookinServer predating this field — receivers must keep a fallback path.
+@property(nonatomic, copy) NSString *deviceModelIdentifier;
 /// @"12.1"
 @property(nonatomic, copy) NSString *osDescription;
 /// 返回 os 的主版本号，比如 iOS 12.1 的设备将返回 12，iOS 13.2.1 的设备将返回 13
