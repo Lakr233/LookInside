@@ -1233,7 +1233,7 @@
 			repositoryURL = "https://github.com/Mx-Iris/UIFoundation";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.15.1;
+				minimumVersion = 0.15.2;
 			};
 			traits = (
 				AppleInternal,
