@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 73;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,6 +17,8 @@
 		E97210092FC2E5C0003AAEA6 /* HelperClient in Frameworks */ = {isa = PBXBuildFile; productRef = E97210082FC2E5C0003AAEA6 /* HelperClient */; };
 		E972100B2FC2E5C0003AAEA6 /* HelperCommunication in Frameworks */ = {isa = PBXBuildFile; productRef = E972100A2FC2E5C0003AAEA6 /* HelperCommunication */; };
 		E972100D2FC2E5C0003AAEA6 /* InjectionServiceInterface in Frameworks */ = {isa = PBXBuildFile; productRef = E972100C2FC2E5C0003AAEA6 /* InjectionServiceInterface */; };
+		E9FE990C3026C657008692AF /* UIFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = E9FE990B3026C657008692AF /* UIFoundation */; };
+		E9FE990E3026C657008692AF /* UIFoundationToolbox in Frameworks */ = {isa = PBXBuildFile; productRef = E9FE990D3026C657008692AF /* UIFoundationToolbox */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +29,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		50EAE1F32F71C01A00EBE063 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		50EAE1F32F71C01A00EBE063 /* Exceptions for "LookInside" folder in "LookInside" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				About/LKAboutViewController.m,
@@ -60,6 +62,7 @@
 				Base/LKBaseView.m,
 				Base/LKBaseViewController.m,
 				Base/LKColorIndicatorLayer.m,
+				Base/LKDeviceIconProvider.swift,
 				Base/LKImageControl.m,
 				Base/LKImageTextView.m,
 				Base/LKLabel.m,
@@ -352,7 +355,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		50EAE1F42F71C01A00EBE063 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
+		50EAE1F42F71C01A00EBE063 /* Exceptions for "LookInside" folder in "Compile Sources" phase from "LookInside" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = 50EADFB42F71C00C00EBE063 /* Sources */;
 			membershipExceptions = (
@@ -653,15 +656,27 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5011BBAE2F9754F0002DA475 /* Configuration */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Configuration; sourceTree = "<group>"; };
-		50EADFB32F71BFF200EBE063 /* LookInside */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (50EAE1F32F71C01A00EBE063 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 50EAE1F42F71C01A00EBE063 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LookInside; sourceTree = "<group>"; };
+		5011BBAE2F9754F0002DA475 /* Configuration */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		50EADFB32F71BFF200EBE063 /* LookInside */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				50EAE1F32F71C01A00EBE063 /* Exceptions for "LookInside" folder in "LookInside" target */,
+				50EAE1F42F71C01A00EBE063 /* Exceptions for "LookInside" folder in "Compile Sources" phase from "LookInside" target */,
+			);
+			path = LookInside;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		AA48F29821CC0CA50032EC2C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
+				E9FE990C3026C657008692AF /* UIFoundation in Frameworks */,
 				50EAE1AA2F71C01A00EBE063 /* Security.framework in Frameworks */,
 				50EAE1AB2F71C01A00EBE063 /* Quartz.framework in Frameworks */,
 				50EAE1AC2F71C01A00EBE063 /* QuickLookThumbnailing.framework in Frameworks */,
@@ -672,8 +687,8 @@
 				E97210092FC2E5C0003AAEA6 /* HelperClient in Frameworks */,
 				E972100B2FC2E5C0003AAEA6 /* HelperCommunication in Frameworks */,
 				E972100D2FC2E5C0003AAEA6 /* InjectionServiceInterface in Frameworks */,
+				E9FE990E3026C657008692AF /* UIFoundationToolbox in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -721,8 +736,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			name = LookInside;
 			packageProductDependencies = (
 				E37B8D0C2F97B1B100600001 /* Demangling */,
@@ -732,6 +745,8 @@
 				E97210082FC2E5C0003AAEA6 /* HelperClient */,
 				E972100A2FC2E5C0003AAEA6 /* HelperCommunication */,
 				E972100C2FC2E5C0003AAEA6 /* InjectionServiceInterface */,
+				E9FE990B3026C657008692AF /* UIFoundation */,
+				E9FE990D3026C657008692AF /* UIFoundationToolbox */,
 			);
 			productName = Lookin;
 			productReference = AA48F29B21CC0CA50032EC2C /* LookInside.app */;
@@ -777,6 +792,7 @@
 				E37B8D202F97B1B100600001 /* XCRemoteSwiftPackageReference "LookInsidePrivateDiscriminator" */,
 				E97210042FC2D5C0003AAEA6 /* XCRemoteSwiftPackageReference "RunningApplicationKit" */,
 				E97210072FC2E3FC003AAEA6 /* XCRemoteSwiftPackageReference "swift-helper-service" */,
+				E9FE990A3026C657008692AF /* XCRemoteSwiftPackageReference "UIFoundation" */,
 			);
 			preferredProjectObjectVersion = 50;
 			productRefGroup = AA48F29C21CC0CA50032EC2C /* Products */;
@@ -791,10 +807,8 @@
 /* Begin PBXResourcesBuildPhase section */
 		AA48F29921CC0CA50032EC2C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -802,55 +816,64 @@
 		5005F8FD2FA505DF00C0BB07 /* Build Authenticator at DEBUG */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
 			name = "Build Authenticator at DEBUG";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" != \"Debug\" ]; then\n    echo \"Skipping Build Authenticator (configuration: $CONFIGURATION)\"\n    exit 0\nfi\nif [ ! -d \"$SRCROOT/../LookInside-Auth\" ]; then\n    echo \"Skipping Build Authenticator: LookInside-Auth not present (not in monorepo checkout)\"\n    exit 0\nfi\nPREPARE_SCRIPT=\"$SRCROOT/Scripts/prepare-debug-auth-server.sh\"\n# Run in a fresh login zsh so xcodebuild env from the host build does not leak\n# into the nested LookInside-Auth build (causes XCBBuildService to crash).\nenv -i HOME=\"$HOME\" USER=\"$USER\" TERM=\"${TERM:-dumb}\" /bin/zsh -lc \"$PREPARE_SCRIPT\"\n";
+			shellScript = (
+				"if [ \"$CONFIGURATION\" != \"Debug\" ]; then",
+				"    echo \"Skipping Build Authenticator (configuration: $CONFIGURATION)\"",
+				"    exit 0",
+				"fi",
+				"if [ ! -d \"$SRCROOT/../LookInside-Auth\" ]; then",
+				"    echo \"Skipping Build Authenticator: LookInside-Auth not present (not in monorepo checkout)\"",
+				"    exit 0",
+				"fi",
+				"PREPARE_SCRIPT=\"$SRCROOT/Scripts/prepare-debug-auth-server.sh\"",
+				"# Run in a fresh login zsh so xcodebuild env from the host build does not leak",
+				"# into the nested LookInside-Auth build (causes XCBBuildService to crash).",
+				"env -i HOME=\"$HOME\" USER=\"$USER\" TERM=\"${TERM:-dumb}\" /bin/zsh -lc \"$PREPARE_SCRIPT\"",
+				"",
+			);
 		};
 		5005F8FE2FA505DF00C0BB07 /* Embed Injector Daemon */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
 			name = "Embed Injector Daemon";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ ! -d \"$SRCROOT/../LookInside-Injector\" ]; then\n    if [ \"$CONFIGURATION\" = \"Release\" ]; then\n        echo \"error: LookInside-Injector not present; Release builds must embed the injector daemon\"\n        exit 1\n    fi\n    echo \"Skipping Embed Injector Daemon: LookInside-Injector not present (not in monorepo checkout)\"\n    exit 0\nfi\nPREPARE_SCRIPT=\"$SRCROOT/Scripts/prepare-injector-daemon.sh\"\n# Run in a fresh login zsh so xcodebuild env from the host build does not leak\n# into the nested LookInside-Injector build (would crash XCBBuildService).\n# Re-export the host's BUILT_PRODUCTS_DIR / CONTENTS_FOLDER_PATH / CONFIGURATION\n# so the nested zsh can locate the LookInside.app bundle to embed into.\nenv -i HOME=\"$HOME\" USER=\"$USER\" TERM=\"${TERM:-dumb}\" \\\n    GITHUB_TOKEN=\"${GITHUB_TOKEN:-}\" \\\n    CONFIGURATION=\"$CONFIGURATION\" \\\n    BUILT_PRODUCTS_DIR=\"$BUILT_PRODUCTS_DIR\" \\\n    CONTENTS_FOLDER_PATH=\"$CONTENTS_FOLDER_PATH\" \\\n    /bin/zsh -lc \"$PREPARE_SCRIPT\"\n";
+			shellScript = (
+				"if [ ! -d \"$SRCROOT/../LookInside-Injector\" ]; then",
+				"    if [ \"$CONFIGURATION\" = \"Release\" ]; then",
+				"        echo \"error: LookInside-Injector not present; Release builds must embed the injector daemon\"",
+				"        exit 1",
+				"    fi",
+				"    echo \"Skipping Embed Injector Daemon: LookInside-Injector not present (not in monorepo checkout)\"",
+				"    exit 0",
+				"fi",
+				"PREPARE_SCRIPT=\"$SRCROOT/Scripts/prepare-injector-daemon.sh\"",
+				"# Run in a fresh login zsh so xcodebuild env from the host build does not leak",
+				"# into the nested LookInside-Injector build (would crash XCBBuildService).",
+				"# Re-export the host's BUILT_PRODUCTS_DIR / CONTENTS_FOLDER_PATH / CONFIGURATION",
+				"# so the nested zsh can locate the LookInside.app bundle to embed into.",
+				"env -i HOME=\"$HOME\" USER=\"$USER\" TERM=\"${TERM:-dumb}\" \\",
+				"    GITHUB_TOKEN=\"${GITHUB_TOKEN:-}\" \\",
+				"    CONFIGURATION=\"$CONFIGURATION\" \\",
+				"    BUILT_PRODUCTS_DIR=\"$BUILT_PRODUCTS_DIR\" \\",
+				"    CONTENTS_FOLDER_PATH=\"$CONTENTS_FOLDER_PATH\" \\",
+				"    /bin/zsh -lc \"$PREPARE_SCRIPT\"",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		50EADFB42F71C00C00EBE063 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		AA48F2AA21CC0CA60032EC2C /* Debug */ = {
+		AA48F2AA21CC0CA60032EC2C /* Debug configuration for PBXProject "LookInside" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Debug.xcconfig;
@@ -926,7 +949,7 @@
 			};
 			name = Debug;
 		};
-		AA48F2AB21CC0CA60032EC2C /* Release */ = {
+		AA48F2AB21CC0CA60032EC2C /* Release configuration for PBXProject "LookInside" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Release.xcconfig;
@@ -996,7 +1019,7 @@
 			};
 			name = Release;
 		};
-		AA48F2AD21CC0CA60032EC2C /* Debug */ = {
+		AA48F2AD21CC0CA60032EC2C /* Debug configuration for PBXNativeTarget "LookInside" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Debug.xcconfig;
@@ -1070,7 +1093,7 @@
 			};
 			name = Debug;
 		};
-		AA48F2AE21CC0CA60032EC2C /* Release */ = {
+		AA48F2AE21CC0CA60032EC2C /* Release configuration for PBXNativeTarget "LookInside" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 5011BBAE2F9754F0002DA475 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Release.xcconfig;
@@ -1149,19 +1172,17 @@
 		AA48F29621CC0CA50032EC2C /* Build configuration list for PBXProject "LookInside" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AA48F2AA21CC0CA60032EC2C /* Debug */,
-				AA48F2AB21CC0CA60032EC2C /* Release */,
+				AA48F2AA21CC0CA60032EC2C /* Debug configuration for PBXProject "LookInside" */,
+				AA48F2AB21CC0CA60032EC2C /* Release configuration for PBXProject "LookInside" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		AA48F2AC21CC0CA60032EC2C /* Build configuration list for PBXNativeTarget "LookInside" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AA48F2AD21CC0CA60032EC2C /* Debug */,
-				AA48F2AE21CC0CA60032EC2C /* Release */,
+				AA48F2AD21CC0CA60032EC2C /* Debug configuration for PBXNativeTarget "LookInside" */,
+				AA48F2AE21CC0CA60032EC2C /* Release configuration for PBXNativeTarget "LookInside" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
@@ -1207,6 +1228,17 @@
 				minimumVersion = 0.1.0;
 			};
 		};
+		E9FE990A3026C657008692AF /* XCRemoteSwiftPackageReference "UIFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Mx-Iris/UIFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.1;
+			};
+			traits = (
+				AppleInternal,
+			);
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1244,6 +1276,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E97210072FC2E3FC003AAEA6 /* XCRemoteSwiftPackageReference "swift-helper-service" */;
 			productName = InjectionServiceInterface;
+		};
+		E9FE990B3026C657008692AF /* UIFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9FE990A3026C657008692AF /* XCRemoteSwiftPackageReference "UIFoundation" */;
+			productName = UIFoundation;
+		};
+		E9FE990D3026C657008692AF /* UIFoundationToolbox */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9FE990A3026C657008692AF /* XCRemoteSwiftPackageReference "UIFoundation" */;
+			productName = UIFoundationToolbox;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

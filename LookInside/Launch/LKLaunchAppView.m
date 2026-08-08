@@ -8,6 +8,7 @@
 
 #import "LKLaunchAppView.h"
 #import "LKInspectableApp.h"
+#import "LookInside-Swift.h"
 
 @interface LKLaunchAppView ()
 
@@ -157,7 +158,13 @@
         self.subtitleLabel.hidden = NO;
         
         self.previewImageView.image = app.appInfo.screenshot;
-        if ([LKHelper appInfoLooksLikeMacTarget:app.appInfo]) {
+        // Prefer the icon of the actual hardware model the app runs on. Falls back to the
+        // per-family asset when the peer's LookinServer does not report a model identifier.
+        NSImage *deviceIcon = [LKDeviceIconProvider deviceIconForAppInfo:app.appInfo
+                                                               pointSize:LKDeviceIconProvider.launchPointSize];
+        if (deviceIcon) {
+            self.iconImageView.image = deviceIcon;
+        } else if ([LKHelper appInfoLooksLikeMacTarget:app.appInfo]) {
             self.iconImageView.image = NSImageMake(@"icon_mac_big");
         } else if (app.appInfo.deviceType == LookinAppInfoDeviceSimulator) {
             self.iconImageView.image = NSImageMake(@"icon_simulator_big");
