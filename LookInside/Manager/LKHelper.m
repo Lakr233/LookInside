@@ -113,6 +113,14 @@ const CGFloat ZoomSliderMaxValue = 2.8;
         [deviceDescription containsString:@"mac"];
 }
 
++ (NSString *)viewClassNameForMacTarget:(BOOL)isMacTarget {
+    return isMacTarget ? @"NSView" : @"UIView";
+}
+
++ (NSString *)viewClassNameForAppInfo:(LookinAppInfo *)appInfo {
+    return [self viewClassNameForMacTarget:[self appInfoLooksLikeMacTarget:appInfo]];
+}
+
 + (NSColor *)accentColor {
     return [NSColor controlAccentColor];
 }

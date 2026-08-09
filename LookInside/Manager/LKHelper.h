@@ -94,6 +94,14 @@ CG_INLINE HorizontalMargins HorizontalMarginsMake(CGFloat left, CGFloat right) {
 
 + (BOOL)appInfoLooksLikeMacTarget:(LookinAppInfo *)appInfo;
 
+/// The name of the view class the inspected app actually uses: @"NSView" for AppKit
+/// targets, @"UIView" otherwise. UI copy must never hardcode either name, because
+/// the host is always compiled for macOS while the inspected app may be either.
++ (NSString *)viewClassNameForMacTarget:(BOOL)isMacTarget;
+
+/// Convenience wrapper combining +appInfoLooksLikeMacTarget: and +viewClassNameForMacTarget:.
++ (NSString *)viewClassNameForAppInfo:(LookinAppInfo *)appInfo;
+
 /// macOS 10.14 及以后返回用户的系统主题色，旧版本系统返回蓝色
 + (NSColor *)accentColor;
 

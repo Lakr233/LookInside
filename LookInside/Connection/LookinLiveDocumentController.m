@@ -71,6 +71,9 @@
     [[NSDocumentController sharedDocumentController] addDocument:doc];
     [doc makeWindowControllers];
     [doc showWindows];
+    // Posted after -makeWindowControllers so observers can reach the
+    // document's data source, which lives on its window controller.
+    [[NSNotificationCenter defaultCenter] postNotificationName:LookinLiveDocumentDidOpenNotification object:doc];
     finish(doc, NO, nil);
 }
 

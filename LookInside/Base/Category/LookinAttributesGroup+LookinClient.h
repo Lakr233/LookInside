@@ -12,7 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface LookinAttributesGroup (LookinClient)
 
-- (NSString *)queryDisplayTitle;
+/// `isMacTarget` describes the app being inspected, not the host. It only affects the
+/// ViewLayer group, whose title names the view class (`NSView` vs `UIView`).
+- (NSString *)queryDisplayTitleForMacTarget:(BOOL)isMacTarget;
 
 @end
 

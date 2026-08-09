@@ -7,6 +7,7 @@
 //
 
 #import "LKTipsView.h"
+#import "LookInside-Swift.h"
 
 @interface LKTipsView ()
 
@@ -149,6 +150,14 @@
 }
 
 - (void)setImageByAppInfo:(LookinAppInfo *)appInfo {
+    // Prefer the icon of the actual hardware model the app runs on. Falls back to the
+    // per-family asset when the peer's LookinServer does not report a model identifier.
+    NSImage *deviceIcon = [LKDeviceIconProvider deviceIconForAppInfo:appInfo
+                                                           pointSize:LKDeviceIconProvider.tipsPointSize];
+    if (deviceIcon) {
+        self.image = deviceIcon;
+        return;
+    }
     if ([LKHelper appInfoLooksLikeMacTarget:appInfo]) {
         self.image = NSImageMake(@"icon_mac_big");
         return;

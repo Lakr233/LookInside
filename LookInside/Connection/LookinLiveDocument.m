@@ -16,6 +16,9 @@
 #import "LKExportManager.h"
 #import "LookinDefines.h"
 
+NSNotificationName const LookinLiveDocumentDidOpenNotification = @"LookinLiveDocumentDidOpenNotification";
+NSNotificationName const LookinLiveDocumentWillCloseNotification = @"LookinLiveDocumentWillCloseNotification";
+
 @interface LookinLiveDocument ()
 
 /// Internal readwrite override of the public readonly property. Phase D
@@ -72,20 +75,20 @@
     return nil;
 }
 
-- (LKStaticHierarchyDataSource *)hierarchyDataSource {
+- (LKStaticWindowController *)staticWindowController {
     LKStaticWindowController *wc = (LKStaticWindowController *)self.windowControllers.firstObject;
     if ([wc isKindOfClass:[LKStaticWindowController class]]) {
-        return wc.hierarchyDataSource;
+        return wc;
     }
     return nil;
 }
 
+- (LKStaticHierarchyDataSource *)hierarchyDataSource {
+    return self.staticWindowController.hierarchyDataSource;
+}
+
 - (LKStaticAsyncUpdateManager *)asyncUpdateManager {
-    LKStaticWindowController *wc = (LKStaticWindowController *)self.windowControllers.firstObject;
-    if ([wc isKindOfClass:[LKStaticWindowController class]]) {
-        return wc.asyncUpdateManager;
-    }
-    return nil;
+    return self.staticWindowController.asyncUpdateManager;
 }
 
 #pragma mark - NSDocument overrides
@@ -163,6 +166,10 @@
 }
 
 - (void)close {
+    // Announced before any teardown so observers can still read this
+    // document's app info and data source while deciding what to report.
+    [[NSNotificationCenter defaultCenter] postNotificationName:LookinLiveDocumentWillCloseNotification object:self];
+
     // Phase D: cancel any in-flight reconnect work *before* the doc is torn
     // down. Channel lifecycle subjects keep weak references to `self`, but
     // disposing here makes the teardown order explicit and avoids one extra

@@ -14,6 +14,22 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// Posted (object = the document) once a Live Doc has been added to the
+/// shared document controller and its window controllers exist, so an
+/// observer can read `inspectableApp` / `hierarchyDataSource` right away.
+///
+/// `NSDocumentController` vends no such notification of its own, and the
+/// MCPBridge event publisher needs both a "a target attached" signal and a
+/// place to hook each document's own reload subject. Rather than have that
+/// publisher reach into the document controller, the two moments announce
+/// themselves.
+extern NSNotificationName const LookinLiveDocumentDidOpenNotification;
+
+/// Posted (object = the document) at the start of `-close`, while the
+/// document is still fully formed. Observers must not assume anything
+/// about it survives the return of this notification.
+extern NSNotificationName const LookinLiveDocumentWillCloseNotification;
+
 @interface LookinLiveDocument : NSDocument
 
 /// The inspectable app this document represents. Stable for callers in the
@@ -38,6 +54,13 @@ NS_ASSUME_NONNULL_BEGIN
 /// Convenience accessor for this document's async update manager. Returns nil
 /// before -makeWindowControllers has run.
 @property(nonatomic, weak, readonly, nullable) LKStaticAsyncUpdateManager *asyncUpdateManager;
+
+/// This document's window controller. Returns nil before
+/// -makeWindowControllers has run. Exposed so callers that need a whole
+/// window-level operation rather than one of its parts — the MCPBridge
+/// `hierarchy.refresh` route reaching -reloadHierarchySignal — do not have
+/// to re-derive it from `windowControllers`.
+@property(nonatomic, weak, readonly, nullable) LKStaticWindowController *staticWindowController;
 
 /// Designated initializer. Returns nil with `outError` populated when `app`
 /// is nil. Phase B does not establish or validate the channel here; that is

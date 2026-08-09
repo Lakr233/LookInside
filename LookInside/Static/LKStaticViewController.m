@@ -26,6 +26,7 @@
 #import "LKMeasureController.h"
 #import "LKHelper.h"
 #import "LookinLiveDocument.h"
+#import "LookinHierarchyInfo.h"
 
 NSString *const LKAppShowConsoleNotificationName = @"LKAppShowConsoleNotificationName";
 
@@ -171,7 +172,9 @@ NSString *const LKAppShowConsoleNotificationName = @"LKAppShowConsoleNotificatio
     
     self.customViewTipView = [LKTipsView new];
     self.customViewTipView.image = NSImageMake(@"Icon_Inspiration_small");
-    self.customViewTipView.title = NSLocalizedString(@"This object may not be a UIView or CALayer.", nil);
+    // The view class name depends on the inspected app, which is unknown until a
+    // hierarchy arrives — handleSelectItemDidChange refreshes the title before showing it.
+    self.customViewTipView.title = [self _customViewTipTitle];
     self.customViewTipView.buttonText = NSLocalizedString(@"Details", nil);
     self.customViewTipView.target = self;
     self.customViewTipView.clickAction = @selector(handleCustomViewTipsView);
@@ -440,11 +443,20 @@ NSString *const LKAppShowConsoleNotificationName = @"LKAppShowConsoleNotificatio
     {
         BOOL showTips = (item && item.isUserCustom);
         BOOL shouldHide = !showTips;
+        if (showTips) {
+            self.customViewTipView.title = [self _customViewTipTitle];
+        }
         if (self.customViewTipView.hidden != shouldHide) {
             self.customViewTipView.hidden = shouldHide;
             [self.view setNeedsLayout:YES];
         }
     }
+}
+
+- (NSString *)_customViewTipTitle {
+    LookinAppInfo *inspectedAppInfo = [self dataSource].rawHierarchyInfo.appInfo;
+    return [NSString stringWithFormat:NSLocalizedString(@"This object may not be a %@ or CALayer.", nil),
+            [LKHelper viewClassNameForAppInfo:inspectedAppInfo]];
 }
 
 - (LKStaticWindowController *)_staticWindowController {

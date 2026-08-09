@@ -27,12 +27,48 @@
     return [self _requestWithType:LookinRequestTypeInbuiltAttrModification data:modification];
 }
 
+- (RACSignal *)rawSubmitInbuiltModification:(LookinAttributeModification *)modification {
+    if (!modification) {
+        return [RACSignal error:LookinErr_Inner];
+    }
+    if (!self.channel) {
+        return [RACSignal error:LookinErr_NoConnect];
+    }
+    return [[[LKConnectionManager sharedInstance] requestWithType:LookinRequestTypeInbuiltAttrModification data:modification channel:self.channel] flattenMap:^__kindof RACSignal * _Nullable(RACTuple * _Nullable tuple) {
+        LookinConnectionResponseAttachment *attachment = tuple.first;
+        if (attachment.error) {
+            // Surface raw error codes so the MCPBridge can map them to
+            // structured wire codes; the console-facing -submit variant
+            // does the LookinErrCode_* → LookinErr_* localization, we
+            // deliberately skip it here.
+            return [RACSignal error:attachment.error];
+        }
+        return [RACSignal return:attachment.data];
+    }];
+}
+
 - (RACSignal *)submitCustomModification:(LookinCustomAttrModification *)modification {
     return [self _requestWithType:LookinRequestTypeCustomAttrModification data:modification];
 }
 
 - (RACSignal *)fetchHierarchyDetailWithTaskPackages:(NSArray<LookinStaticAsyncUpdateTasksPackage *> *)packages {
     return [self _requestWithType:LookinRequestTypeHierarchyDetails data:packages];
+}
+
+- (RACSignal *)rawFetchHierarchyDetailWithTaskPackages:(NSArray<LookinStaticAsyncUpdateTasksPackage *> *)packages {
+    if (!self.channel) {
+        return [RACSignal error:LookinErr_NoConnect];
+    }
+    return [[[LKConnectionManager sharedInstance] requestWithType:LookinRequestTypeHierarchyDetails data:(packages ?: @[]) channel:self.channel] flattenMap:^__kindof RACSignal * _Nullable(RACTuple * _Nullable tuple) {
+        LookinConnectionResponseAttachment *attachment = tuple.first;
+        if (attachment.error) {
+            // Raw error code preserved so MCPBridge can map LookinErrCode_*
+            // onto structured details.* wire codes; the console-facing
+            // variant above does the LookinErr_* localization swap.
+            return [RACSignal error:attachment.error];
+        }
+        return [RACSignal return:attachment.data];
+    }];
 }
 
 - (void)cancelHierarchyDetailFetching {
@@ -69,6 +105,27 @@
         } else {
             return value;
         }
+    }];
+}
+
+- (RACSignal *)rawInvokeMethodWithOid:(unsigned long)oid text:(NSString *)text {
+    if (oid == 0 || !text.length) {
+        return [RACSignal error:LookinErr_Inner];
+    }
+    if (!self.channel) {
+        return [RACSignal error:LookinErr_NoConnect];
+    }
+    NSDictionary *param = @{@"oid":@(oid), @"text":text};
+    return [[[LKConnectionManager sharedInstance] requestWithType:LookinRequestTypeInvokeMethod data:param channel:self.channel] flattenMap:^__kindof RACSignal * _Nullable(RACTuple * _Nullable tuple) {
+        LookinConnectionResponseAttachment *attachment = tuple.first;
+        if (attachment.error) {
+            // Surface the server's raw error code untouched so the MCPBridge
+            // route can map LookinErrCode_ObjectNotFound / _Inner / etc. to
+            // structured bridge error codes. The console-facing variant above
+            // does this translation; we deliberately skip it here.
+            return [RACSignal error:attachment.error];
+        }
+        return [RACSignal return:attachment.data];
     }];
 }
 

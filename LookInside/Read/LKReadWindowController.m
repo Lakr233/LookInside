@@ -18,6 +18,7 @@
 #import "LKPreviewView.h"
 #import "LKHierarchyView.h"
 #import "LookinArchiveDocument.h"
+#import "LKHelper.h"
 
 @interface LKReadWindowController () <NSToolbarDelegate>
 
@@ -106,7 +107,9 @@
     popover.behavior = NSPopoverBehaviorTransient;
     popover.animates = NO;
     popover.contentSize = NSMakeSize(IsEnglish ? 270 : 350, 200);
-    popover.contentViewController = [[LKMenuPopoverSettingController alloc] initWithPreferenceManager:self.preferenceManager];
+    LookinAppInfo *inspectedAppInfo = self.viewController.hierarchyDataSource.rawHierarchyInfo.appInfo;
+    popover.contentViewController = [[LKMenuPopoverSettingController alloc] initWithPreferenceManager:self.preferenceManager
+                                                                                          isMacTarget:[LKHelper appInfoLooksLikeMacTarget:inspectedAppInfo]];
     [popover showRelativeToRect:NSMakeRect(0, 0, button.bounds.size.width, button.bounds.size.height) ofView:button preferredEdge:NSRectEdgeMaxY];
 }
 

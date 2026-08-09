@@ -12,6 +12,8 @@
 
 @interface LKMenuPopoverSettingController : LKBaseViewController
 
-- (instancetype)initWithPreferenceManager:(LKPreferenceManager *)manager;
+/// `isMacTarget` describes the app being inspected, not the host. It decides whether the
+/// copy talks about `NSView` or `UIView`.
+- (instancetype)initWithPreferenceManager:(LKPreferenceManager *)manager isMacTarget:(BOOL)isMacTarget;
 
 @end
