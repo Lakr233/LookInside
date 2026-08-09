@@ -659,7 +659,12 @@ final class LKPrivateDiscriminatorStore: NSObject, ObservableObject {
         else {
             return [:]
         }
-        return Dictionary(uniqueKeysWithValues: records.map { ($0.filename, $0) })
+        // Keep-first rather than `uniqueKeysWithValues:`. This CSV is read off
+        // disk and can be hand-edited or left inconsistent by an older build,
+        // so a repeated filename is reachable input -- and trapping on it
+        // would take the whole app down. The map exists only to carry
+        // creation metadata forward, so the earliest row is the one to keep.
+        return Dictionary(records.map { ($0.filename, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private func existingAutosavedRecords(for module: String) throws -> [PrivateDiscriminatorRecord] {
