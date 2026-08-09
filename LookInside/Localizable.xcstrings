@@ -4632,6 +4632,9 @@
         }
       }
     },
+    "The app finished the hierarchy request without returning a hierarchy." : {
+
+    },
     "The command is disabled and cannot be executed" : {
       "localizations" : {
         "en" : {
