@@ -287,8 +287,6 @@ public final class LKMCPBridgeScreenshotService {
         let frames: [NSArray]
         do {
             frames = try await LKMCPBridgeRACBridge.awaitAllValues(of: signal, as: NSArray.self)
-        } catch let error as NSError {
-            return .failure(identifier: identifier, error: mapScreenshotError(error))
         } catch RACBridgeError.completedWithoutValue {
             return .failure(
                 identifier: identifier,
@@ -305,6 +303,11 @@ public final class LKMCPBridgeScreenshotService {
                     message: "The render was cancelled before the target app returned an image."
                 )
             )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and they become dead code.
+            return .failure(identifier: identifier, error: mapScreenshotError(error))
         } catch {
             Self.logger.error("screenshot.read bridge error: \(error.localizedDescription, privacy: .public)")
             return .failure(identifier: identifier, error: .internalError)
@@ -345,7 +348,7 @@ public final class LKMCPBridgeScreenshotService {
 
         // Merge into the host cache so the inspector UI and any repeat
         // call see the same image without another round-trip.
-        (document.hierarchyDataSource as? LKStaticHierarchyDataSource)?.modify(with: detail)
+        document.hierarchyDataSource?.modify(with: detail)
 
         guard let renderedImage = mode.image(in: detail) else {
             // The server has real paths that return a detail with no
@@ -406,7 +409,7 @@ public final class LKMCPBridgeScreenshotService {
             sourcePixelWidth: encoded.sourcePixelWidth,
             sourcePixelHeight: encoded.sourcePixelHeight,
             byteCount: encoded.pngData.count,
-            frame: LKMCPBridgeRect(cgRect: displayItem.frame),
+            frame: LKMCPBridgeRect(cgRect: LKMCPBridgeLiveDocumentLookup.rootSpaceFrame(for: displayItem)),
             servedFromCache: servedFromCache,
             containsSecureContent: containsSecureContent
         )

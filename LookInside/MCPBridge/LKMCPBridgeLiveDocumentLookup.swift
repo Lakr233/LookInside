@@ -80,4 +80,20 @@ enum LKMCPBridgeLiveDocumentLookup {
         let oid = item.displayingObject()?.oid ?? 0
         return String(format: "0x%lx", oid)
     }
+
+    /// The item's rectangle in the root coordinate space.
+    ///
+    /// `LookinDisplayItem.frame` is *parent*-relative -- `calculateFrameToRoot`
+    /// exists precisely because composing it up the tree is non-trivial (it
+    /// has to subtract each ancestor's `bounds` origin and flip for AppKit
+    /// superitems). The bridge reports root-space rectangles so an agent can
+    /// line a node up against a screenshot without walking the tree itself.
+    ///
+    /// Falls back to the raw frame when the item has no usable geometry:
+    /// `hasValidFrameToRoot` is a check on `frame` itself, so in that case
+    /// both values are equally meaningless and the raw one at least matches
+    /// what the host inspector displays.
+    static func rootSpaceFrame(for item: LookinDisplayItem) -> CGRect {
+        return item.hasValidFrameToRoot() ? item.calculateFrameToRoot() : item.frame
+    }
 }

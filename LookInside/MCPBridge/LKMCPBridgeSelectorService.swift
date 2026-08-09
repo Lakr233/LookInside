@@ -222,11 +222,6 @@ public final class LKMCPBridgeSelectorService {
         let rawSelectors: NSArray
         do {
             rawSelectors = try await LKMCPBridgeRACBridge.awaitFirstValue(of: signal, as: NSArray.self)
-        } catch let error as NSError {
-            return .failure(
-                identifier: identifier,
-                error: mapSelectorError(error, className: resolvedClassName)
-            )
         } catch RACBridgeError.completedWithoutValue {
             return .failure(
                 identifier: identifier,
@@ -242,6 +237,14 @@ public final class LKMCPBridgeSelectorService {
                     code: "selectors.cancelled",
                     message: "The selector query was cancelled before the target app produced a result."
                 )
+            )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and they become dead code.
+            return .failure(
+                identifier: identifier,
+                error: mapSelectorError(error, className: resolvedClassName)
             )
         } catch {
             Self.logger.error("selectors.list bridge error: \(error.localizedDescription, privacy: .public)")

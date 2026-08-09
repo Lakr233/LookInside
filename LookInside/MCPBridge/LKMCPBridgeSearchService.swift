@@ -284,7 +284,7 @@ public final class LKMCPBridgeSearchService {
             className: item.displayingObject()?.classChainList?.first ?? "",
             title: title,
             subtitle: subtitle,
-            frame: LKMCPBridgeRect(cgRect: item.frame),
+            frame: LKMCPBridgeRect(cgRect: LKMCPBridgeLiveDocumentLookup.rootSpaceFrame(for: item)),
             isHidden: item.isHidden,
             alpha: Double(item.alpha),
             depth: ancestorIdentifiers.count,

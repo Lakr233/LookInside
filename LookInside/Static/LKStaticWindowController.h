@@ -44,6 +44,11 @@ typedef NS_ENUM(NSInteger, LKStaticWindowControllerReloadErrorCode) {
     /// The window went away while the fetch was in flight, leaving no data
     /// source to absorb the result.
     LKStaticWindowControllerReloadErrorWindowClosed = 4,
+    /// The fetch finished without ever delivering a hierarchy and without
+    /// reporting an error -- reachable when the Peertalk channel tears down
+    /// mid-request. Distinct from `WindowClosed`: the window is still here,
+    /// the target app simply never answered.
+    LKStaticWindowControllerReloadErrorNoResponse = 5,
 };
 
 @interface LKStaticWindowController : LKWindowController

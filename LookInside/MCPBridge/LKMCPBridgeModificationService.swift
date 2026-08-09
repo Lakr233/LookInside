@@ -210,8 +210,6 @@ public final class LKMCPBridgeModificationService {
                 of: signal,
                 as: LookinDisplayItemDetail.self
             )
-        } catch let error as NSError {
-            return .failure(identifier: identifier, error: mapModificationError(error))
         } catch RACBridgeError.completedWithoutValue {
             return .failure(
                 identifier: identifier,
@@ -228,10 +226,29 @@ public final class LKMCPBridgeModificationService {
                     message: "The modification was cancelled before the target app produced a result."
                 )
             )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and they become dead code.
+            return .failure(identifier: identifier, error: mapModificationError(error))
         } catch {
             Self.logger.error("attribute.modify bridge error: \(error.localizedDescription, privacy: .public)")
             return .failure(identifier: identifier, error: .internalError)
         }
+
+        // Merge the post-modification detail back into the host's cache, the
+        // same way `details.read` and `screenshot.read` do. Without this the
+        // inspector window keeps showing the pre-modification value, and a
+        // follow-up `attributes.read` serves the stale cached groups -- which
+        // directly contradicts the `effectiveAttribute` this call is about to
+        // return, with nothing to tell the agent which one is current.
+        //
+        // The host's own modification path additionally re-fetches a
+        // screenshot (`LKDashboardViewController.m`). That is deliberately
+        // not mirrored here: screenshots have their own route, and issuing
+        // one per attribute write would put a render round-trip on the
+        // critical path of every modification.
+        document.hierarchyDataSource?.modify(with: detail)
 
         // Find the effective post-layout attribute in the response.
         guard let effectiveAttribute = findAttribute(

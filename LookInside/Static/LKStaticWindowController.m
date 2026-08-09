@@ -423,6 +423,10 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
     // the time this returns, so a subscriber that arrives late still gets
     // the outcome, and two subscribers never mean two round-trips.
     RACReplaySubject *resultSubject = [RACReplaySubject replaySubjectWithCapacity:1];
+    // Tracks whether the subject has already been terminated, so the
+    // `completed` block can tell "the fetch delivered and finished" apart
+    // from "the fetch finished having delivered nothing".
+    __block BOOL didSettleResult = NO;
     @weakify(self);
     [[app fetchHierarchyData] subscribeNext:^(LookinHierarchyInfo *info) {
         @strongify(self);
@@ -430,6 +434,7 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
             // No data source left to hand the hierarchy to. Reporting
             // success here would tell the caller the host holds this tree
             // when nothing does.
+            didSettleResult = YES;
             [resultSubject sendError:LKStaticWindowControllerReloadErrorMake(
                                          LKStaticWindowControllerReloadErrorWindowClosed,
                                          NSLocalizedString(@"The inspector window closed while the hierarchy was being fetched.", nil))];
@@ -441,6 +446,7 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
 
         [LKPerformanceReporter.sharedInstance didFetchHierarchy];
 
+        didSettleResult = YES;
         [resultSubject sendNext:info];
         [resultSubject sendCompleted];
 
@@ -450,7 +456,25 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
         [self.viewController.progressView resetToZero];
         self.isFetchingHierarchy = NO;
 
+        didSettleResult = YES;
         [resultSubject sendError:error ?: LookinErr_Inner];
+    } completed:^{
+        // A signal that completes without ever emitting is not hypothetical:
+        // `-_requestWithType:` flattenMaps a tuple stream that can complete
+        // empty when the channel tears down mid-request. Left unhandled it
+        // strands every party -- `isFetchingHierarchy` stays latched YES,
+        // which permanently disables this window's reload button, and a
+        // bridge caller awaiting `resultSubject` never gets a response frame.
+        @strongify(self);
+        if (didSettleResult) {
+            return;
+        }
+        [self.viewController.progressView resetToZero];
+        self.isFetchingHierarchy = NO;
+
+        [resultSubject sendError:LKStaticWindowControllerReloadErrorMake(
+                                     LKStaticWindowControllerReloadErrorNoResponse,
+                                     NSLocalizedString(@"The app finished the hierarchy request without returning a hierarchy.", nil))];
     }];
     return resultSubject;
 }

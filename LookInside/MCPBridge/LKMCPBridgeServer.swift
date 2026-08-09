@@ -130,9 +130,17 @@ public final class LKMCPBridgeServer: NSObject {
             guard let self else { return }
             guard self.isRunning else { return }
             self.isRunning = false
+
+            // Cancelling hands the descriptor to the source's cancel handler,
+            // which closes it. That handler is scheduled on this very queue,
+            // so it cannot run until this block returns -- closing here as
+            // well would be a double close, and by the time the second one
+            // lands the number may have been recycled onto an unrelated file.
             self.acceptSource?.cancel()
             self.acceptSource = nil
-            self.cleanUpListenSocket()
+            self.listenFileDescriptor = -1
+            unlink(Self.socketURL.path)
+
             for connection in self.openConnections.values {
                 connection.close(reason: "server shutdown")
             }
@@ -381,11 +389,18 @@ public final class LKMCPBridgeServer: NSObject {
 
     // MARK: - Helpers
 
+    /// Failed-start cleanup only.
+    ///
+    /// This is the one path where no accept source exists to own the
+    /// descriptor, so closing it here is correct. `stop()` deliberately does
+    /// not call this: once the source exists, its cancel handler is the only
+    /// thing allowed to close the descriptor.
     private func cleanUpListenSocket() {
-        if listenFileDescriptor >= 0 {
+        dispatchPrecondition(condition: .onQueue(stateQueue))
+        if acceptSource == nil, listenFileDescriptor >= 0 {
             close(listenFileDescriptor)
-            listenFileDescriptor = -1
         }
+        listenFileDescriptor = -1
         unlink(Self.socketURL.path)
     }
 

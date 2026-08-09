@@ -85,8 +85,14 @@ public final class LKMCPBridgeConnection {
     /// Closes the connection. Safe to call from any thread; the actual
     /// teardown hops onto `connectionQueue`.
     public func close(reason: String) {
-        connectionQueue.async { [weak self] in
-            self?.closeOnConnectionQueue(reason: reason)
+        // Strong capture on purpose. This block is what cancels the read
+        // source and closes the socket, so it must still run when the caller
+        // drops its reference first -- which is exactly what
+        // `LKMCPBridgeServer.stop()` does when it clears `openConnections`.
+        // Captured weakly, shutdown would leak the descriptor and leave a
+        // live read source firing on a connection nobody owns.
+        connectionQueue.async {
+            self.closeOnConnectionQueue(reason: reason)
         }
     }
 

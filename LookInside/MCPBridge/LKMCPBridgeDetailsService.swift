@@ -78,26 +78,31 @@ public final class LKMCPBridgeDetailsService {
             return .failure(identifier: identifier, error: .invalidParameters)
         }
 
-        // Materialize the identifier list as Swift strings; reject if
-        // any entry is not a JSON string (loose typing across the wire
-        // is fine for primitives but identifiers are critical).
-        var requestedIdentifiers: [String] = []
-        requestedIdentifiers.reserveCapacity(identifierWireValues.count)
-        for entry in identifierWireValues {
-            guard case .string(let value) = entry else {
-                return .failure(identifier: identifier, error: .invalidParameters)
+        // Materialize the identifier list as distinct Swift strings. The
+        // de-duplication is load-bearing, not tidiness: two equal identifiers
+        // resolve to the same display item and therefore the same oid, and
+        // the oid-keyed index built below traps on a duplicate key, which
+        // would take down the whole host app rather than fail this request.
+        let requestedIdentifiers: [String]
+        switch LKMCPBridgeObjectIdentifierList.parse(
+            wireValues: identifierWireValues,
+            limit: Self.maximumObjectIdentifiersPerCall
+        ) {
+        case .success(let parsed):
+            requestedIdentifiers = parsed.identifiers
+            if parsed.droppedDuplicateCount > 0 {
+                Self.logger.debug(
+                    "details.read collapsed \(parsed.droppedDuplicateCount, privacy: .public) duplicate object identifier(s)"
+                )
             }
-            requestedIdentifiers.append(value)
-        }
-        guard requestedIdentifiers.isEmpty == false else {
+        case .failure(.notAllStrings), .failure(.empty):
             return .failure(identifier: identifier, error: .invalidParameters)
-        }
-        guard requestedIdentifiers.count <= Self.maximumObjectIdentifiersPerCall else {
+        case .failure(.tooMany(let distinctCount, let limit)):
             return .failure(
                 identifier: identifier,
                 error: LKMCPBridgeErrorPayload(
                     code: "dispatch.tooMany",
-                    message: "details.read accepts at most \(Self.maximumObjectIdentifiersPerCall) object identifiers per call; received \(requestedIdentifiers.count). Split into multiple calls."
+                    message: "details.read accepts at most \(limit) object identifiers per call; received \(distinctCount) distinct. Split into multiple calls."
                 )
             )
         }
@@ -200,8 +205,6 @@ public final class LKMCPBridgeDetailsService {
         let frames: [NSArray]
         do {
             frames = try await LKMCPBridgeRACBridge.awaitAllValues(of: signal, as: NSArray.self)
-        } catch let error as NSError {
-            return .failure(identifier: identifier, error: mapDetailsError(error))
         } catch RACBridgeError.completedWithoutValue {
             // Empty success (server completed before any frame) → treat
             // as zero successful details, all requested identifiers
@@ -219,6 +222,12 @@ public final class LKMCPBridgeDetailsService {
                     message: "The fetch was cancelled before the target app finished streaming details."
                 )
             )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and the empty-success path just
+            // above could never run.
+            return .failure(identifier: identifier, error: mapDetailsError(error))
         } catch {
             Self.logger.error("details.read bridge error: \(error.localizedDescription, privacy: .public)")
             return .failure(identifier: identifier, error: .internalError)
@@ -239,15 +248,24 @@ public final class LKMCPBridgeDetailsService {
         // Index resolved items by native oid so we can match incoming
         // details back to the display item (needed for secureContent
         // detection and for downstream cache merging).
+        //
+        // Keep-first on collision rather than `uniqueKeysWithValues:`. The
+        // identifier list is already de-duplicated, so a collision here would
+        // mean two *different* identifier strings resolved to one object --
+        // impossible today, since identifiers are generated from the oid and
+        // matched by exact equality. Trapping on it anyway would turn a future
+        // change in identifier syntax into a host crash, which is far worse
+        // than serving the first of two equivalent entries.
         let itemsByOid: [UInt: (identifier: String, displayItem: LookinDisplayItem, nativeOid: UInt)] = Dictionary(
-            uniqueKeysWithValues: resolvedItems.map { ($0.nativeOid, $0) }
+            resolvedItems.map { ($0.nativeOid, $0) },
+            uniquingKeysWith: { first, _ in first }
         )
 
         // Resolve the concrete data source once. We thread it through
         // the per-detail loop rather than walking back from each
         // display item, because LookinDisplayItem has no back-reference
         // to its owning document.
-        let staticDataSource = document.hierarchyDataSource as? LKStaticHierarchyDataSource
+        let staticDataSource = document.hierarchyDataSource
 
         var emittedDetails: [LKMCPBridgeViewDetail] = []
         emittedDetails.reserveCapacity(allDetails.count)

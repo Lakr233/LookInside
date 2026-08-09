@@ -122,8 +122,6 @@ public final class LKMCPBridgeRefreshService {
             // response describes the host's settled state rather than the
             // wire payload.
             _ = try await LKMCPBridgeRACBridge.awaitFirstValue(of: signal, as: AnyObject.self)
-        } catch let error as NSError {
-            return .failure(identifier: identifier, error: mapRefreshError(error))
         } catch RACBridgeError.completedWithoutValue {
             return .failure(
                 identifier: identifier,
@@ -140,6 +138,11 @@ public final class LKMCPBridgeRefreshService {
                     message: "The refresh was cancelled before the target app produced a hierarchy."
                 )
             )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and they become dead code.
+            return .failure(identifier: identifier, error: mapRefreshError(error))
         } catch {
             Self.logger.error("hierarchy.refresh bridge error: \(error.localizedDescription, privacy: .public)")
             return .failure(identifier: identifier, error: .internalError)
@@ -198,6 +201,11 @@ public final class LKMCPBridgeRefreshService {
                 return LKMCPBridgeErrorPayload(
                     code: "refresh.windowClosed",
                     message: "The inspector window closed while the hierarchy was being fetched, so the result was discarded."
+                )
+            case LKStaticWindowControllerReloadErrorCode.noResponse.rawValue:
+                return LKMCPBridgeErrorPayload(
+                    code: "refresh.disconnected",
+                    message: "The target app finished the hierarchy request without returning a hierarchy. The channel may have been closed mid-request."
                 )
             default:
                 Self.logger.error("hierarchy.refresh received unmapped host refusal \(error.code, privacy: .public)")

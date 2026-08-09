@@ -184,8 +184,6 @@ public final class LKMCPBridgeInvocationService {
         let rawDictionary: NSDictionary
         do {
             rawDictionary = try await LKMCPBridgeRACBridge.awaitFirstValue(of: signal, as: NSDictionary.self)
-        } catch let error as NSError {
-            return .failure(identifier: identifier, error: mapInvocationError(error))
         } catch RACBridgeError.completedWithoutValue {
             return .failure(
                 identifier: identifier,
@@ -202,6 +200,11 @@ public final class LKMCPBridgeInvocationService {
                     message: "The invocation was cancelled before the target app produced a result."
                 )
             )
+        } catch let error as NSError {
+            // Must stay below the RACBridgeError clauses. Every Swift error
+            // bridges to NSError, so this pattern matches everything -- above
+            // them it silently swallows both, and they become dead code.
+            return .failure(identifier: identifier, error: mapInvocationError(error))
         } catch {
             Self.logger.error("invoke.method bridge error: \(error.localizedDescription, privacy: .public)")
             return .failure(identifier: identifier, error: .internalError)

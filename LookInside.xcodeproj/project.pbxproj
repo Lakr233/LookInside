@@ -223,6 +223,7 @@
 				MCPBridge/LKMCPBridgeListenSocket.swift,
 				MCPBridge/LKMCPBridgeLiveDocumentLookup.swift,
 				MCPBridge/LKMCPBridgeModificationService.swift,
+				MCPBridge/LKMCPBridgeObjectIdentifierList.swift,
 				MCPBridge/LKMCPBridgeRACBridge.swift,
 				MCPBridge/LKMCPBridgeRefreshService.swift,
 				MCPBridge/LKMCPBridgeScreenshotService.swift,
