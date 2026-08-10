@@ -12,11 +12,15 @@
 
 #import "LookinDefines.h"
 
+/// 设备类型。该枚举的原始值会经由 wire 协议传给 Lookin 客户端，因此顺序不可调整，
+/// 新增的档位只能追加在末尾。上游 Lookin 只认识前三档（0–2），收到更大的值时会落到
+/// 自己的 default 分支（表现为设备图标缺失，而非报错）。
 typedef NS_ENUM(NSInteger, LookinAppInfoDevice) {
-    LookinAppInfoDeviceSimulator,   // 模拟器
-    LookinAppInfoDeviceIPad,    // iPad 真机
-    LookinAppInfoDeviceOthers,   // 应该视为 iPhone 真机
-    LookinAppInfoDeviceMac, // 使用AppKit的Mac应用（非 Catalyst）
+    LookinAppInfoDeviceSimulator,   // 0，模拟器
+    LookinAppInfoDeviceIPad,    // 1，iPad 真机
+    LookinAppInfoDeviceOthers,   // 2，应该视为 iPhone 真机
+    LookinAppInfoDeviceMac, // 3，使用AppKit的Mac应用（非 Catalyst）
+    LookinAppInfoDeviceMacCatalyst, // 4，Mac Catalyst 应用：跑在 Mac 上，但界面是 UIKit
 };
 
 @interface LookinAppInfo : NSObject <NSSecureCoding, NSCopying>

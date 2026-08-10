@@ -105,6 +105,13 @@ const CGFloat ZoomSliderMaxValue = 2.8;
     if (appInfo.deviceType == LookinAppInfoDeviceMac) {
         return YES;
     }
+    if (appInfo.deviceType == LookinAppInfoDeviceMacCatalyst) {
+        // Catalyst runs on a Mac but draws UIKit views, and this predicate is about the view
+        // framework, not the hardware. Answer NO here rather than falling through: the
+        // heuristics below match on the Mac's own computer name ("JH's Mac Studio Ultra"),
+        // which a Catalyst app reports as its deviceDescription.
+        return NO;
+    }
 
     NSString *osDescription = appInfo.osDescription.lowercaseString ?: @"";
     NSString *deviceDescription = appInfo.deviceDescription.lowercaseString ?: @"";

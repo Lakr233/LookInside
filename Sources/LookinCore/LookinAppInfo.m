@@ -15,6 +15,10 @@
 
 #import <sys/sysctl.h>
 
+#if TARGET_OS_MACCATALYST
+#import <objc/message.h>
+#endif
+
 static NSString * const CodingKey_AppIcon = @"1";
 static NSString * const CodingKey_Screenshot = @"2";
 static NSString * const CodingKey_DeviceDescription = @"3";
@@ -41,6 +45,37 @@ static NSString *LookinAppInfoSysctlStringValue(const char *sysctlName) {
     free(valueBuffer);
     return value.length ? value : nil;
 }
+
+#if TARGET_OS_MACCATALYST
+/// This Mac's user-facing computer name, e.g. @"JH's Mac Studio Ultra". Nil when it cannot
+/// be read, which callers must tolerate.
+///
+/// Reached through the runtime rather than by calling NSHost directly: NSHost is declared
+/// only in the AppKit-flavoured Foundation headers, which a Catalyst target does not see —
+/// but the class itself is present and functional in the Foundation a Catalyst process
+/// links against, so the lookup succeeds at runtime.
+///
+/// Needed because -[UIDevice name] answers the literal string @"iPad" on Catalyst. That
+/// names a device family, not this machine, so it identifies nothing to the person reading
+/// the host's device label.
+static NSString *LookinAppInfoMacHostLocalizedName(void) {
+    Class hostClass = NSClassFromString(@"NSHost");
+    SEL currentHostSelector = NSSelectorFromString(@"currentHost");
+    if (![hostClass respondsToSelector:currentHostSelector]) {
+        return nil;
+    }
+    id currentHost = ((id (*)(id, SEL))objc_msgSend)(hostClass, currentHostSelector);
+    SEL localizedNameSelector = NSSelectorFromString(@"localizedName");
+    if (![currentHost respondsToSelector:localizedNameSelector]) {
+        return nil;
+    }
+    id localizedName = ((id (*)(id, SEL))objc_msgSend)(currentHost, localizedNameSelector);
+    if (![localizedName isKindOfClass:[NSString class]] || [(NSString *)localizedName length] == 0) {
+        return nil;
+    }
+    return localizedName;
+}
+#endif
 
 @implementation LookinAppInfo
 
@@ -178,17 +213,24 @@ static NSString *LookinAppInfoSysctlStringValue(const char *sysctlName) {
 #endif
     info.appInfoIdentifier = selfIdentifier;
     info.appName = [self appName];
-#if TARGET_OS_IPHONE
+#if TARGET_OS_MACCATALYST
+    // Ask the Mac for its own name. -[UIDevice name] is still consulted as a last resort so
+    // the field is never empty, but on Catalyst it only ever answers @"iPad".
+    info.deviceDescription = LookinAppInfoMacHostLocalizedName() ?: [UIDevice currentDevice].name;
+#elif TARGET_OS_IPHONE
     info.deviceDescription = [UIDevice currentDevice].name;
-#endif
-
-#if TARGET_OS_OSX
+#elif TARGET_OS_OSX
     info.deviceDescription = [NSHost currentHost].localizedName;
 #endif
     info.deviceModelIdentifier = [self currentDeviceModelIdentifier];
     info.appBundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
     if ([self isSimulator]) {
         info.deviceType = LookinAppInfoDeviceSimulator;
+    } else if ([LKS_MultiplatformAdapter isMacCatalyst]) {
+        // Must precede the iPad check: -[UIDevice model] reports "iPad" on Catalyst, so
+        // +isiPad matches a Catalyst build too and would otherwise claim it first. +isMac
+        // never fires here either — TARGET_OS_OSX is 0 for the Catalyst destination.
+        info.deviceType = LookinAppInfoDeviceMacCatalyst;
     } else if ([LKS_MultiplatformAdapter isiPad]) {
         info.deviceType = LookinAppInfoDeviceIPad;
     } else if ([LKS_MultiplatformAdapter isMac]) {
@@ -198,8 +240,16 @@ static NSString *LookinAppInfoSysctlStringValue(const char *sysctlName) {
     }
 
 #if TARGET_OS_IPHONE
-    info.osDescription = [NSString stringWithFormat:@"iOS %@", [UIDevice currentDevice].systemVersion];
-    NSString *mainVersionStr = [[[UIDevice currentDevice] systemVersion] componentsSeparatedByString:@"."].firstObject;
+    NSString *systemVersion = [UIDevice currentDevice].systemVersion;
+#if TARGET_OS_MACCATALYST
+    // On Catalyst -[UIDevice systemVersion] answers the *macOS* version (@"26.6" on macOS
+    // 26.6), not the iOS version Catalyst maps onto. Calling that "iOS 26.6" would be wrong
+    // twice over — wrong OS, and a version number that OS never shipped.
+    info.osDescription = [NSString stringWithFormat:@"macCatalyst %@", systemVersion];
+#else
+    info.osDescription = [NSString stringWithFormat:@"iOS %@", systemVersion];
+#endif
+    NSString *mainVersionStr = [systemVersion componentsSeparatedByString:@"."].firstObject;
     info.osMainVersion = [mainVersionStr integerValue];
 #elif TARGET_OS_OSX
     NSOperatingSystemVersion operatingSystemVersion = [NSProcessInfo processInfo].operatingSystemVersion;

@@ -66,11 +66,12 @@ public final class LKMCPBridgeInspectionService {
 
     private func deviceKindString(for kind: LookinAppInfoDevice) -> String {
         switch kind {
-        case .simulator: return "simulator"
-        case .iPad:      return "iPad"
-        case .others:    return "device"
-        case .mac:       return "mac"
-        @unknown default: return "unknown"
+        case .simulator:   return "simulator"
+        case .iPad:        return "iPad"
+        case .others:      return "device"
+        case .mac:         return "mac"
+        case .macCatalyst: return "macCatalyst"
+        @unknown default:  return "unknown"
         }
     }
 

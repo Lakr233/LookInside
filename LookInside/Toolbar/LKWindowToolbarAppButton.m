@@ -101,6 +101,14 @@
                     case LookinAppInfoDeviceOthers:
                         deviceIcon = NSImageMake(@"icon_iphone_small");
                         break;
+                    case LookinAppInfoDeviceMacCatalyst:
+                        // A Catalyst app runs on Mac hardware, so it gets the Mac icon even
+                        // though its views are UIKit ones. It reaches this switch at all
+                        // because +appInfoLooksLikeMacTarget: above deliberately answers NO
+                        // for Catalyst — that predicate is about the UI framework, not the
+                        // hardware.
+                        deviceIcon = NSImageMake(@"icon_mac_small");
+                        break;
                     default:
                         deviceIcon = NSImageMake(@"icon_simulator_small");
                         break;

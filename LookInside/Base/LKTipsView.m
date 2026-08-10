@@ -136,7 +136,9 @@
 }
 
 - (void)setImageByDeviceType:(LookinAppInfoDevice)type {
-    if (type == LookinAppInfoDeviceMac) {
+    if (type == LookinAppInfoDeviceMac || type == LookinAppInfoDeviceMacCatalyst) {
+        // A Catalyst app runs on Mac hardware, so it gets the Mac icon even though its
+        // views are UIKit ones.
         self.image = NSImageMake(@"icon_mac_big");
     } else if (type == LookinAppInfoDeviceSimulator) {
         self.image = NSImageMake(@"icon_simulator_big");

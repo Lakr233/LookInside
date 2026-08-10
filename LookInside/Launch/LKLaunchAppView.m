@@ -164,7 +164,10 @@
                                                                pointSize:LKDeviceIconProvider.launchPointSize];
         if (deviceIcon) {
             self.iconImageView.image = deviceIcon;
-        } else if ([LKHelper appInfoLooksLikeMacTarget:app.appInfo]) {
+        } else if ([LKHelper appInfoLooksLikeMacTarget:app.appInfo]
+                   || app.appInfo.deviceType == LookinAppInfoDeviceMacCatalyst) {
+            // A Catalyst app runs on Mac hardware, so it gets the Mac icon even though
+            // +appInfoLooksLikeMacTarget: deliberately answers NO for it (its views are UIKit).
             self.iconImageView.image = NSImageMake(@"icon_mac_big");
         } else if (app.appInfo.deviceType == LookinAppInfoDeviceSimulator) {
             self.iconImageView.image = NSImageMake(@"icon_simulator_big");

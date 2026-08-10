@@ -62,6 +62,14 @@
 #endif
 }
 
++ (BOOL)isMacCatalyst {
+#if TARGET_OS_MACCATALYST
+    return YES;
+#else
+    return NO;
+#endif
+}
+
 + (CGRect)mainScreenBounds {
 #if TARGET_OS_VISION || TARGET_OS_MACCATALYST
     return [LKS_MultiplatformAdapter getFirstActiveWindowScene].coordinateSpace.bounds;
