@@ -81,6 +81,7 @@ LookinAttrSectionIdentifier const LookinAttrSec_Layout_Bounds = @"l_b";
 LookinAttrSectionIdentifier const LookinAttrSec_Layout_SafeArea = @"l_s";
 LookinAttrSectionIdentifier const LookinAttrSec_Layout_Position = @"l_p";
 LookinAttrSectionIdentifier const LookinAttrSec_Layout_AnchorPoint = @"l_a";
+LookinAttrSectionIdentifier const LookinAttrSec_Layout_CoordinateSpace = @"l_c";
 
 LookinAttrSectionIdentifier const LookinAttrSec_AutoLayout_Hugging = @"a_h";
 LookinAttrSectionIdentifier const LookinAttrSec_AutoLayout_Resistance = @"a_r";
@@ -342,6 +343,7 @@ LookinAttrIdentifier const LookinAttr_Layout_Bounds_Bounds = @"l_b_b";
 LookinAttrIdentifier const LookinAttr_Layout_SafeArea_SafeArea = @"l_s_s";
 LookinAttrIdentifier const LookinAttr_Layout_Position_Position = @"l_p_p";
 LookinAttrIdentifier const LookinAttr_Layout_AnchorPoint_AnchorPoint = @"l_a_a";
+LookinAttrIdentifier const LookinAttr_Layout_CoordinateSpace_CoordinateSpace = @"l_c_c";
 
 LookinAttrIdentifier const LookinAttr_AutoLayout_Hugging_Hor = @"al_h_h";
 LookinAttrIdentifier const LookinAttr_AutoLayout_Hugging_Ver = @"al_h_v";
@@ -636,6 +638,13 @@ LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Screen = @"UIWindo
 LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_StatusBar = @"UIWindowScene_StatusBar";
 LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Traits = @"UIWindowScene_Traits";
 LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Session = @"UIWindowScene_Session";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Configuration = @"UIWindowScene_Configuration";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Geometry = @"UIWindowScene_Geometry";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_ActivationConditions = @"UIWindowScene_ActivationConditions";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_SizeRestrictions = @"UIWindowScene_SizeRestrictions";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_WindowingBehaviors = @"UIWindowScene_WindowingBehaviors";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Pointer = @"UIWindowScene_Pointer";
+LookinAttrSectionIdentifier const LookinAttrSec_UIWindowScene_Protection = @"UIWindowScene_Protection";
 
 LookinAttrIdentifier const LookinAttr_UIWindowScene_State_ActivationState = @"UIWindowScene_State_ActivationState";
 LookinAttrIdentifier const LookinAttr_UIWindowScene_Title_Title = @"UIWindowScene_Title_Title";
@@ -652,6 +661,34 @@ LookinAttrIdentifier const LookinAttr_UIWindowScene_Traits_HorizontalSizeClass =
 LookinAttrIdentifier const LookinAttr_UIWindowScene_Traits_VerticalSizeClass = @"UIWindowScene_Traits_VerticalSizeClass";
 LookinAttrIdentifier const LookinAttr_UIWindowScene_Session_PersistentIdentifier = @"UIWindowScene_Session_PersistentIdentifier";
 LookinAttrIdentifier const LookinAttr_UIWindowScene_Session_SessionRole = @"UIWindowScene_Session_SessionRole";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Session_StateRestorationActivityType = @"UIWindowScene_Session_StateRestorationActivityType";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Session_UserInfo = @"UIWindowScene_Session_UserInfo";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Title_Subtitle = @"UIWindowScene_Title_Subtitle";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Configuration_Name = @"UIWindowScene_Configuration_Name";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Configuration_SceneClass = @"UIWindowScene_Configuration_SceneClass";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Configuration_DelegateClass = @"UIWindowScene_Configuration_DelegateClass";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Configuration_Storyboard = @"UIWindowScene_Configuration_Storyboard";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Geometry_SystemFrame = @"UIWindowScene_Geometry_SystemFrame";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Geometry_InterfaceOrientationLocked = @"UIWindowScene_Geometry_InterfaceOrientationLocked";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Geometry_InteractivelyResizing = @"UIWindowScene_Geometry_InteractivelyResizing";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_ActivationConditions_CanActivate = @"UIWindowScene_ActivationConditions_CanActivate";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_ActivationConditions_PrefersToActivate = @"UIWindowScene_ActivationConditions_PrefersToActivate";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_SizeRestrictions_MinimumSize = @"UIWindowScene_SizeRestrictions_MinimumSize";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_SizeRestrictions_MaximumSize = @"UIWindowScene_SizeRestrictions_MaximumSize";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_SizeRestrictions_AllowsFullScreen = @"UIWindowScene_SizeRestrictions_AllowsFullScreen";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_WindowingBehaviors_Closable = @"UIWindowScene_WindowingBehaviors_Closable";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_WindowingBehaviors_Miniaturizable = @"UIWindowScene_WindowingBehaviors_Miniaturizable";
+LookinAttrIdentifier const LookinAttr_UIWindowScene_WindowingBehaviors_FullScreen = @"UIWindowScene_WindowingBehaviors_FullScreen";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Pointer_Locked = @"UIWindowScene_Pointer_Locked";
+
+LookinAttrIdentifier const LookinAttr_UIWindowScene_Protection_UserAuthenticationEnabled = @"UIWindowScene_Protection_UserAuthenticationEnabled";
 
 // UIWindowScene additional traits
 LookinAttrIdentifier const LookinAttr_UIWindowScene_Traits_UserInterfaceLevel = @"UIWindowScene_Traits_UserInterfaceLevel";

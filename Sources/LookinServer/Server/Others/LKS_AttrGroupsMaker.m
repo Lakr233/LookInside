@@ -328,21 +328,21 @@
         }
     }
 
-    // Layout group - show coordinateSpace bounds
+    // Layout group - show coordinateSpace bounds. A scene has no frame of its
+    // own, so this must not reuse LookinAttr_Layout_Frame_Frame: that attribute
+    // resolves its setter to -setFrame:, which UIWindowScene does not respond to.
     {
-        LookinAttribute *frameAttr = [LookinAttribute new];
-        frameAttr.identifier = LookinAttr_Layout_Frame_Frame;
-        frameAttr.attrType = LookinAttrTypeCGRect;
-        frameAttr.value = [NSValue valueWithCGRect:windowScene.coordinateSpace.bounds];
+        LookinAttribute *coordinateSpaceAttribute = [self _attributeWithIdentifer:LookinAttr_Layout_CoordinateSpace_CoordinateSpace targetObject:windowScene];
+        if (coordinateSpaceAttribute) {
+            LookinAttributesSection *coordinateSpaceSection = [LookinAttributesSection new];
+            coordinateSpaceSection.identifier = LookinAttrSec_Layout_CoordinateSpace;
+            coordinateSpaceSection.attributes = @[coordinateSpaceAttribute];
 
-        LookinAttributesSection *frameSec = [LookinAttributesSection new];
-        frameSec.identifier = LookinAttrSec_Layout_Frame;
-        frameSec.attributes = @[frameAttr];
-
-        LookinAttributesGroup *layoutGroup = [LookinAttributesGroup new];
-        layoutGroup.identifier = LookinAttrGroup_Layout;
-        layoutGroup.attrSections = @[frameSec];
-        [result addObject:layoutGroup];
+            LookinAttributesGroup *layoutGroup = [LookinAttributesGroup new];
+            layoutGroup.identifier = LookinAttrGroup_Layout;
+            layoutGroup.attrSections = @[coordinateSpaceSection];
+            [result addObject:layoutGroup];
+        }
     }
 
     // UIWindowScene-specific groups from blueprint
