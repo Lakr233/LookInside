@@ -19,6 +19,7 @@ API_AVAILABLE(ios(13.0))
 - (NSArray<NSString *> *)lks_selfRelation;
 
 // Pass-through getters for sub-object properties
+@property (nonatomic, readonly) CGRect lks_coordinateSpaceBounds;
 @property (nonatomic, readonly) NSInteger lks_windowCount;
 @property (nonatomic, readonly, nullable) NSString *lks_keyWindowClassName;
 @property (nonatomic, readonly) CGRect lks_screenBounds;
@@ -45,6 +46,45 @@ API_AVAILABLE(ios(13.0))
 @property (nonatomic, readonly) NSInteger lks_sceneCaptureState;
 @property (nonatomic, readonly) NSInteger lks_imageDynamicRange;
 @property (nonatomic, readonly, nullable) NSString *lks_typesettingLanguage;
+
+#if !TARGET_OS_TV
+// Declared only where UIInterfaceOrientation exists. On tvOS the selector is
+// absent, so the dashboard drops the row instead of showing a fabricated value.
+@property (nonatomic, readonly) NSInteger lks_interfaceOrientation;
+#endif
+
+// UISceneSession getters
+@property (nonatomic, readonly, nullable) NSString *lks_sessionStateRestorationActivityType;
+@property (nonatomic, readonly, nullable) NSString *lks_sessionUserInfoJSONString;
+
+// UISceneConfiguration getters
+@property (nonatomic, readonly, nullable) NSString *lks_configurationName;
+@property (nonatomic, readonly, nullable) NSString *lks_configurationSceneClassName;
+@property (nonatomic, readonly, nullable) NSString *lks_configurationDelegateClassName;
+@property (nonatomic, readonly, nullable) NSString *lks_configurationStoryboardDescription;
+
+// UIWindowSceneGeometry getters
+@property (nonatomic, readonly, nullable) NSValue *lks_geometrySystemFrame;
+@property (nonatomic, readonly, nullable) NSNumber *lks_geometryInterfaceOrientationLocked;
+@property (nonatomic, readonly, nullable) NSNumber *lks_geometryInteractivelyResizing;
+
+// UISceneActivationConditions getters
+@property (nonatomic, readonly, nullable) NSString *lks_canActivateForTargetContentIdentifierPredicateFormat;
+@property (nonatomic, readonly, nullable) NSString *lks_prefersToActivateForTargetContentIdentifierPredicateFormat;
+
+// UISceneSizeRestrictions getters
+@property (nonatomic, readonly, nullable) NSValue *lks_sizeRestrictionsMinimumSize;
+@property (nonatomic, readonly, nullable) NSValue *lks_sizeRestrictionsMaximumSize;
+@property (nonatomic, readonly, nullable) NSNumber *lks_sizeRestrictionsAllowsFullScreen;
+
+// UISceneWindowingBehaviors getters
+@property (nonatomic, readonly, nullable) NSNumber *lks_windowingBehaviorsClosable;
+@property (nonatomic, readonly, nullable) NSNumber *lks_windowingBehaviorsMiniaturizable;
+@property (nonatomic, readonly, nullable) NSNumber *lks_fullScreen;
+
+// UIPointerLockState / UISceneSystemProtectionManager getters
+@property (nonatomic, readonly, nullable) NSNumber *lks_pointerLocked;
+@property (nonatomic, readonly, nullable) NSNumber *lks_systemProtectionUserAuthenticationEnabled;
 
 @end
 

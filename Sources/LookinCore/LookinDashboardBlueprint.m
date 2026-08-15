@@ -84,7 +84,8 @@
                                       LookinAttrSec_Layout_Bounds,
                                       LookinAttrSec_Layout_SafeArea,
                                       LookinAttrSec_Layout_Position,
-                                      LookinAttrSec_Layout_AnchorPoint],
+                                      LookinAttrSec_Layout_AnchorPoint,
+                                      LookinAttrSec_Layout_CoordinateSpace],
             
             LookinAttrGroup_AutoLayout: @[LookinAttrSec_AutoLayout_Constraints,
                                           LookinAttrSec_AutoLayout_IntrinsicSize,
@@ -178,11 +179,18 @@
                 LookinAttrSec_UIWindowScene_State,
                 LookinAttrSec_UIWindowScene_Title,
                 LookinAttrSec_UIWindowScene_Orientation,
+                LookinAttrSec_UIWindowScene_Geometry,
                 LookinAttrSec_UIWindowScene_Windows,
                 LookinAttrSec_UIWindowScene_Screen,
                 LookinAttrSec_UIWindowScene_StatusBar,
+                LookinAttrSec_UIWindowScene_SizeRestrictions,
+                LookinAttrSec_UIWindowScene_WindowingBehaviors,
+                LookinAttrSec_UIWindowScene_Pointer,
+                LookinAttrSec_UIWindowScene_Protection,
                 LookinAttrSec_UIWindowScene_Traits,
                 LookinAttrSec_UIWindowScene_Session,
+                LookinAttrSec_UIWindowScene_Configuration,
+                LookinAttrSec_UIWindowScene_ActivationConditions,
             ],
             LookinAttrGroup_UITraitCollection: @[
                 LookinAttrSec_UITraitCollection_Appearance,
@@ -433,6 +441,7 @@
             LookinAttrSec_Layout_SafeArea: @[LookinAttr_Layout_SafeArea_SafeArea],
             LookinAttrSec_Layout_Position: @[LookinAttr_Layout_Position_Position],
             LookinAttrSec_Layout_AnchorPoint: @[LookinAttr_Layout_AnchorPoint_AnchorPoint],
+            LookinAttrSec_Layout_CoordinateSpace: @[LookinAttr_Layout_CoordinateSpace_CoordinateSpace],
             
             LookinAttrSec_AutoLayout_Hugging: @[LookinAttr_AutoLayout_Hugging_Hor,
                                                 LookinAttr_AutoLayout_Hugging_Ver],
@@ -599,6 +608,7 @@
             ],
             LookinAttrSec_UIWindowScene_Title: @[
                 LookinAttr_UIWindowScene_Title_Title,
+                LookinAttr_UIWindowScene_Title_Subtitle,
             ],
             LookinAttrSec_UIWindowScene_Orientation: @[
                 LookinAttr_UIWindowScene_Orientation_InterfaceOrientation,
@@ -636,6 +646,39 @@
             LookinAttrSec_UIWindowScene_Session: @[
                 LookinAttr_UIWindowScene_Session_PersistentIdentifier,
                 LookinAttr_UIWindowScene_Session_SessionRole,
+                LookinAttr_UIWindowScene_Session_StateRestorationActivityType,
+                LookinAttr_UIWindowScene_Session_UserInfo,
+            ],
+            LookinAttrSec_UIWindowScene_Configuration: @[
+                LookinAttr_UIWindowScene_Configuration_Name,
+                LookinAttr_UIWindowScene_Configuration_SceneClass,
+                LookinAttr_UIWindowScene_Configuration_DelegateClass,
+                LookinAttr_UIWindowScene_Configuration_Storyboard,
+            ],
+            LookinAttrSec_UIWindowScene_Geometry: @[
+                LookinAttr_UIWindowScene_Geometry_SystemFrame,
+                LookinAttr_UIWindowScene_Geometry_InterfaceOrientationLocked,
+                LookinAttr_UIWindowScene_Geometry_InteractivelyResizing,
+            ],
+            LookinAttrSec_UIWindowScene_ActivationConditions: @[
+                LookinAttr_UIWindowScene_ActivationConditions_CanActivate,
+                LookinAttr_UIWindowScene_ActivationConditions_PrefersToActivate,
+            ],
+            LookinAttrSec_UIWindowScene_SizeRestrictions: @[
+                LookinAttr_UIWindowScene_SizeRestrictions_MinimumSize,
+                LookinAttr_UIWindowScene_SizeRestrictions_MaximumSize,
+                LookinAttr_UIWindowScene_SizeRestrictions_AllowsFullScreen,
+            ],
+            LookinAttrSec_UIWindowScene_WindowingBehaviors: @[
+                LookinAttr_UIWindowScene_WindowingBehaviors_Closable,
+                LookinAttr_UIWindowScene_WindowingBehaviors_Miniaturizable,
+                LookinAttr_UIWindowScene_WindowingBehaviors_FullScreen,
+            ],
+            LookinAttrSec_UIWindowScene_Pointer: @[
+                LookinAttr_UIWindowScene_Pointer_Locked,
+            ],
+            LookinAttrSec_UIWindowScene_Protection: @[
+                LookinAttr_UIWindowScene_Protection_UserAuthenticationEnabled,
             ],
             // UITraitCollection
             LookinAttrSec_UITraitCollection_Appearance: @[
@@ -1354,6 +1397,7 @@
             LookinAttrSec_Layout_SafeArea: @"SafeArea",
             LookinAttrSec_Layout_Position: @"Position",
             LookinAttrSec_Layout_AnchorPoint: @"AnchorPoint",
+            LookinAttrSec_Layout_CoordinateSpace: @"CoordinateSpace",
             LookinAttrSec_AutoLayout_Hugging: @"HuggingPriority",
             LookinAttrSec_AutoLayout_Resistance: @"ResistancePriority",
             LookinAttrSec_AutoLayout_IntrinsicSize: @"IntrinsicSize",
@@ -1556,6 +1600,13 @@
             LookinAttrSec_UIWindowScene_StatusBar: @"StatusBar",
             LookinAttrSec_UIWindowScene_Traits: @"Traits",
             LookinAttrSec_UIWindowScene_Session: @"Session",
+            LookinAttrSec_UIWindowScene_Configuration: @"Configuration",
+            LookinAttrSec_UIWindowScene_Geometry: @"Geometry",
+            LookinAttrSec_UIWindowScene_ActivationConditions: @"ActivationConditions",
+            LookinAttrSec_UIWindowScene_SizeRestrictions: @"SizeRestrictions",
+            LookinAttrSec_UIWindowScene_WindowingBehaviors: @"WindowingBehaviors",
+            LookinAttrSec_UIWindowScene_Pointer: @"Pointer",
+            LookinAttrSec_UIWindowScene_Protection: @"Protection",
             // UITraitCollection
             LookinAttrSec_UITraitCollection_Appearance: @"Appearance",
             LookinAttrSec_UITraitCollection_SizeClass: @"SizeClass",
@@ -3307,6 +3358,15 @@
             },
 
             // MARK: - UIWindowScene
+            // Lives under the Layout group rather than the UIWindowScene group,
+            // because it is the only geometry a scene exposes — it has no frame.
+            LookinAttr_Layout_CoordinateSpace_CoordinateSpace: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"CoordinateSpace",
+                @"getterString": @"lks_coordinateSpaceBounds",
+                @"setterString": @"",
+                @"patch": @(NO)
+            },
             LookinAttr_UIWindowScene_State_ActivationState: @{
                 @"className": @"UIWindowScene",
                 @"fullTitle": @"ActivationState",
@@ -3321,9 +3381,17 @@
                 @"patch": @(YES),
                 @"typeIfObj": @(LookinAttrTypeNSString)
             },
+            LookinAttr_UIWindowScene_Title_Subtitle: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Subtitle",
+                @"patch": @(YES),
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"osVersion": @(15)
+            },
             LookinAttr_UIWindowScene_Orientation_InterfaceOrientation: @{
                 @"className": @"UIWindowScene",
                 @"fullTitle": @"InterfaceOrientation",
+                @"getterString": @"lks_interfaceOrientation",
                 @"setterString": @"",
                 @"enumList": @"UIInterfaceOrientation",
                 @"patch": @(NO)
@@ -3526,6 +3594,202 @@
                 @"setterString": @"",
                 @"typeIfObj": @(LookinAttrTypeNSString),
                 @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Session_StateRestorationActivityType: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"StateRestorationActivity",
+                @"getterString": @"lks_sessionStateRestorationActivityType",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Session_UserInfo: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"UserInfo",
+                @"getterString": @"lks_sessionUserInfoJSONString",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeJson),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+
+            // UISceneConfiguration — describes which classes and storyboard back
+            // this scene. DelegateClass is the class declared in the configuration,
+            // which is not necessarily the class of the delegate instance shown in
+            // the Relation group; a mismatch between the two is worth noticing.
+            LookinAttr_UIWindowScene_Configuration_Name: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Name",
+                @"getterString": @"lks_configurationName",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Configuration_SceneClass: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"SceneClass",
+                @"getterString": @"lks_configurationSceneClassName",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Configuration_DelegateClass: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"DelegateClass",
+                @"getterString": @"lks_configurationDelegateClassName",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_Configuration_Storyboard: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Storyboard",
+                @"getterString": @"lks_configurationStoryboardDescription",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+
+            // UIWindowSceneGeometry — every entry returns an object so that it can
+            // disappear via hideIfNil on platforms and OS versions that lack it.
+            LookinAttr_UIWindowScene_Geometry_SystemFrame: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"SystemFrame",
+                @"getterString": @"lks_geometrySystemFrame",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCGRect),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(16)
+            },
+            LookinAttr_UIWindowScene_Geometry_InterfaceOrientationLocked: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"InterfaceOrientationLocked",
+                @"getterString": @"lks_geometryInterfaceOrientationLocked",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(26)
+            },
+            LookinAttr_UIWindowScene_Geometry_InteractivelyResizing: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"InteractivelyResizing",
+                @"getterString": @"lks_geometryInteractivelyResizing",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(26)
+            },
+
+            // UISceneActivationConditions — shown as the predicates' format strings.
+            LookinAttr_UIWindowScene_ActivationConditions_CanActivate: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"CanActivateForTargetContentIdentifier",
+                @"briefTitle": @"CanActivate",
+                @"getterString": @"lks_canActivateForTargetContentIdentifierPredicateFormat",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_ActivationConditions_PrefersToActivate: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"PrefersToActivateForTargetContentIdentifier",
+                @"briefTitle": @"PrefersToActivate",
+                @"getterString": @"lks_prefersToActivateForTargetContentIdentifierPredicateFormat",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+
+            // UISceneSizeRestrictions — nil on iPhone, so the whole section drops out there.
+            LookinAttr_UIWindowScene_SizeRestrictions_MinimumSize: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"MinimumSize",
+                @"getterString": @"lks_sizeRestrictionsMinimumSize",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCGSize),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_SizeRestrictions_MaximumSize: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"MaximumSize",
+                @"getterString": @"lks_sizeRestrictionsMaximumSize",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeCGSize),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+            LookinAttr_UIWindowScene_SizeRestrictions_AllowsFullScreen: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"AllowsFullScreen",
+                @"getterString": @"lks_sizeRestrictionsAllowsFullScreen",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+
+            // UISceneWindowingBehaviors — nil outside iPad multitasking and Catalyst.
+            LookinAttr_UIWindowScene_WindowingBehaviors_Closable: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Closable",
+                @"getterString": @"lks_windowingBehaviorsClosable",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(16)
+            },
+            LookinAttr_UIWindowScene_WindowingBehaviors_Miniaturizable: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Miniaturizable",
+                @"getterString": @"lks_windowingBehaviorsMiniaturizable",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(16)
+            },
+            LookinAttr_UIWindowScene_WindowingBehaviors_FullScreen: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"FullScreen",
+                @"getterString": @"lks_fullScreen",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO)
+            },
+
+            LookinAttr_UIWindowScene_Pointer_Locked: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"Locked",
+                @"getterString": @"lks_pointerLocked",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(14)
+            },
+
+            LookinAttr_UIWindowScene_Protection_UserAuthenticationEnabled: @{
+                @"className": @"UIWindowScene",
+                @"fullTitle": @"UserAuthenticationEnabled",
+                @"getterString": @"lks_systemProtectionUserAuthenticationEnabled",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeBOOL),
+                @"hideIfNil": @(YES),
+                @"patch": @(NO),
+                @"osVersion": @(18)
             },
             // MARK: - UITraitCollection
             LookinAttr_UITraitCollection_Appearance_UserInterfaceStyle: @{

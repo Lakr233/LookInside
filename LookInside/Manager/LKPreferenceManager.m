@@ -545,6 +545,7 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
                                                         
                                                         LookinAttrSec_Layout_Frame,
                                                         LookinAttrSec_Layout_Bounds,
+                                                        LookinAttrSec_Layout_CoordinateSpace,
                                                         
                                                         LookinAttrSec_AutoLayout_Hugging,
                                                         LookinAttrSec_AutoLayout_Resistance,
@@ -776,8 +777,15 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
                                                         LookinAttrSec_UIWindowScene_Windows,
                                                         LookinAttrSec_UIWindowScene_Screen,
                                                         LookinAttrSec_UIWindowScene_StatusBar,
+                                                        LookinAttrSec_UIWindowScene_Geometry,
+                                                        LookinAttrSec_UIWindowScene_SizeRestrictions,
+                                                        LookinAttrSec_UIWindowScene_WindowingBehaviors,
+                                                        LookinAttrSec_UIWindowScene_Pointer,
+                                                        LookinAttrSec_UIWindowScene_Protection,
                                                         LookinAttrSec_UIWindowScene_Traits,
                                                         LookinAttrSec_UIWindowScene_Session,
+                                                        LookinAttrSec_UIWindowScene_Configuration,
+                                                        LookinAttrSec_UIWindowScene_ActivationConditions,
                                                         // UITraitCollection
                                                         LookinAttrSec_UITraitCollection_Appearance,
                                                         LookinAttrSec_UITraitCollection_SizeClass,
