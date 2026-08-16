@@ -2527,6 +2527,8 @@
             LookinAttr_NSButton_Misc_SpringLoaded: @{
                 @"className": @"NSButton",
                 @"fullTitle": @"SpringLoaded",
+                // Derived getter would be -springLoaded; the property is -isSpringLoaded.
+                @"getterString": @"isSpringLoaded",
                 @"patch": @(YES)
             },
             LookinAttr_NSButton_Misc_HasDestructiveAction: @{
@@ -2611,34 +2613,44 @@
                 @"fullTitle": @"RulersVisible",
                 @"patch": @(YES)
             },
+            // briefTitle is display-only and never crosses the wire. These six
+            // sit three-to-a-row with the label inside the field, so the section
+            // title carries the meaning ("LineScroll") and the field only marks
+            // the axis — the same shape as the scroller inset row above.
             LookinAttr_NSScrollView_LineScroll_Horizontal: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"HorizontalLineScroll",
+                @"briefTitle": @"H",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_LineScroll_Vertical: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"VerticalLineScroll",
+                @"briefTitle": @"V",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_LineScroll_LineScroll: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"LineScroll",
+                @"briefTitle": @"⇄",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_PageScroll_Horizontal: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"HorizontalPageScroll",
+                @"briefTitle": @"H",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_PageScroll_Vertical: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"VerticalPageScroll",
+                @"briefTitle": @"V",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_PageScroll_PageScroll: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"PageScroll",
+                @"briefTitle": @"⇄",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_ScrollElasiticity_Horizontal: @{
@@ -2668,19 +2680,34 @@
                 @"fullTitle": @"AllowsMagnification",
                 @"patch": @(YES)
             },
+            // Three to a row under the AllowsMagnification switch; the section
+            // title already says "Magnification", so the fields only need to
+            // say which of the three values they are.
             LookinAttr_NSScrollView_Magnification_Magnification: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"Magnification",
+                @"briefTitle": @"Current",
                 @"patch": @(YES)
             },
+            // Explicit getter/setter: the derived names would be
+            // -maximunMagnification / -minimumMagnification, and NSScrollView
+            // spells them -maxMagnification / -minMagnification. Deriving them
+            // produced selectors nobody responds to, so both rows silently read
+            // as nil and never appeared in the dashboard at all.
             LookinAttr_NSScrollView_Magnification_Max: @{
                 @"className": @"NSScrollView",
-                @"fullTitle": @"MaximunMagnification",
+                @"fullTitle": @"MaximumMagnification",
+                @"briefTitle": @"Max",
+                @"getterString": @"maxMagnification",
+                @"setterString": @"setMaxMagnification:",
                 @"patch": @(YES)
             },
             LookinAttr_NSScrollView_Magnification_Min: @{
                 @"className": @"NSScrollView",
                 @"fullTitle": @"MinimumMagnification",
+                @"briefTitle": @"Min",
+                @"getterString": @"minMagnification",
+                @"setterString": @"setMinMagnification:",
                 @"patch": @(YES)
             },
             LookinAttr_NSTableView_AllowsColumnReordering_AllowsColumnReordering: @{
@@ -2784,6 +2811,10 @@
             LookinAttr_NSTableView_AutomaticRowHeights_AutomaticRowHeights: @{
                 @"className": @"NSTableView",
                 @"fullTitle": @"AutomaticRowHeights",
+                // NSTableView spells this usesAutomaticRowHeights, so both the
+                // derived getter and the derived setter miss.
+                @"getterString": @"usesAutomaticRowHeights",
+                @"setterString": @"setUsesAutomaticRowHeights:",
                 @"patch": @(YES)
             },
             LookinAttr_NSTableView_AutosaveName_AutosaveName: @{
@@ -2909,11 +2940,15 @@
             LookinAttr_NSTextView_Resizable_Horizontal: @{
                 @"className": @"NSTextView",
                 @"fullTitle": @"HorizontallyResizable",
+                // Derived getter would be -horizontallyResizable; it is -isHorizontallyResizable.
+                @"getterString": @"isHorizontallyResizable",
                 @"patch": @(NO)
             },
             LookinAttr_NSTextView_Resizable_Vertical: @{
                 @"className": @"NSTextView",
                 @"fullTitle": @"VerticallyResizable",
+                // Derived getter would be -verticallyResizable; it is -isVerticallyResizable.
+                @"getterString": @"isVerticallyResizable",
                 @"patch": @(NO)
             },
             LookinAttr_NSTextField_Bordered_Bordered: @{

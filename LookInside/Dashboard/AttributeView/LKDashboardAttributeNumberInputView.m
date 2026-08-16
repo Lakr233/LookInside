@@ -90,7 +90,16 @@
                                 LookinAttr_UITraitCollection_Display_DisplayScale,
                                 LookinAttr_UIWindowScene_Traits_DisplayScale,
                                 LookinAttr_UIWindowScene_Windows_WindowCount,
-                                LookinAttr_UIWindowScene_Screen_ScreenScale];
+                                LookinAttr_UIWindowScene_Screen_ScreenScale,
+                                // Three per row, each labelled with a single
+                                // letter inside the field — same shape as the
+                                // inset rows above them in the same card.
+                                LookinAttr_NSScrollView_LineScroll_Horizontal,
+                                LookinAttr_NSScrollView_LineScroll_Vertical,
+                                LookinAttr_NSScrollView_LineScroll_LineScroll,
+                                LookinAttr_NSScrollView_PageScroll_Horizontal,
+                                LookinAttr_NSScrollView_PageScroll_Vertical,
+                                LookinAttr_NSScrollView_PageScroll_PageScroll];
         });
         if ([horizontalAttrs containsObject:self.attribute.identifier]) {
             self.inputView.viewStyle = LKNumberInputViewStyleHorizontal;
@@ -139,6 +148,20 @@
                     LookinAttr_UIScrollView_Zoom_Scale: @3,
                     LookinAttr_UIScrollView_Zoom_MinScale: @3,
                     LookinAttr_UIScrollView_Zoom_MaxScale: @3,
+
+                    LookinAttr_NSScrollView_LineScroll_Horizontal: @3,
+                    LookinAttr_NSScrollView_LineScroll_Vertical: @3,
+                    LookinAttr_NSScrollView_LineScroll_LineScroll: @3,
+                    LookinAttr_NSScrollView_PageScroll_Horizontal: @3,
+                    LookinAttr_NSScrollView_PageScroll_Vertical: @3,
+                    LookinAttr_NSScrollView_PageScroll_PageScroll: @3,
+
+                    // Kept in the vertical style — "Current" / "Max" / "Min"
+                    // read better as words than as glyphs — but widened to a
+                    // third of the row so the words fit without truncation.
+                    LookinAttr_NSScrollView_Magnification_Magnification: @3,
+                    LookinAttr_NSScrollView_Magnification_Max: @3,
+                    LookinAttr_NSScrollView_Magnification_Min: @3,
 
                     LookinAttr_UITraitCollection_Display_DisplayScale: @1,
                     LookinAttr_UIWindowScene_Traits_DisplayScale: @1,

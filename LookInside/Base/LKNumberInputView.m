@@ -44,6 +44,12 @@ const CGFloat LKNumberInputVerticalHeight = 38;
         
         self.titleLabel = [LKLabel new];
         self.titleLabel.alignment = NSTextAlignmentCenter;
+        // The vertical style lays the title out under the field, inside a
+        // column that can be narrower than the title. Truncate rather than
+        // overflow — an unclamped title used to spill onto its neighbours.
+        self.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        self.titleLabel.usesSingleLineMode = YES;
+        self.titleLabel.cell.truncatesLastVisibleLine = YES;
 //        self.titleLabel.layer.borderWidth = 1;
 //        self.titleLabel.layer.borderColor = [NSColor purpleColor].CGColor;
         [self addSubview:self.titleLabel];
@@ -63,7 +69,10 @@ const CGFloat LKNumberInputVerticalHeight = 38;
             insets;
         });
     } else if (self.viewStyle == LKNumberInputViewStyleVertical) {
-        $(self.titleLabel).sizeToFit.horAlign.y(self.textFieldView.$maxY + 3);
+        // Clamped to the column width. Previously this was sizeToFit + horAlign,
+        // so a title wider than its column kept its natural width, centred, and
+        // overlapped whatever sat to the left and right of it.
+        $(self.titleLabel).width(self.$width).heightToFit.x(0).y(self.textFieldView.$maxY + 3);
     } else {
         NSAssert(NO, @"");
     }
@@ -82,7 +91,10 @@ const CGFloat LKNumberInputVerticalHeight = 38;
 
 - (void)setTitle:(NSString *)title {
     _title = title;
-    self.titleLabel.stringValue = title;
+    self.titleLabel.stringValue = title ?: @"";
+    // The title can be truncated or abbreviated to a single letter, so keep the
+    // full name reachable on hover.
+    self.titleLabel.toolTip = title.length > 0 ? title : nil;
     [self _updateTitleLabelFontAndColor];
     [self setNeedsLayout:YES];
 }

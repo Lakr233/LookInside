@@ -103,37 +103,64 @@
         contentsY = self.titleLabel.$maxY + DashboardAttrItemVerInterspace;
     }
     
-    NSArray<LKDashboardAttributeView *> *attrViews = [self.attrViews lookin_filter:^BOOL(LKDashboardAttributeView *view) {
-        return view.isVisible;
-    }];
-    [attrViews enumerateObjectsUsingBlock:^(LKDashboardAttributeView * _Nonnull view, NSUInteger idx, BOOL * _Nonnull stop) {
-        LKDashboardAttributeView *prevView = (idx > 0 ? attrViews[idx - 1] : nil);
-        CGFloat width;
-        NSUInteger numberOfColumns = view.numberOfColumnsOccupied;
-        if (numberOfColumns == 0) {
-            width = [view sizeThatFits:NSSizeMax].width;
-        } else {
-            width = floor((selfWidth + DashboardAttrItemHorInterspace) / (CGFloat)numberOfColumns) - DashboardAttrItemHorInterspace;
-        }
-        
-        CGFloat x, y;
-        if (prevView && (prevView.$maxX + DashboardAttrItemHorInterspace + width <= (selfWidth + contentsX))) {
-            x = prevView.$maxX + DashboardAttrItemHorInterspace;
-            y = prevView.$y;
-        } else {
-            x = contentsX;
-            y = prevView ? (prevView.$maxY + DashboardAttrItemVerInterspace) : contentsY;
-        }
-        $(view).width(width).heightToFit.x(x).y(y);
+    NSArray<NSArray<LKDashboardAttributeView *> *> *rows = [self _rowsOfVisibleAttrViewsInAvailableWidth:selfWidth];
+    __block CGFloat rowTop = contentsY;
+    [rows enumerateObjectsUsingBlock:^(NSArray<LKDashboardAttributeView *> *row, NSUInteger rowIdx, BOOL *stop) {
+        __block CGFloat itemX = contentsX;
+        __block CGFloat rowHeight = 0;
+        [row enumerateObjectsUsingBlock:^(LKDashboardAttributeView *view, NSUInteger idx, BOOL *innerStop) {
+            CGFloat width = [self _widthForAttrView:view inAvailableWidth:selfWidth];
+            $(view).width(width).heightToFit.x(itemX).y(rowTop);
+            // Rows are as tall as their tallest item. Taking the first item's
+            // height instead is what let a 21pt switch clip the 38pt number
+            // input sitting next to it.
+            rowHeight = MAX(rowHeight, view.$height);
+            itemX = view.$maxX + DashboardAttrItemHorInterspace;
+        }];
+        rowTop += rowHeight + DashboardAttrItemVerInterspace;
     }];
 }
 
-- (NSSize)sizeThatFits:(NSSize)limitedSize {
+/// The width an attribute view gets for a given container width. Shared by
+/// -layout and -sizeThatFits: so the two can never disagree.
+- (CGFloat)_widthForAttrView:(LKDashboardAttributeView *)view inAvailableWidth:(CGFloat)availableWidth {
+    NSUInteger numberOfColumns = view.numberOfColumnsOccupied;
+    if (numberOfColumns == 0) {
+        return [view sizeThatFits:NSSizeMax].width;
+    }
+    return floor((availableWidth + DashboardAttrItemHorInterspace) / (CGFloat)numberOfColumns) - DashboardAttrItemHorInterspace;
+}
+
+/// Groups the visible attribute views into rows exactly the way -layout places
+/// them. Measurement and placement both go through this, so a row can no longer
+/// be measured as one height and drawn at another.
+- (NSArray<NSArray<LKDashboardAttributeView *> *> *)_rowsOfVisibleAttrViewsInAvailableWidth:(CGFloat)availableWidth {
     NSArray<LKDashboardAttributeView *> *attrViews = [self.attrViews lookin_filter:^BOOL(LKDashboardAttributeView *view) {
         return view.isVisible;
     }];
-    
-    CGFloat height = 0;
+
+    NSMutableArray<NSMutableArray<LKDashboardAttributeView *> *> *rows = [NSMutableArray array];
+    NSMutableArray<LKDashboardAttributeView *> *currentRow = nil;
+    CGFloat currentRowWidth = 0;
+
+    for (LKDashboardAttributeView *view in attrViews) {
+        CGFloat width = [self _widthForAttrView:view inAvailableWidth:availableWidth];
+        BOOL fitsInCurrentRow = (currentRow != nil) &&
+            (currentRowWidth + DashboardAttrItemHorInterspace + width <= availableWidth);
+        if (fitsInCurrentRow) {
+            currentRowWidth += DashboardAttrItemHorInterspace + width;
+        } else {
+            currentRow = [NSMutableArray array];
+            [rows addObject:currentRow];
+            currentRowWidth = width;
+        }
+        [currentRow addObject:view];
+    }
+    return rows;
+}
+
+- (NSSize)sizeThatFits:(NSSize)limitedSize {
+    __block CGFloat height = 0;
     if (!self.topSepLayer.hidden) {
         height += DashboardAttrItemVerInterspace;
     }
@@ -144,30 +171,24 @@
         }
         height += [self.titleLabel sizeThatFits:NSMakeSize(titleWidth, CGFLOAT_MAX)].height + _titleMarginTop;
     }
-    __block CGFloat prevMaxX = 0;
-    height = [attrViews lookin_reduceCGFloat:^CGFloat(CGFloat accumulator, NSUInteger idx, LKDashboardAttributeView *view) {
-        NSUInteger numberOfColumns = view.numberOfColumnsOccupied;
-        CGFloat width;
-        if (numberOfColumns == 0) {
-            width = [view sizeThatFits:limitedSize].width;
-        } else {
-            width = floor((limitedSize.width + DashboardAttrItemHorInterspace) / numberOfColumns) - DashboardAttrItemHorInterspace;
-        }
-        
-        if (idx > 0 && (prevMaxX + DashboardAttrItemHorInterspace + width <= limitedSize.width)) {
-            prevMaxX = prevMaxX + DashboardAttrItemHorInterspace + width;
-            return accumulator;
-        } else {
-            accumulator += [view sizeThatFits:limitedSize].height;
-            if (idx > 0) {
-                accumulator += DashboardAttrItemVerInterspace;
-            }
-            prevMaxX = width;
-            return accumulator;
-        }
 
-    } initialAccumlator:height];
-    
+    NSArray<NSArray<LKDashboardAttributeView *> *> *rows = [self _rowsOfVisibleAttrViewsInAvailableWidth:limitedSize.width];
+    [rows enumerateObjectsUsingBlock:^(NSArray<LKDashboardAttributeView *> *row, NSUInteger rowIdx, BOOL *stop) {
+        __block CGFloat rowHeight = 0;
+        [row enumerateObjectsUsingBlock:^(LKDashboardAttributeView *view, NSUInteger idx, BOOL *innerStop) {
+            // Measure at the width the item will actually get, not at the full
+            // container width — otherwise anything that grows when narrowed
+            // (wrapping labels) reports too little height and gets clipped.
+            CGFloat width = [self _widthForAttrView:view inAvailableWidth:limitedSize.width];
+            CGFloat itemHeight = [view sizeThatFits:NSMakeSize(width, CGFLOAT_MAX)].height;
+            rowHeight = MAX(rowHeight, itemHeight);
+        }];
+        if (rowIdx > 0) {
+            height += DashboardAttrItemVerInterspace;
+        }
+        height += rowHeight;
+    }];
+
     limitedSize.height = height;
     return limitedSize;
 }
