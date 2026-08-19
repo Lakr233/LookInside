@@ -185,6 +185,19 @@ jobs:
             "https://x-access-token:${LOOKINSIDE_INJECTOR_READ_TOKEN}@github.com/LookInsideApp/LookInside-Injector.git" \
             ../LookInside-Injector
 
+      - name: Checkout MCP Server
+        env:
+          LOOKINSIDE_MCP_READ_TOKEN: ${{ secrets.LOOKINSIDE_PRIVATE_READ_TOKEN || secrets.LOOKINSIDE_WEB_RELEASE_TOKEN || secrets.LOOKINSIDE_INJECTOR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${LOOKINSIDE_MCP_READ_TOKEN}" ]]; then
+            echo "LOOKINSIDE_PRIVATE_READ_TOKEN, LOOKINSIDE_WEB_RELEASE_TOKEN, or LOOKINSIDE_INJECTOR_READ_TOKEN is required to checkout LookInside-MCP." >&2
+            exit 1
+          fi
+          git clone --depth 1 \
+            "https://x-access-token:${LOOKINSIDE_MCP_READ_TOKEN}@github.com/LookInsideApp/LookInside-MCP.git" \
+            ../LookInside-MCP
+
       - name: Configure Private Package Access
         env:
           LOOKINSIDE_PRIVATE_READ_TOKEN: ${{ secrets.LOOKINSIDE_PRIVATE_READ_TOKEN || secrets.LOOKINSIDE_WEB_RELEASE_TOKEN || secrets.LOOKINSIDE_INJECTOR_READ_TOKEN }}
