@@ -347,12 +347,33 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Detect Existing GitHub Release
+        if: needs.prepare.outputs.publish_release == 'true'
+        id: release_state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.build_version }}
+        run: |
+          set -euo pipefail
+          error_file="$RUNNER_TEMP/release-state-error.txt"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
+            --silent 2>"$error_file"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$(<"$error_file")" == *"HTTP 404"* ]]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cat "$error_file" >&2
+          exit 1
+
       - name: Publish GitHub Release
         if: needs.prepare.outputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.build_version }}
-          generate_release_notes: true
+          generate_release_notes: ${{ steps.release_state.outputs.exists != 'true' }}
           files: |
             dist/*.zip
             dist/checksums.txt
