@@ -44,8 +44,22 @@
 /// 返回某个 LookinAttribute 代表的属性是哪一个类拥有的，比如 LookinAttrSec_UILabel_TextColor 是 UILabel 才有的
 + (NSString *)classNameWithAttrID:(LookinAttrIdentifier)attrID;
 
+/// Which object on a display item an attribute reads from and writes to. The
+/// host picks the target oid for a modification with this; the old
+/// per-kind boolean queries below remain as wrappers around it.
+typedef NS_ENUM(NSInteger, LookinAttrTargetKind) {
+    LookinAttrTargetKindLayer = 0,
+    LookinAttrTargetKindView,
+    LookinAttrTargetKindWindow,
+    LookinAttrTargetKindCell,   // AppKit only; wired up in the NSCell phase
+};
+
++ (LookinAttrTargetKind)targetKindForAttrID:(LookinAttrIdentifier)attrID;
+
+/// Wrapper around targetKindForAttrID: — YES for LookinAttrTargetKindWindow.
 + (BOOL)isWindowPropertyWithAttrID:(LookinAttrIdentifier)attrID;
 
+/// Wrapper around targetKindForAttrID: — YES for LookinAttrTargetKindView.
 /// 一个 attr 要么属于 UIView 要么属于 CALayer，如果它属于 UIView 那么该方法返回 YES
 + (BOOL)isUIViewPropertyWithAttrID:(LookinAttrIdentifier)attrID;
 

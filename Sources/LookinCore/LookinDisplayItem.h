@@ -60,10 +60,45 @@ typedef NS_ENUM(NSUInteger, LookinDisplayItemProperty) {
 
 @end
 
+/// What a hierarchy node *is*. Append-only: the integers travel on the wire
+/// and inside .lookin archives, so existing cases must never be renumbered.
+typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
+    /// Data produced before this field existed (old servers, old archives).
+    /// Consumers must read resolvedNodeKind, which derives the kind from the
+    /// legacy object slots in this case.
+    LookinDisplayItemNodeKindUnspecified = 0,
+    LookinDisplayItemNodeKindLayer       = 1,
+    LookinDisplayItemNodeKindView        = 2,
+    LookinDisplayItemNodeKindWindow      = 3,
+    LookinDisplayItemNodeKindWindowScene = 4,
+    /// A customInfo node (including SwiftUI virtual nodes — those are told
+    /// apart by customInfo.isSwiftUI, not by a separate kind).
+    LookinDisplayItemNodeKindCustom      = 5,
+    LookinDisplayItemNodeKindLayoutGuide = 6,
+};
+
 @interface LookinDisplayItem : NSObject <NSSecureCoding, NSCopying>
 
 /// 当 customInfo 不为 nil 时，意思是该 DisplayItem 为 UserCustom 配置的。此时，Encode 属性中仅 subitems 和 customAttrGroupList 属性有意义，其它几乎所有属性都无意义
 @property(nonatomic, strong) LookinCustomDisplayItemInfo *customInfo;
+
+/// The node's explicit kind. Unspecified for data from servers or archives
+/// that predate the field — never read this raw, read resolvedNodeKind.
+@property(nonatomic, assign) LookinDisplayItemNodeKind nodeKind;
+
+/// The primary object for kinds that do not use the legacy slots
+/// (LayoutGuide today). view / layer / window nodes keep using their
+/// dedicated slots.
+@property(nonatomic, strong) LookinObject *kindObject;
+
+/// Whether the server judged this node to be created and managed by the
+/// system rather than by app code (e.g. safe-area / layout-margins layout
+/// guides). Drives the host's visibility toggle for such nodes.
+@property(nonatomic, assign) BOOL representsSystemManagedNode;
+
+/// nodeKind, falling back to a derivation from the legacy object slots when
+/// the field is Unspecified. All consumers read this, never nodeKind itself.
+- (LookinDisplayItemNodeKind)resolvedNodeKind;
 
 @property(nonatomic, copy) NSArray<LookinDisplayItem *> *subitems;
 

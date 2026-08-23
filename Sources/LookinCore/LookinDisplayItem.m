@@ -59,6 +59,9 @@
     newDisplayItem.viewObject = self.viewObject.copy;
     newDisplayItem.layerObject = self.layerObject.copy;
     newDisplayItem.windowObject = self.windowObject.copy;
+    newDisplayItem.nodeKind = self.nodeKind;
+    newDisplayItem.kindObject = self.kindObject.copy;
+    newDisplayItem.representsSystemManagedNode = self.representsSystemManagedNode;
     newDisplayItem.hostViewControllerObject = self.hostViewControllerObject.copy;
     newDisplayItem.hostWindowControllerObject = self.hostWindowControllerObject.copy;
     newDisplayItem.attributesGroupList = [self.attributesGroupList lookin_map:^id(NSUInteger idx, LookinAttributesGroup *value) {
@@ -90,6 +93,9 @@
     [aCoder encodeObject:self.viewObject forKey:@"viewObject"];
     [aCoder encodeObject:self.layerObject forKey:@"layerObject"];
     [aCoder encodeObject:self.windowObject forKey:@"windowObject"];
+    [aCoder encodeInteger:self.nodeKind forKey:@"nodeKind"];
+    [aCoder encodeObject:self.kindObject forKey:@"kindObject"];
+    [aCoder encodeBool:self.representsSystemManagedNode forKey:@"representsSystemManagedNode"];
     [aCoder encodeObject:self.hostViewControllerObject forKey:@"hostViewControllerObject"];
     [aCoder encodeObject:self.hostWindowControllerObject forKey:@"hostWindowControllerObject"];
     [aCoder encodeObject:self.attributesGroupList forKey:@"attributesGroupList"];
@@ -130,6 +136,12 @@
         self.windowObject = [aDecoder decodeObjectForKey:@"windowObject"];
         self.viewObject = [aDecoder decodeObjectForKey:@"viewObject"];
         self.layerObject = [aDecoder decodeObjectForKey:@"layerObject"];
+        /// These fields exist since the nodeKind mechanism landed; absent
+        /// keys decode to Unspecified / nil / NO, which is exactly the
+        /// legacy-data contract resolvedNodeKind derives from.
+        self.nodeKind = [aDecoder containsValueForKey:@"nodeKind"] ? [aDecoder decodeIntegerForKey:@"nodeKind"] : LookinDisplayItemNodeKindUnspecified;
+        self.kindObject = [aDecoder decodeObjectForKey:@"kindObject"];
+        self.representsSystemManagedNode = [aDecoder decodeBoolForKey:@"representsSystemManagedNode"];
         self.hostViewControllerObject = [aDecoder decodeObjectForKey:@"hostViewControllerObject"];
         self.hostWindowControllerObject = [aDecoder decodeObjectForKey:@"hostWindowControllerObject"];
         self.attributesGroupList = [aDecoder decodeObjectForKey:@"attributesGroupList"];
@@ -191,7 +203,30 @@
 }
 
 - (LookinObject *)displayingObject {
-    return self.windowObject ? : self.viewObject ? : self.layerObject;
+    return self.kindObject ? : self.windowObject ? : self.viewObject ? : self.layerObject;
+}
+
+- (LookinDisplayItemNodeKind)resolvedNodeKind {
+    if (self.nodeKind != LookinDisplayItemNodeKindUnspecified) {
+        return self.nodeKind;
+    }
+    // Derivation for data that predates the field, matching how the maker
+    // used the legacy slots: scene and window nodes both borrowed
+    // windowObject (alone), custom nodes carry customInfo, view nodes carry
+    // viewObject, and everything else is a bare layer.
+    if (self.customInfo) {
+        return LookinDisplayItemNodeKindCustom;
+    }
+    if (self.windowObject && !self.viewObject && !self.layerObject) {
+        BOOL representsWindowScene = [self.windowObject.classChainList lookin_any:^BOOL(NSString *className) {
+            return [className isEqualToString:@"UIWindowScene"];
+        }];
+        return representsWindowScene ? LookinDisplayItemNodeKindWindowScene : LookinDisplayItemNodeKindWindow;
+    }
+    if (self.viewObject) {
+        return LookinDisplayItemNodeKindView;
+    }
+    return LookinDisplayItemNodeKindLayer;
 }
 
 - (BOOL)hasValidFrameToRoot {

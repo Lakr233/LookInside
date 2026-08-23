@@ -4546,34 +4546,25 @@
     return className;
 }
 
-+ (BOOL)isWindowPropertyWithAttrID:(LookinAttrIdentifier)attrID {
++ (LookinAttrTargetKind)targetKindForAttrID:(LookinAttrIdentifier)attrID {
     NSString *className = [self classNameWithAttrID:attrID];
-    if ([className isEqualToString:@"UIWindowScene"]) {
-        return YES;
+    if ([className isEqualToString:@"CALayer"]) {
+        return LookinAttrTargetKindLayer;
     }
+    if ([className isEqualToString:@"UIWindowScene"] || [className isEqualToString:@"NSWindow"]) {
+        return LookinAttrTargetKindWindow;
+    }
+    // The NSCell phase adds a cell branch here; until then everything that is
+    // not a layer or window attribute reads from the view.
+    return LookinAttrTargetKindView;
+}
 
-    if ([className isEqualToString:@"NSWindow"]) {
-        return YES;
-    }
-    return NO;
++ (BOOL)isWindowPropertyWithAttrID:(LookinAttrIdentifier)attrID {
+    return [self targetKindForAttrID:attrID] == LookinAttrTargetKindWindow;
 }
 
 + (BOOL)isUIViewPropertyWithAttrID:(LookinAttrIdentifier)attrID {
-    NSString *className = [self classNameWithAttrID:attrID];
-
-    if ([className isEqualToString:@"CALayer"]) {
-        return NO;
-    }
-
-    if ([className isEqualToString:@"UIWindowScene"]) {
-        return NO;
-    }
-
-    if ([className isEqualToString:@"NSWindow"]) {
-        return NO;
-    }
-
-    return YES;
+    return [self targetKindForAttrID:attrID] == LookinAttrTargetKindView;
 }
 
 + (NSString *)enumListNameWithAttrID:(LookinAttrIdentifier)attrID {
