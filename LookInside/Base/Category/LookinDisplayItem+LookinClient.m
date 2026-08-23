@@ -307,40 +307,6 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
     return NO;
 }
 
-- (BOOL)hasValidFrameToRoot {
-    if (self.customInfo) {
-        return [self.customInfo hasValidFrame];
-    }
-    return [LKHelper validateFrame:self.frame];
-}
-
-- (CGRect)calculateFrameToRoot {
-    if (self.customInfo) {
-        return [self.customInfo.frameInWindow rectValue];
-    }
-    if (!self.superItem) {
-        return self.frame;
-    }
-    
-    CGRect superFrameToRoot = [self.superItem calculateFrameToRoot];
-    CGRect superBounds = self.superItem.bounds;
-    CGRect selfFrame = self.frame;
-    
-    CGFloat x = selfFrame.origin.x - superBounds.origin.x + superFrameToRoot.origin.x;
-    CGFloat y;
-    
-    if (self.superItem.isFlipped) {
-        y = superFrameToRoot.origin.y + (superBounds.size.height - selfFrame.origin.y - selfFrame.size.height);
-    } else {
-        y = selfFrame.origin.y - superBounds.origin.y + superFrameToRoot.origin.y;
-    }
-    
-    CGFloat width = selfFrame.size.width;
-    CGFloat height = selfFrame.size.height;
-    return CGRectMake(x, y, width, height);
-}
-
-
 - (BOOL)isMatchedWithSearchString:(NSString *)string {
     if (string.length == 0) {
         NSAssert(NO, @"");

@@ -10,13 +10,4 @@
 
 @implementation LookinCustomDisplayItemInfo (LookinClient)
 
-- (BOOL)hasValidFrame {
-    if (!self.frameInWindow) {
-        return NO;
-    }
-    CGRect rect = [self.frameInWindow rectValue];
-    BOOL valid = [LKHelper validateFrame:rect];
-    return valid;
-}
-
 @end

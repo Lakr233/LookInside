@@ -38,10 +38,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// 是否有能力显示图层框
 - (BOOL)hasPreviewBoxAbility;
 
-- (BOOL)hasValidFrameToRoot;
-
-/// 当 hasValidFrameToRoot 返回 NO 时，该方法返回的值无意义
-- (CGRect)calculateFrameToRoot;
+// hasValidFrameToRoot and calculateFrameToRoot moved into LookinCore's
+// LookinDisplayItem so they can be unit-tested and shared with the server
+// side; calculateFrameToRoot now degrades to CGRectZero on unusable frames
+// instead of composing NaN values.
 
 /// 在 string 这个搜索词下，如果该 displayItem 应该被搜索到，则该方法返回 YES。
 /// string 字段不能为 nil 或空字符串
