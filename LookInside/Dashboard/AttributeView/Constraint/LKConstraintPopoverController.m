@@ -68,15 +68,16 @@
         [texts addObject:[LookinStringTwoTuple tupleWithFirst:@"ShouldBeArchived" second:constraint.shouldBeArchived ? @"YES" : @"NO"]];
         [texts addObject:[LookinStringTwoTuple tupleWithFirst:@"Identifier" second:constraint.identifier ? : @""]];
         
-        if (constraint.firstItemType == LookinConstraintItemTypeView) {
+        LookinObject *firstJumpObject = [constraint jumpableItemObjectForEndpoint:LookinConstraintEndpointFirst];
+        if (firstJumpObject) {
             NSButton *button = [NSButton lk_buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
-            [button lookin_bindObject:constraint.firstItem forKey:@"jumpObject"];
+            [button lookin_bindObject:firstJumpObject forKey:@"jumpObject"];
             [self.textsView addButton:button atIndex:0];
-            
         }
-        if (constraint.secondItemType == LookinConstraintItemTypeView) {
+        LookinObject *secondJumpObject = [constraint jumpableItemObjectForEndpoint:LookinConstraintEndpointSecond];
+        if (secondJumpObject) {
             NSButton *button = [NSButton lk_buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
-            [button lookin_bindObject:constraint.firstItem forKey:@"jumpObject"];
+            [button lookin_bindObject:secondJumpObject forKey:@"jumpObject"];
             [self.textsView addButton:button atIndex:3];
         }
         
