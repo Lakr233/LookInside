@@ -78,6 +78,7 @@
     [aCoder encodeDouble:self.constant forKey:@"constant"];
     [aCoder encodeDouble:self.priority forKey:@"priority"];
     [aCoder encodeObject:self.identifier forKey:@"identifier"];
+    [aCoder encodeInteger:(NSInteger)self.constraintOid forKey:@"constraintOid"];
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
@@ -96,6 +97,9 @@
         self.constant = [aDecoder decodeDoubleForKey:@"constant"];
         self.priority = [aDecoder decodeDoubleForKey:@"priority"];
         self.identifier = [aDecoder decodeObjectForKey:@"identifier"];
+        /// Absent in old archives — decodeIntegerForKey returns 0, which is
+        /// exactly the "no identity" contract.
+        self.constraintOid = (unsigned long)[aDecoder decodeIntegerForKey:@"constraintOid"];
     }
     return self;
 }

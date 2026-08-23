@@ -49,6 +49,11 @@ typedef NS_ENUM(NSInteger, LookinConstraintEndpoint) {
 @property(nonatomic, assign) CGFloat priority;
 @property(nonatomic, copy) NSString *identifier;
 
+/// The NSLayoutConstraint's own registered oid. The same constraint appears
+/// in both endpoints' attribute lists; this is what lets consumers recognize
+/// the two copies as one constraint. 0 means the data predates the field.
+@property(nonatomic, assign) unsigned long constraintOid;
+
 /// The item object a jump control for the given endpoint must navigate to:
 /// the first endpoint jumps to firstItem, the second endpoint to secondItem.
 /// Returns nil when that endpoint has no node in the hierarchy to land on —
