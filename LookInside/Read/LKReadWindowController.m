@@ -106,7 +106,7 @@
     NSPopover *popover = [[NSPopover alloc] init];
     popover.behavior = NSPopoverBehaviorTransient;
     popover.animates = NO;
-    popover.contentSize = NSMakeSize(IsEnglish ? 270 : 350, 200);
+    popover.contentSize = NSMakeSize(IsEnglish ? 270 : 350, 230);
     LookinAppInfo *inspectedAppInfo = self.viewController.hierarchyDataSource.rawHierarchyInfo.appInfo;
     popover.contentViewController = [[LKMenuPopoverSettingController alloc] initWithPreferenceManager:self.preferenceManager
                                                                                           isMacTarget:[LKHelper appInfoLooksLikeMacTarget:inspectedAppInfo]];

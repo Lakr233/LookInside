@@ -64,6 +64,10 @@ typedef NS_ENUM(NSInteger, LookinMeasureState) {
 
 @property(nonatomic, strong, readonly) LookinBOOLMsgAttribute *showHiddenItems;
 
+/// 是否在层级树里显示系统自动创建的 LayoutGuide（safe area、layout margins 等）。
+/// 默认显示；关闭只是宿主端过滤，数据仍在。用户自建 guide 不受此开关影响。
+@property(nonatomic, strong, readonly) LookinBOOLMsgAttribute *showSystemLayoutGuides;
+
 // 范围是 0 ～ 1
 @property(nonatomic, strong, readonly) LookinDoubleMsgAttribute *zInterspace;
 

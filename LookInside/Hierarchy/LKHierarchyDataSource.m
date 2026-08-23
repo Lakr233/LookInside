@@ -164,6 +164,10 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
             @strongify(self);
             [self _setUpColors];
         }];
+
+        // Toggling the system-layout-guide visibility re-filters the visible
+        // rows; the tree data itself keeps every node.
+        [[LKPreferenceManager mainManager].showSystemLayoutGuides subscribe:self action:@selector(_handleShowSystemLayoutGuidesDidChange:) relatedObject:nil];
     }
     return self;
 }
@@ -229,6 +233,11 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
             }
         }
         
+        if (obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide) {
+            // A guide has no pixels: no screenshot task, but it stays in the
+            // preview as a wireframe box.
+            obj.doNotFetchScreenshotReason = LookinDoNotFetchScreenshotForNoPixels;
+        }
         if (!obj.isUserCustom && !obj.shouldCaptureImage) {
             [obj enumerateSelfAndChildren:^(LookinDisplayItem *item) {
                 item.noPreview = YES;
@@ -769,13 +778,26 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
 }
 
 - (void)buildDisplayingFlatItems {
+    BOOL showSystemLayoutGuides = [LKPreferenceManager mainManager].showSystemLayoutGuides.currentBOOLValue;
     NSMutableArray<LookinDisplayItem *> *displayingItems = [NSMutableArray array];
     [self.flatItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if (obj.displayingInHierarchy) {
-            [displayingItems addObject:obj];
+        if (!obj.displayingInHierarchy) {
+            return;
         }
+        // System-created layout guides can be toggled off; user guides always
+        // show, and the underlying data keeps every node either way.
+        if (!showSystemLayoutGuides
+            && obj.representsSystemManagedNode
+            && obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide) {
+            return;
+        }
+        [displayingItems addObject:obj];
     }];
     self.displayingFlatItems = displayingItems;
+}
+
+- (void)_handleShowSystemLayoutGuidesDidChange:(LookinMsgActionParams *)param {
+    [self buildDisplayingFlatItems];
 }
 
 - (void)collapseItem:(LookinDisplayItem *)item {

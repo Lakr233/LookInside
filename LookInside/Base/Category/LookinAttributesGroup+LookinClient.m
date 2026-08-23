@@ -22,6 +22,11 @@
         // always 0 in the host, so it would say "NSView" even for an iOS target.
         return [NSString stringWithFormat:@"CALayer / %@", [LKHelper viewClassNameForMacTarget:isMacTarget]];
     }
+    if ([self.identifier isEqualToString:LookinAttrGroup_LayoutGuide]) {
+        // The group ID is platform-neutral; the title names the inspected
+        // platform's actual class.
+        return isMacTarget ? @"NSLayoutGuide" : @"UILayoutGuide";
+    }
     return [LookinDashboardBlueprint groupTitleWithGroupID:self.identifier];
 }
 

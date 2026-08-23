@@ -22,6 +22,7 @@ const NSTimeInterval LKDefaultLicenseHandshakeTimeoutInterval = 5;
 static NSString * const Key_PreviousClientVersion = @"preVer";
 static NSString * const Key_ShowOutline = @"showOutline";
 static NSString * const Key_ShowHiddenItems = @"showHiddenItems";
+static NSString * const Key_ShowSystemLayoutGuides = @"showSystemLayoutGuides";
 static NSString * const Key_RgbaFormat = @"egbaFormat";
 static NSString * const Key_ZInterspace = @"zInterspace_v095";
 static NSString * const Key_AppearanceType = @"appearanceType";
@@ -93,7 +94,16 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
             [userDefaults setObject:@(NO) forKey:Key_ShowHiddenItems];
         }
         [self.showHiddenItems subscribe:self action:@selector(_handleShowHiddenItemsChange:) relatedObject:nil];
-        
+
+        NSNumber *obj_showSystemLayoutGuides = [userDefaults objectForKey:Key_ShowSystemLayoutGuides];
+        if (obj_showSystemLayoutGuides != nil) {
+            _showSystemLayoutGuides = [LookinBOOLMsgAttribute attributeWithBOOL:[obj_showSystemLayoutGuides boolValue]];
+        } else {
+            _showSystemLayoutGuides = [LookinBOOLMsgAttribute attributeWithBOOL:YES];
+            [userDefaults setObject:@(YES) forKey:Key_ShowSystemLayoutGuides];
+        }
+        [self.showSystemLayoutGuides subscribe:self action:@selector(_handleShowSystemLayoutGuidesChange:) relatedObject:nil];
+
         NSNumber *obj_doubleClickBehavior = [userDefaults objectForKey:Key_DoubleClickBehavior];
         if (obj_doubleClickBehavior) {
             _doubleClickBehavior = [obj_doubleClickBehavior intValue];
@@ -355,6 +365,12 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
     }
 }
 
+- (void)_handleShowSystemLayoutGuidesChange:(LookinMsgActionParams *)param {
+    if (self.shouldStoreToLocal) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(param.boolValue) forKey:Key_ShowSystemLayoutGuides];
+    }
+}
+
 - (void)setRgbaFormat:(BOOL)rgbaFormat {
     if (_rgbaFormat == rgbaFormat) {
         return;
@@ -551,7 +567,11 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
                                                         LookinAttrSec_AutoLayout_Resistance,
                                                         LookinAttrSec_AutoLayout_Constraints,
                                                         LookinAttrSec_AutoLayout_IntrinsicSize,
-                                                        
+
+                                                        LookinAttrSec_LayoutGuide_Identifier,
+                                                        LookinAttrSec_LayoutGuide_LayoutFrame,
+                                                        LookinAttrSec_LayoutGuide_OwningView,
+
                                                         LookinAttrSec_ViewLayer_Visibility,
                                                         LookinAttrSec_ViewLayer_InterationAndMasks,
                                                         LookinAttrSec_ViewLayer_Corner,
