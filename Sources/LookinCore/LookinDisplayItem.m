@@ -62,6 +62,7 @@
     newDisplayItem.nodeKind = self.nodeKind;
     newDisplayItem.kindObject = self.kindObject.copy;
     newDisplayItem.representsSystemManagedNode = self.representsSystemManagedNode;
+    newDisplayItem.cellObject = self.cellObject.copy;
     newDisplayItem.hostViewControllerObject = self.hostViewControllerObject.copy;
     newDisplayItem.hostWindowControllerObject = self.hostWindowControllerObject.copy;
     newDisplayItem.attributesGroupList = [self.attributesGroupList lookin_map:^id(NSUInteger idx, LookinAttributesGroup *value) {
@@ -96,6 +97,7 @@
     [aCoder encodeInteger:self.nodeKind forKey:@"nodeKind"];
     [aCoder encodeObject:self.kindObject forKey:@"kindObject"];
     [aCoder encodeBool:self.representsSystemManagedNode forKey:@"representsSystemManagedNode"];
+    [aCoder encodeObject:self.cellObject forKey:@"cellObject"];
     [aCoder encodeObject:self.hostViewControllerObject forKey:@"hostViewControllerObject"];
     [aCoder encodeObject:self.hostWindowControllerObject forKey:@"hostWindowControllerObject"];
     [aCoder encodeObject:self.attributesGroupList forKey:@"attributesGroupList"];
@@ -142,6 +144,7 @@
         self.nodeKind = [aDecoder containsValueForKey:@"nodeKind"] ? [aDecoder decodeIntegerForKey:@"nodeKind"] : LookinDisplayItemNodeKindUnspecified;
         self.kindObject = [aDecoder decodeObjectForKey:@"kindObject"];
         self.representsSystemManagedNode = [aDecoder decodeBoolForKey:@"representsSystemManagedNode"];
+        self.cellObject = [aDecoder decodeObjectForKey:@"cellObject"];
         self.hostViewControllerObject = [aDecoder decodeObjectForKey:@"hostViewControllerObject"];
         self.hostWindowControllerObject = [aDecoder decodeObjectForKey:@"hostWindowControllerObject"];
         self.attributesGroupList = [aDecoder decodeObjectForKey:@"attributesGroupList"];

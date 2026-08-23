@@ -98,6 +98,12 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// guides). Drives the host's visibility toggle for such nodes.
 @property(nonatomic, assign) BOOL representsSystemManagedNode;
 
+/// AppKit only: the NSCell of an NSControl node. The cell is not a tree node
+/// of its own — its attributes ride on the control's node and route to this
+/// object (second-object routing, LookinAttrTargetKindCell). nil everywhere
+/// else, including Mac Catalyst, which is explicitly excluded server-side.
+@property(nonatomic, strong) LookinObject *cellObject;
+
 /// nodeKind, falling back to a derivation from the legacy object slots when
 /// the field is Unspecified. All consumers read this, never nodeKind itself.
 - (LookinDisplayItemNodeKind)resolvedNodeKind;

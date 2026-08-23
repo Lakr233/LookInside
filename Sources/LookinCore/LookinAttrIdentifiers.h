@@ -62,6 +62,8 @@ extern LookinAttrGroupIdentifier const LookinAttrGroup_NSTabView;
 extern LookinAttrGroupIdentifier const LookinAttrGroup_NSGridView;
 // Platform-neutral group shared by UILayoutGuide and NSLayoutGuide nodes
 extern LookinAttrGroupIdentifier const LookinAttrGroup_LayoutGuide;
+// AppKit only: NSCell attributes routed onto the owning NSControl node
+extern LookinAttrGroupIdentifier const LookinAttrGroup_NSCell;
 
 // UITraitCollection
 extern LookinAttrGroupIdentifier const LookinAttrGroup_UITraitCollection;
@@ -347,6 +349,10 @@ extern LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Placement;
 extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_Identifier;
 extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_LayoutFrame;
 extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_OwningView;
+
+extern LookinAttrSectionIdentifier const LookinAttrSec_NSCell_Cell;
+extern LookinAttrSectionIdentifier const LookinAttrSec_NSCell_ButtonCell;
+extern LookinAttrSectionIdentifier const LookinAttrSec_NSCell_TextFieldCell;
 
 
 #pragma mark - Attr
@@ -1238,5 +1244,21 @@ extern LookinAttrIdentifier const LookinAttr_NSGridView_Placement_YPlacement;
 extern LookinAttrIdentifier const LookinAttr_LayoutGuide_Identifier_Identifier;
 extern LookinAttrIdentifier const LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame;
 extern LookinAttrIdentifier const LookinAttr_LayoutGuide_OwningView_OwningView;
+
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Type;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_State;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Enabled;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Bordered;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Bezeled;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Highlighted;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Editable;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Selectable;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_Alignment;
+extern LookinAttrIdentifier const LookinAttr_NSCell_Cell_ControlSize;
+extern LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_BezelStyle;
+extern LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ImagePosition;
+extern LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside;
+extern LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_Placeholder;
+extern LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_DrawsBackground;
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

@@ -63,6 +63,7 @@ LookinAttrGroupIdentifier const LookinAttrGroup_NSSplitView = @"NSSplitView";
 LookinAttrGroupIdentifier const LookinAttrGroup_NSTabView = @"NSTabView";
 LookinAttrGroupIdentifier const LookinAttrGroup_NSGridView = @"NSGridView";
 LookinAttrGroupIdentifier const LookinAttrGroup_LayoutGuide = @"LayoutGuide";
+LookinAttrGroupIdentifier const LookinAttrGroup_NSCell = @"NSCell";
 
 
 LookinAttrGroupIdentifier const LookinAttrGroup_UserCustom = @"guc"; // 用户自定义
@@ -332,6 +333,10 @@ LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Placement = @"NSGridV
 LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_Identifier = @"LayoutGuide_Identifier";
 LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_LayoutFrame = @"LayoutGuide_LayoutFrame";
 LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_OwningView = @"LayoutGuide_OwningView";
+
+LookinAttrSectionIdentifier const LookinAttrSec_NSCell_Cell = @"NSCell_Cell";
+LookinAttrSectionIdentifier const LookinAttrSec_NSCell_ButtonCell = @"NSCell_ButtonCell";
+LookinAttrSectionIdentifier const LookinAttrSec_NSCell_TextFieldCell = @"NSCell_TextFieldCell";
 
 #pragma mark - Attr
 
@@ -851,5 +856,21 @@ LookinAttrIdentifier const LookinAttr_NSGridView_Placement_YPlacement = @"NSGrid
 LookinAttrIdentifier const LookinAttr_LayoutGuide_Identifier_Identifier = @"LayoutGuide_Identifier_Identifier";
 LookinAttrIdentifier const LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame = @"LayoutGuide_LayoutFrame_LayoutFrame";
 LookinAttrIdentifier const LookinAttr_LayoutGuide_OwningView_OwningView = @"LayoutGuide_OwningView_OwningView";
+
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Type = @"NSCell_Cell_Type";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_State = @"NSCell_Cell_State";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Enabled = @"NSCell_Cell_Enabled";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Bordered = @"NSCell_Cell_Bordered";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Bezeled = @"NSCell_Cell_Bezeled";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Highlighted = @"NSCell_Cell_Highlighted";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Editable = @"NSCell_Cell_Editable";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Selectable = @"NSCell_Cell_Selectable";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_Alignment = @"NSCell_Cell_Alignment";
+LookinAttrIdentifier const LookinAttr_NSCell_Cell_ControlSize = @"NSCell_Cell_ControlSize";
+LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_BezelStyle = @"NSCell_ButtonCell_BezelStyle";
+LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ImagePosition = @"NSCell_ButtonCell_ImagePosition";
+LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside = @"NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside";
+LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_Placeholder = @"NSCell_TextFieldCell_Placeholder";
+LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_DrawsBackground = @"NSCell_TextFieldCell_DrawsBackground";
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

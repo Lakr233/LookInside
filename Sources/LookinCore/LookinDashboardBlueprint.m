@@ -65,6 +65,7 @@
             LookinAttrGroup_NSSplitView,
             LookinAttrGroup_NSTabView,
             LookinAttrGroup_NSGridView,
+            LookinAttrGroup_NSCell,
 #endif
             // Platform-neutral: LayoutGuide nodes exist on both platforms
             LookinAttrGroup_LayoutGuide,
@@ -427,6 +428,11 @@
                 LookinAttrSec_LayoutGuide_Identifier,
                 LookinAttrSec_LayoutGuide_LayoutFrame,
                 LookinAttrSec_LayoutGuide_OwningView,
+            ],
+            LookinAttrGroup_NSCell: @[
+                LookinAttrSec_NSCell_Cell,
+                LookinAttrSec_NSCell_ButtonCell,
+                LookinAttrSec_NSCell_TextFieldCell,
             ],
             
         };
@@ -1312,6 +1318,27 @@
             LookinAttrSec_LayoutGuide_OwningView: @[
                 LookinAttr_LayoutGuide_OwningView_OwningView,
             ],
+            LookinAttrSec_NSCell_Cell: @[
+                LookinAttr_NSCell_Cell_Type,
+                LookinAttr_NSCell_Cell_State,
+                LookinAttr_NSCell_Cell_Enabled,
+                LookinAttr_NSCell_Cell_Bordered,
+                LookinAttr_NSCell_Cell_Bezeled,
+                LookinAttr_NSCell_Cell_Highlighted,
+                LookinAttr_NSCell_Cell_Editable,
+                LookinAttr_NSCell_Cell_Selectable,
+                LookinAttr_NSCell_Cell_Alignment,
+                LookinAttr_NSCell_Cell_ControlSize,
+            ],
+            LookinAttrSec_NSCell_ButtonCell: @[
+                LookinAttr_NSCell_ButtonCell_BezelStyle,
+                LookinAttr_NSCell_ButtonCell_ImagePosition,
+                LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside,
+            ],
+            LookinAttrSec_NSCell_TextFieldCell: @[
+                LookinAttr_NSCell_TextFieldCell_Placeholder,
+                LookinAttr_NSCell_TextFieldCell_DrawsBackground,
+            ],
         };
     });
     return dict[sectionID];
@@ -1394,6 +1421,7 @@
             // Platform-neutral; the host renders it as UILayoutGuide or
             // NSLayoutGuide depending on the inspected app's platform.
             LookinAttrGroup_LayoutGuide:        @"LayoutGuide",
+            LookinAttrGroup_NSCell:             @"NSCell",
 #if TARGET_OS_IPHONE
             LookinAttrGroup_ViewLayer: @"CALayer / UIView",
 #else
@@ -1614,6 +1642,10 @@
             LookinAttrSec_LayoutGuide_Identifier: @"Identifier",
             LookinAttrSec_LayoutGuide_LayoutFrame: @"LayoutFrame",
             LookinAttrSec_LayoutGuide_OwningView: @"OwningView",
+            // NSCell
+            LookinAttrSec_NSCell_Cell: @"Cell",
+            LookinAttrSec_NSCell_ButtonCell: @"NSButtonCell",
+            LookinAttrSec_NSCell_TextFieldCell: @"NSTextFieldCell",
             // UIWindowScene
             LookinAttrSec_UIWindowScene_State: @"State",
             LookinAttrSec_UIWindowScene_Title: @"Title",
@@ -1846,6 +1878,104 @@
                 @"setterString": @"",
                 @"typeIfObj": @(LookinAttrTypeNSString),
                 @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_Cell_Type: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"CellType",
+                @"getterString": @"type",
+                @"setterString": @"",
+                @"enumList": @"NSCellType"
+            },
+            LookinAttr_NSCell_Cell_State: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"State",
+                @"getterString": @"state",
+                @"setterString": @"",
+                @"enumList": @"NSControlStateValue"
+            },
+            LookinAttr_NSCell_Cell_Enabled: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Enabled",
+                @"getterString": @"isEnabled",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Bordered: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Bordered",
+                @"getterString": @"isBordered",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Bezeled: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Bezeled",
+                @"getterString": @"isBezeled",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Highlighted: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Highlighted",
+                @"getterString": @"isHighlighted",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Editable: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Editable",
+                @"getterString": @"isEditable",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Selectable: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Selectable",
+                @"getterString": @"isSelectable",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Cell_Alignment: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Alignment",
+                @"getterString": @"alignment",
+                @"setterString": @"",
+                @"enumList": @"NSTextAlignment_AppKit"
+            },
+            LookinAttr_NSCell_Cell_ControlSize: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"ControlSize",
+                @"getterString": @"controlSize",
+                @"setterString": @"",
+                @"enumList": @"NSControlSize"
+            },
+            LookinAttr_NSCell_ButtonCell_BezelStyle: @{
+                @"className": @"NSButtonCell",
+                @"fullTitle": @"BezelStyle",
+                @"getterString": @"bezelStyle",
+                @"setterString": @"",
+                @"enumList": @"NSBezelStyle"
+            },
+            LookinAttr_NSCell_ButtonCell_ImagePosition: @{
+                @"className": @"NSButtonCell",
+                @"fullTitle": @"ImagePosition",
+                @"getterString": @"imagePosition",
+                @"setterString": @"",
+                @"enumList": @"NSCellImagePosition"
+            },
+            LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside: @{
+                @"className": @"NSButtonCell",
+                @"fullTitle": @"ShowsBorderOnlyWhileMouseInside",
+                @"getterString": @"showsBorderOnlyWhileMouseInside",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_TextFieldCell_Placeholder: @{
+                @"className": @"NSTextFieldCell",
+                @"fullTitle": @"Placeholder",
+                @"getterString": @"placeholderString",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_TextFieldCell_DrawsBackground: @{
+                @"className": @"NSTextFieldCell",
+                @"fullTitle": @"DrawsBackground",
+                @"getterString": @"drawsBackground",
+                @"setterString": @""
             },
             LookinAttr_ViewLayer_Tag_Tag: @{
 #if TARGET_OS_IPHONE
@@ -4611,8 +4741,9 @@
     if ([className isEqualToString:@"UIWindowScene"] || [className isEqualToString:@"NSWindow"]) {
         return LookinAttrTargetKindWindow;
     }
-    // The NSCell phase adds a cell branch here; until then everything that is
-    // not a layer or window attribute reads from the view.
+    if ([className isEqualToString:@"NSCell"] || [className isEqualToString:@"NSButtonCell"] || [className isEqualToString:@"NSTextFieldCell"]) {
+        return LookinAttrTargetKindCell;
+    }
     return LookinAttrTargetKindView;
 }
 
