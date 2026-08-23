@@ -103,14 +103,7 @@ static BOOL LKRectsAlmostEqual(CGRect lhs, CGRect rhs) {
 /// Returns the item's leaf class name using the view → layer → window priority order shared
 /// with `LookinDisplayItem.title`; returns nil for UserCustom-only nodes (no classChainList).
 static NSString *LKDisplayItemPrimaryClassName(LookinDisplayItem *item) {
-    NSArray<NSString *> *chain = item.viewObject.classChainList;
-    if (chain.count == 0) {
-        chain = item.layerObject.classChainList;
-    }
-    if (chain.count == 0) {
-        chain = item.windowObject.classChainList;
-    }
-    return chain.firstObject;
+    return item.displayingObject.classChainList.firstObject;
 }
 
 static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSString *> *sourceTypes) {
@@ -455,7 +448,8 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
         // 如果 keyWindowItem 是 scene 容器（只有 windowObject，没有 layer/view），
         // 在其子项中找到实际的 key window，用于 UITransitionView 搜索
         LookinDisplayItem *actualKeyWindow = keyWindowItem;
-        if (keyWindowItem.windowObject && !keyWindowItem.layerObject && !keyWindowItem.viewObject) {
+        LookinDisplayItemNodeKind keyWindowItemKind = keyWindowItem.resolvedNodeKind;
+        if (keyWindowItemKind == LookinDisplayItemNodeKindWindow || keyWindowItemKind == LookinDisplayItemNodeKindWindowScene) {
             for (LookinDisplayItem *child in keyWindowItem.subitems) {
                 if (child.representedAsKeyWindow) {
                     actualKeyWindow = child;
@@ -699,6 +693,9 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
         }
         if (obj.windowObject.oid) {
             map[@(obj.windowObject.oid)] = obj;
+        }
+        if (obj.kindObject.oid) {
+            map[@(obj.kindObject.oid)] = obj;
         }
     }];
     self.oidToDisplayItemMap = map;

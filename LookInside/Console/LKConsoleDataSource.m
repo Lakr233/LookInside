@@ -50,7 +50,7 @@
                                           if (!item) {
                                               return nil;
                                           }
-                                          NSArray<LookinObject *> *objs = $(item.hostViewControllerObject, item.hostWindowControllerObject, item.layerObject, item.viewObject, item.windowObject).array;
+                                          NSArray<LookinObject *> *objs = $(item.hostViewControllerObject, item.hostWindowControllerObject, item.layerObject, item.viewObject, item.windowObject, item.kindObject).array;
                                           return objs;
                                       }];
     }

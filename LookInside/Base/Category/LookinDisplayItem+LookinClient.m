@@ -165,7 +165,7 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
         rootItem = rootItem.superItem;
     }
 
-    LookinObject *rootObject = rootItem.windowObject ?: rootItem.viewObject ?: rootItem.layerObject;
+    LookinObject *rootObject = rootItem.displayingObject;
     for (NSString *className in rootObject.classChainList ?: @[]) {
         if ([className hasPrefix:@"NSWindow"]) {
             return YES;
@@ -183,17 +183,29 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
 }
 
 - (unsigned long)bestObjectOidPreferView:(BOOL)preferView {
-    // 始终优先使用 layerObject.oid，以匹配上游行为。
-    // 上游服务端 detail handler 通过 CALayer OID 解析并截图，
-    // 这是经过验证的可靠路径。
-    if (self.layerObject.oid) {
-        return self.layerObject.oid;
-    }
-    if (self.viewObject.oid) {
-        return self.viewObject.oid;
-    }
-    if (self.windowObject.oid) {
-        return self.windowObject.oid;
+    switch (self.resolvedNodeKind) {
+        case LookinDisplayItemNodeKindWindow:
+        case LookinDisplayItemNodeKindWindowScene:
+            return self.windowObject.oid;
+        case LookinDisplayItemNodeKindLayoutGuide:
+            return self.kindObject.oid;
+        case LookinDisplayItemNodeKindCustom:
+            // Custom nodes carry no oid — a known limitation, out of scope
+            // for the nodeKind mechanism itself.
+            return 0;
+        case LookinDisplayItemNodeKindView:
+        case LookinDisplayItemNodeKindLayer:
+        case LookinDisplayItemNodeKindUnspecified:
+            // 始终优先使用 layerObject.oid，以匹配上游行为。
+            // 上游服务端 detail handler 通过 CALayer OID 解析并截图，
+            // 这是经过验证的可靠路径。
+            if (self.layerObject.oid) {
+                return self.layerObject.oid;
+            }
+            if (self.viewObject.oid) {
+                return self.viewObject.oid;
+            }
+            return self.windowObject.oid;
     }
     return 0;
 }
@@ -210,6 +222,9 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
     if (self.layerObject.oid) {
         [oids addObject:@(self.layerObject.oid)];
     }
+    if (self.kindObject.oid) {
+        [oids addObject:@(self.kindObject.oid)];
+    }
     return oids.array;
 }
 
@@ -219,12 +234,8 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
         baseTitle = self.customInfo.title;
     } else if (self.customDisplayTitle.length > 0) {
         baseTitle = self.customDisplayTitle;
-    } else if (self.viewObject) {
-        baseTitle = self.viewObject.lk_simpleDemangledClassName;
-    } else if (self.layerObject) {
-        baseTitle = self.layerObject.lk_simpleDemangledClassName;
-    } else if (self.windowObject) {
-        baseTitle = self.windowObject.lk_simpleDemangledClassName;
+    } else {
+        baseTitle = self.displayingObject.lk_simpleDemangledClassName;
     }
     return [[LKPrivateDiscriminatorStore shared] displayTitleForDisplayItem:self fallback:baseTitle];
 }
@@ -243,7 +254,7 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
         return [NSString stringWithFormat:@"%@.view", text];
     }
     
-    LookinObject *representedObject = self.windowObject ? : self.viewObject ? : self.layerObject;
+    LookinObject *representedObject = self.displayingObject;
     if (representedObject.specialTrace.length) {
         return representedObject.specialTrace;
         
@@ -276,7 +287,8 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
     // Window 根节点的 soloScreenshot 始终是近乎透明的（只有窗口边框）。
     // 这是预期行为——子视图负责渲染实际内容。不要对这些节点回退到
     // groupScreenshot，否则祖先抑制逻辑会导致所有子视图变为空白。
-    if (self.windowObject && !self.layerObject && !self.viewObject) {
+    LookinDisplayItemNodeKind nodeKind = self.resolvedNodeKind;
+    if (nodeKind == LookinDisplayItemNodeKindWindow || nodeKind == LookinDisplayItemNodeKindWindowScene) {
         return NO;
     }
     return LKShouldFallbackToGroupScreenshot(self.soloScreenshot, self.groupScreenshot);
@@ -328,6 +340,9 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
     if ([self.windowObject.memoryAddress containsString:searchString]) {
         return YES;
     }
+    if ([self.kindObject.memoryAddress containsString:searchString]) {
+        return YES;
+    }
     return NO;
 }
 
@@ -373,7 +388,7 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
     if (!targetClassNames.count) {
         return NO;
     }
-    LookinObject *selfObj = self.windowObject ? : self.viewObject ? : self.layerObject;
+    LookinObject *selfObj = self.displayingObject;
     if (!selfObj) {
         return NO;
     }
@@ -398,7 +413,8 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
 - (BOOL)lk_isSwiftUISupportRelated {
     if (LKObjectLooksLikeSwiftUISupport(self.viewObject) ||
         LKObjectLooksLikeSwiftUISupport(self.layerObject) ||
-        LKObjectLooksLikeSwiftUISupport(self.windowObject)) {
+        LKObjectLooksLikeSwiftUISupport(self.windowObject) ||
+        LKObjectLooksLikeSwiftUISupport(self.kindObject)) {
         return YES;
     }
 

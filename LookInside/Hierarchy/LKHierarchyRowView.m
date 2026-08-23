@@ -403,45 +403,58 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
     __block NSString *imageName = nil;
     if (item.isUserCustom) {
         imageName = @"hierarchy_custom";
-        
+
     } else if (item.hostViewControllerObject || item.hostWindowControllerObject) {
         imageName = @"hierarchy_controller";
-        
-    } else if (item.viewObject) {
-        [item.viewObject.classChainList enumerateObjectsUsingBlock:^(NSString * _Nonnull className, NSUInteger idx, BOOL * _Nonnull stop) {
-            imageName = [viewsList lookin_firstFiltered:^BOOL(NSDictionary<NSString *, NSString*> *obj) {
-                return !!obj[className];
-            }][className];
-            
-            if (imageName) {
-                *stop = YES;
-            }
-        }];
-        
-        if (!imageName) {
-            imageName = @"hierarchy_view";
+
+    } else {
+        switch (item.resolvedNodeKind) {
+            case LookinDisplayItemNodeKindView:
+                [item.viewObject.classChainList enumerateObjectsUsingBlock:^(NSString * _Nonnull className, NSUInteger idx, BOOL * _Nonnull stop) {
+                    imageName = [viewsList lookin_firstFiltered:^BOOL(NSDictionary<NSString *, NSString*> *obj) {
+                        return !!obj[className];
+                    }][className];
+
+                    if (imageName) {
+                        *stop = YES;
+                    }
+                }];
+
+                if (!imageName) {
+                    imageName = @"hierarchy_view";
+                }
+                break;
+
+            case LookinDisplayItemNodeKindLayer:
+                [item.layerObject.classChainList enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                    if ([obj isEqualToString:@"CAShapeLayer"]) {
+                        imageName = @"hierarchy_shapelayer";
+                        *stop = YES;
+                        return;
+                    }
+                    if ([obj isEqualToString:@"CAGradientLayer"]) {
+                        imageName = @"hierarchy_gradientlayer";
+                        *stop = YES;
+                        return;
+                    }
+                }];
+                if (!imageName) {
+                    imageName = @"hierarchy_layer";
+                }
+                break;
+
+            case LookinDisplayItemNodeKindWindow:
+            case LookinDisplayItemNodeKindWindowScene:
+                imageName = @"hierarchy_window";
+                break;
+
+            case LookinDisplayItemNodeKindLayoutGuide:
+            case LookinDisplayItemNodeKindCustom:
+            case LookinDisplayItemNodeKindUnspecified:
+                break;
         }
-        
-    } else if (item.layerObject) {
-        [item.layerObject.classChainList enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-            if ([obj isEqualToString:@"CAShapeLayer"]) {
-                imageName = @"hierarchy_shapelayer";
-                *stop = YES;
-                return;
-            }
-            if ([obj isEqualToString:@"CAGradientLayer"]) {
-                imageName = @"hierarchy_gradientlayer";
-                *stop = YES;
-                return;
-            }
-        }];
-        if (!imageName) {
-            imageName = @"hierarchy_layer";
-        }
-    } else if (item.windowObject) {
-        imageName = @"hierarchy_window";
     }
-    
+
     if (!imageName) {
         imageName = @"hierarchy_view";
     }

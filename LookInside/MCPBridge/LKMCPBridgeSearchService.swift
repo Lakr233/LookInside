@@ -240,7 +240,7 @@ public final class LKMCPBridgeSearchService {
         // of a debugger may name the layer even when the row represents
         // the view, and vice versa.
         var memoryAddresses: [String] = []
-        for candidateObject in [item.viewObject, item.layerObject, item.windowObject] {
+        for candidateObject in [item.viewObject, item.layerObject, item.windowObject, item.kindObject] {
             if let address = candidateObject?.memoryAddress, address.isEmpty == false {
                 memoryAddresses.append(address)
             }

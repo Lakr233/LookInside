@@ -807,6 +807,7 @@ final class LKPrivateDiscriminatorStore: NSObject, ObservableObject {
             item.viewObject,
             item.layerObject,
             item.windowObject,
+            item.kindObject,
             item.hostViewControllerObject,
             item.hostWindowControllerObject,
         ] {

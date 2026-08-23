@@ -228,19 +228,33 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
         return nil;
     }
 
-    // macOS 上优先使用 viewObject.oid，因为服务端的 detail handler 能为所有 NSView 对象
-    // （包括 layer-backed 的 SwiftUI 视图）截图。使用 layerObject.oid 可能访问到已释放的 layer。
-    // iOS 上优先使用 layerObject.oid，以匹配上游行为。
-    BOOL preferViewOid = [LKHelper appInfoLooksLikeMacTarget:self.dataSource.rawHierarchyInfo.appInfo];
     unsigned long oid = 0;
-    if (preferViewOid && item.viewObject.oid) {
-        oid = item.viewObject.oid;
-    } else if (item.layerObject.oid) {
-        oid = item.layerObject.oid;
-    } else if (item.viewObject.oid) {
-        oid = item.viewObject.oid;
-    } else if (item.windowObject.oid) {
-        oid = item.windowObject.oid;
+    switch (item.resolvedNodeKind) {
+        case LookinDisplayItemNodeKindWindow:
+        case LookinDisplayItemNodeKindWindowScene:
+            oid = item.windowObject.oid;
+            break;
+        case LookinDisplayItemNodeKindLayoutGuide:
+            oid = item.kindObject.oid;
+            break;
+        case LookinDisplayItemNodeKindCustom:
+            break;
+        case LookinDisplayItemNodeKindView:
+        case LookinDisplayItemNodeKindLayer:
+        case LookinDisplayItemNodeKindUnspecified: {
+            // macOS 上优先使用 viewObject.oid，因为服务端的 detail handler 能为所有 NSView 对象
+            // （包括 layer-backed 的 SwiftUI 视图）截图。使用 layerObject.oid 可能访问到已释放的 layer。
+            // iOS 上优先使用 layerObject.oid，以匹配上游行为。
+            BOOL preferViewOid = [LKHelper appInfoLooksLikeMacTarget:self.dataSource.rawHierarchyInfo.appInfo];
+            if (preferViewOid && item.viewObject.oid) {
+                oid = item.viewObject.oid;
+            } else if (item.layerObject.oid) {
+                oid = item.layerObject.oid;
+            } else if (item.viewObject.oid) {
+                oid = item.viewObject.oid;
+            }
+            break;
+        }
     }
     if (oid == 0) {
         return nil;
