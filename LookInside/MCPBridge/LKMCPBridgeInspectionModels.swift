@@ -92,6 +92,11 @@ public struct LKMCPBridgeViewNode: Sendable, Codable {
     /// touching a real view / layer.
     public let className: String
 
+    /// What the node is: "view" | "layer" | "window" | "windowScene" |
+    /// "layoutGuide" | "custom". Mapped from the display item's resolved
+    /// node kind, so it is present for old servers too (slot derivation).
+    public let nodeKind: String
+
     /// Frame in the root coordinate space (host calls this `frameToRoot`).
     public let frame: LKMCPBridgeRect
 
