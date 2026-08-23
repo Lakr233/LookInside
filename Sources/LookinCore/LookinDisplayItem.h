@@ -32,7 +32,9 @@ typedef NS_ENUM(NSUInteger, LookinDoNotFetchScreenshotReason) {
     // layer 尺寸过大
     LookinDoNotFetchScreenshotForTooLarge,
     // 被 LookinServer 的用户配置拒绝
-    LookinDoNotFetchScreenshotForUserConfig
+    LookinDoNotFetchScreenshotForUserConfig,
+    // 节点本身没有像素（layout guide 等）——不发截图任务，但照常进预览画线框
+    LookinDoNotFetchScreenshotForNoPixels
 };
 
 

@@ -62,6 +62,7 @@ LookinAttrGroupIdentifier const LookinAttrGroup_NSBox = @"NSBox";
 LookinAttrGroupIdentifier const LookinAttrGroup_NSSplitView = @"NSSplitView";
 LookinAttrGroupIdentifier const LookinAttrGroup_NSTabView = @"NSTabView";
 LookinAttrGroupIdentifier const LookinAttrGroup_NSGridView = @"NSGridView";
+LookinAttrGroupIdentifier const LookinAttrGroup_LayoutGuide = @"LayoutGuide";
 
 
 LookinAttrGroupIdentifier const LookinAttrGroup_UserCustom = @"guc"; // 用户自定义
@@ -327,6 +328,10 @@ LookinAttrSectionIdentifier const LookinAttrSec_NSTabView_Info = @"NSTabView_Inf
 LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Dimensions = @"NSGridView_Dimensions";
 LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Spacing = @"NSGridView_Spacing";
 LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Placement = @"NSGridView_Placement";
+
+LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_Identifier = @"LayoutGuide_Identifier";
+LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_LayoutFrame = @"LayoutGuide_LayoutFrame";
+LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_OwningView = @"LayoutGuide_OwningView";
 
 #pragma mark - Attr
 
@@ -842,5 +847,9 @@ LookinAttrIdentifier const LookinAttr_NSGridView_Spacing_RowSpacing = @"NSGridVi
 LookinAttrIdentifier const LookinAttr_NSGridView_Spacing_ColumnSpacing = @"NSGridView_Spacing_ColumnSpacing";
 LookinAttrIdentifier const LookinAttr_NSGridView_Placement_XPlacement = @"NSGridView_Placement_XPlacement";
 LookinAttrIdentifier const LookinAttr_NSGridView_Placement_YPlacement = @"NSGridView_Placement_YPlacement";
+
+LookinAttrIdentifier const LookinAttr_LayoutGuide_Identifier_Identifier = @"LayoutGuide_Identifier_Identifier";
+LookinAttrIdentifier const LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame = @"LayoutGuide_LayoutFrame_LayoutFrame";
+LookinAttrIdentifier const LookinAttr_LayoutGuide_OwningView_OwningView = @"LayoutGuide_OwningView_OwningView";
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

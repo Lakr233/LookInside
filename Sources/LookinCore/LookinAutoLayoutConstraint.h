@@ -51,8 +51,8 @@ typedef NS_ENUM(NSInteger, LookinConstraintEndpoint) {
 
 /// The item object a jump control for the given endpoint must navigate to:
 /// the first endpoint jumps to firstItem, the second endpoint to secondItem.
-/// Returns nil when that endpoint is not a view (only view endpoints have a
-/// node in the hierarchy to jump to today).
+/// Returns nil when that endpoint has no node in the hierarchy to land on —
+/// view and layout guide endpoints are jumpable, everything else is not.
 - (LookinObject *)jumpableItemObjectForEndpoint:(LookinConstraintEndpoint)endpoint;
 
 @end

@@ -66,6 +66,8 @@
             LookinAttrGroup_NSTabView,
             LookinAttrGroup_NSGridView,
 #endif
+            // Platform-neutral: LayoutGuide nodes exist on both platforms
+            LookinAttrGroup_LayoutGuide,
         ];
     });
     return array;
@@ -421,6 +423,11 @@
                 LookinAttrSec_NSGridView_Placement,
             ],
 #endif
+            LookinAttrGroup_LayoutGuide: @[
+                LookinAttrSec_LayoutGuide_Identifier,
+                LookinAttrSec_LayoutGuide_LayoutFrame,
+                LookinAttrSec_LayoutGuide_OwningView,
+            ],
             
         };
     });
@@ -1296,6 +1303,15 @@
                 LookinAttr_NSGridView_Placement_YPlacement,
             ],
 #endif
+            LookinAttrSec_LayoutGuide_Identifier: @[
+                LookinAttr_LayoutGuide_Identifier_Identifier,
+            ],
+            LookinAttrSec_LayoutGuide_LayoutFrame: @[
+                LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame,
+            ],
+            LookinAttrSec_LayoutGuide_OwningView: @[
+                LookinAttr_LayoutGuide_OwningView_OwningView,
+            ],
         };
     });
     return dict[sectionID];
@@ -1375,6 +1391,9 @@
             LookinAttrGroup_NSSplitView:        @"NSSplitView",
             LookinAttrGroup_NSTabView:          @"NSTabView",
             LookinAttrGroup_NSGridView:         @"NSGridView",
+            // Platform-neutral; the host renders it as UILayoutGuide or
+            // NSLayoutGuide depending on the inspected app's platform.
+            LookinAttrGroup_LayoutGuide:        @"LayoutGuide",
 #if TARGET_OS_IPHONE
             LookinAttrGroup_ViewLayer: @"CALayer / UIView",
 #else
@@ -1591,6 +1610,10 @@
             LookinAttrSec_NSGridView_Dimensions: @"Dimensions",
             LookinAttrSec_NSGridView_Spacing: @"Spacing",
             LookinAttrSec_NSGridView_Placement: @"Placement",
+            // LayoutGuide
+            LookinAttrSec_LayoutGuide_Identifier: @"Identifier",
+            LookinAttrSec_LayoutGuide_LayoutFrame: @"LayoutFrame",
+            LookinAttrSec_LayoutGuide_OwningView: @"OwningView",
             // UIWindowScene
             LookinAttrSec_UIWindowScene_State: @"State",
             LookinAttrSec_UIWindowScene_Title: @"Title",
@@ -1789,6 +1812,40 @@
                 @"fullTitle": @"TintAdjustmentMode",
                 @"enumList": @"UIViewTintAdjustmentMode",
                 @"patch": @(YES)
+            },
+            LookinAttr_LayoutGuide_Identifier_Identifier: @{
+#if TARGET_OS_IPHONE
+                @"className": @"UILayoutGuide",
+#else
+                @"className": @"NSLayoutGuide",
+#endif
+                @"fullTitle": @"Identifier",
+                @"getterString": @"identifier",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame: @{
+#if TARGET_OS_IPHONE
+                @"className": @"UILayoutGuide",
+#else
+                @"className": @"NSLayoutGuide",
+#endif
+                @"fullTitle": @"LayoutFrame",
+                @"getterString": @"lks_layoutFrame",
+                @"setterString": @""
+            },
+            LookinAttr_LayoutGuide_OwningView_OwningView: @{
+#if TARGET_OS_IPHONE
+                @"className": @"UILayoutGuide",
+#else
+                @"className": @"NSLayoutGuide",
+#endif
+                @"fullTitle": @"OwningView",
+                @"getterString": @"lks_owningViewDescription",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
             },
             LookinAttr_ViewLayer_Tag_Tag: @{
 #if TARGET_OS_IPHONE

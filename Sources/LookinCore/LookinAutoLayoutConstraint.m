@@ -100,12 +100,18 @@
     return self;
 }
 
+static BOOL LookinConstraintItemTypeIsJumpable(LookinConstraintItemType itemType) {
+    // View endpoints have always had a node to land on; layout guide
+    // endpoints gained one when guides entered the hierarchy tree.
+    return itemType == LookinConstraintItemTypeView || itemType == LookinConstraintItemTypeLayoutGuide;
+}
+
 - (LookinObject *)jumpableItemObjectForEndpoint:(LookinConstraintEndpoint)endpoint {
     switch (endpoint) {
         case LookinConstraintEndpointFirst:
-            return (self.firstItemType == LookinConstraintItemTypeView) ? self.firstItem : nil;
+            return LookinConstraintItemTypeIsJumpable(self.firstItemType) ? self.firstItem : nil;
         case LookinConstraintEndpointSecond:
-            return (self.secondItemType == LookinConstraintItemTypeView) ? self.secondItem : nil;
+            return LookinConstraintItemTypeIsJumpable(self.secondItemType) ? self.secondItem : nil;
     }
     return nil;
 }

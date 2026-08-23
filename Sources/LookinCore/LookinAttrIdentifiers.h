@@ -60,6 +60,8 @@ extern LookinAttrGroupIdentifier const LookinAttrGroup_NSBox;
 extern LookinAttrGroupIdentifier const LookinAttrGroup_NSSplitView;
 extern LookinAttrGroupIdentifier const LookinAttrGroup_NSTabView;
 extern LookinAttrGroupIdentifier const LookinAttrGroup_NSGridView;
+// Platform-neutral group shared by UILayoutGuide and NSLayoutGuide nodes
+extern LookinAttrGroupIdentifier const LookinAttrGroup_LayoutGuide;
 
 // UITraitCollection
 extern LookinAttrGroupIdentifier const LookinAttrGroup_UITraitCollection;
@@ -341,6 +343,10 @@ extern LookinAttrSectionIdentifier const LookinAttrSec_NSTabView_Info;
 extern LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Dimensions;
 extern LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Spacing;
 extern LookinAttrSectionIdentifier const LookinAttrSec_NSGridView_Placement;
+
+extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_Identifier;
+extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_LayoutFrame;
+extern LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_OwningView;
 
 
 #pragma mark - Attr
@@ -1228,5 +1234,9 @@ extern LookinAttrIdentifier const LookinAttr_NSGridView_Spacing_RowSpacing;
 extern LookinAttrIdentifier const LookinAttr_NSGridView_Spacing_ColumnSpacing;
 extern LookinAttrIdentifier const LookinAttr_NSGridView_Placement_XPlacement;
 extern LookinAttrIdentifier const LookinAttr_NSGridView_Placement_YPlacement;
+
+extern LookinAttrIdentifier const LookinAttr_LayoutGuide_Identifier_Identifier;
+extern LookinAttrIdentifier const LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame;
+extern LookinAttrIdentifier const LookinAttr_LayoutGuide_OwningView_OwningView;
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */
