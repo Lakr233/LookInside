@@ -178,6 +178,11 @@
             MakeItem(@"NSTextAlignmentJustified", 3),
             MakeItem(@"NSTextAlignmentNatural", 4)
         ];
+        mData[@"NSCellType"] = @[
+            MakeItem(@"NSNullCellType", 0),
+            MakeItem(@"NSTextCellType", 1),
+            MakeItem(@"NSImageCellType", 2),
+        ];
         mData[@"NSButtonType"] = @[
             MakeItem(@"NSButtonTypeMomentaryLight", 0),
             MakeItem(@"NSButtonTypePushOnPushOff", 1),

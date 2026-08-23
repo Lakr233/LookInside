@@ -306,7 +306,8 @@
                 modification.targetOid = modifyingItem.windowObject.oid;
                 break;
             case LookinAttrTargetKindCell:
-                // Wired up in the NSCell phase; no cell attributes exist yet.
+                modification.targetOid = modifyingItem.cellObject.oid;
+                break;
             case LookinAttrTargetKindLayer:
                 modification.targetOid = modifyingItem.layerObject.oid;
                 break;
