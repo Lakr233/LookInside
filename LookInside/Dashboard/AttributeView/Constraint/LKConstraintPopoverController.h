@@ -12,7 +12,11 @@
 
 @interface LKConstraintPopoverController : LKBaseViewController
 
-- (instancetype)initWithConstraint:(LookinAutoLayoutConstraint *)constraint;
+/// canJumpToObject decides at render time whether an endpoint's jump button
+/// is enabled — a target can be absent from the current tree (released,
+/// not captured, or data predating oid identity). Pass nil to enable all.
+- (instancetype)initWithConstraint:(LookinAutoLayoutConstraint *)constraint
+                   canJumpToObject:(BOOL (^)(LookinObject *lookinObj))canJumpToObject;
 
 - (NSSize)contentSize;
 

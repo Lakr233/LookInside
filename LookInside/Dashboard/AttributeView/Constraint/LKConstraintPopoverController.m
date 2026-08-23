@@ -28,7 +28,8 @@
     CGFloat _textsViewMarginTop;
 }
 
-- (instancetype)initWithConstraint:(LookinAutoLayoutConstraint *)constraint {
+- (instancetype)initWithConstraint:(LookinAutoLayoutConstraint *)constraint
+                   canJumpToObject:(BOOL (^)(LookinObject *lookinObj))canJumpToObject {
     if (self = [self initWithContainerView:nil]) {
         _horInset = 5;
         _insetBottom = 10;
@@ -70,15 +71,11 @@
         
         LookinObject *firstJumpObject = [constraint jumpableItemObjectForEndpoint:LookinConstraintEndpointFirst];
         if (firstJumpObject) {
-            NSButton *button = [NSButton lk_buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
-            [button lookin_bindObject:firstJumpObject forKey:@"jumpObject"];
-            [self.textsView addButton:button atIndex:0];
+            [self.textsView addButton:[self _jumpButtonForObject:firstJumpObject canJumpToObject:canJumpToObject] atIndex:0];
         }
         LookinObject *secondJumpObject = [constraint jumpableItemObjectForEndpoint:LookinConstraintEndpointSecond];
         if (secondJumpObject) {
-            NSButton *button = [NSButton lk_buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
-            [button lookin_bindObject:secondJumpObject forKey:@"jumpObject"];
-            [self.textsView addButton:button atIndex:3];
+            [self.textsView addButton:[self _jumpButtonForObject:secondJumpObject canJumpToObject:canJumpToObject] atIndex:3];
         }
         
         self.textsView.texts = texts;
@@ -109,6 +106,17 @@
     resultSize.height += (_insetBottom + _textsViewMarginTop);
     
     return resultSize;
+}
+
+- (NSButton *)_jumpButtonForObject:(LookinObject *)jumpObject canJumpToObject:(BOOL (^)(LookinObject *lookinObj))canJumpToObject {
+    NSButton *button = [NSButton lk_buttonWithImage:NSImageMake(@"Icon_JumpDisclosure") target:self action:@selector(_handleJumpButton:)];
+    [button lookin_bindObject:jumpObject forKey:@"jumpObject"];
+    BOOL canJump = canJumpToObject ? canJumpToObject(jumpObject) : YES;
+    if (!canJump) {
+        button.enabled = NO;
+        button.toolTip = NSLocalizedString(@"This object is not in the current hierarchy — it may have been released, filtered out, or come from data captured before it had an identity.", nil);
+    }
+    return button;
 }
 
 - (void)_handleJumpButton:(NSButton *)button {
