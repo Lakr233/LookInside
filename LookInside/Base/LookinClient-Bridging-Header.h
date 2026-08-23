@@ -19,6 +19,7 @@
 #import "LookinDisplayItemDetail.h"
 #import "LookinStaticAsyncUpdateTask.h"
 #import "LookinDisplayItem.h"
+#import "LookinAutoLayoutConstraint.h"
 // Client-side display helpers (row title / subtitle, ancestor + subtree
 // walks, class-chain predicates). The MCPBridge search route needs the
 // same title and ancestry the inspector shows, and reimplementing them in

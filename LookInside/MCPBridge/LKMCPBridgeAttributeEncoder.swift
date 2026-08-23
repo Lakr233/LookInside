@@ -154,6 +154,9 @@ enum LKMCPBridgeAttributeEncoder {
             return Projection(kind: "json", value: encodeArbitraryJSON(rawValue))
 
         case .customObj:
+            if let constraints = rawValue as? [LookinAutoLayoutConstraint], constraints.isEmpty == false {
+                return Projection(kind: "constraints", value: encodeConstraints(constraints))
+            }
             return Projection(kind: "custom", value: encodeCustomObject(rawValue))
 
         @unknown default:
@@ -334,6 +337,74 @@ enum LKMCPBridgeAttributeEncoder {
             }
         }
         return encodeFallbackDescription(raw)
+    }
+
+    // MARK: - Constraints
+
+    private static func constraintItemTypeString(_ itemType: LookinConstraintItemType) -> String {
+        switch itemType {
+        case .`nil`: return "nil"
+        case .view: return "view"
+        case .`self`: return "self"
+        case .super: return "super"
+        case .layoutGuide: return "layoutGuide"
+        case .unknown: return "unknown"
+        @unknown default: return "unknown"
+        }
+    }
+
+    private static func constraintRelationString(_ relation: NSLayoutConstraint.Relation) -> String {
+        switch relation {
+        case .lessThanOrEqual: return "lessThanOrEqual"
+        case .equal: return "equal"
+        case .greaterThanOrEqual: return "greaterThanOrEqual"
+        @unknown default: return "unknown"
+        }
+    }
+
+    private static func encodeConstraintEndpoint(_ endpointObject: LookinObject?, itemType: LookinConstraintItemType) -> LKMCPBridgeJSONValue {
+        var fields: [String: LKMCPBridgeJSONValue] = [
+            "itemType": .string(constraintItemTypeString(itemType)),
+        ]
+        if let endpointObject, endpointObject.oid != 0 {
+            fields["objectIdentifier"] = .string(String(format: "0x%lx", endpointObject.oid))
+        }
+        if let className = endpointObject?.classChainList?.first {
+            fields["className"] = .string(className)
+        }
+        return .object(fields)
+    }
+
+    /// Structured projection of an AutoLayout constraints list — previously
+    /// this fell into the description-string fallback and lost every field.
+    /// The attribute numbers stay raw NSInteger values: UIKit and AppKit
+    /// assign different numbers to NSLayoutAttribute cases, and the bridge
+    /// does not know which platform produced the data.
+    private static func encodeConstraints(_ constraints: [LookinAutoLayoutConstraint]) -> LKMCPBridgeJSONValue {
+        let encodedConstraints: [LKMCPBridgeJSONValue] = constraints.map { constraint in
+            var fields: [String: LKMCPBridgeJSONValue] = [
+                "firstItem": encodeConstraintEndpoint(constraint.firstItem, itemType: constraint.firstItemType),
+                "firstAttributeRawValue": .integer(Int64(constraint.firstAttribute)),
+                "relation": .string(constraintRelationString(constraint.relation)),
+                "secondItem": encodeConstraintEndpoint(constraint.secondItem, itemType: constraint.secondItemType),
+                "secondAttributeRawValue": .integer(Int64(constraint.secondAttribute)),
+                "multiplier": .double(Double(constraint.multiplier)),
+                "constant": .double(Double(constraint.constant)),
+                "priority": .double(Double(constraint.priority)),
+                "isActive": .bool(constraint.active),
+                "isEffective": .bool(constraint.effective),
+            ]
+            if constraint.constraintOid != 0 {
+                // The same constraint appears in both endpoints' lists; this
+                // identifier is what lets an agent deduplicate the copies.
+                fields["constraintObjectIdentifier"] = .string(String(format: "0x%lx", constraint.constraintOid))
+            }
+            if let identifier = constraint.identifier, identifier.isEmpty == false {
+                fields["identifier"] = .string(identifier)
+            }
+            return .object(fields)
+        }
+        return .array(encodedConstraints)
     }
 
     private static func encodeCustomObject(_ raw: Any?) -> LKMCPBridgeJSONValue? {
