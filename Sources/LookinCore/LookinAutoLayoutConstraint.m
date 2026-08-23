@@ -100,6 +100,16 @@
     return self;
 }
 
+- (LookinObject *)jumpableItemObjectForEndpoint:(LookinConstraintEndpoint)endpoint {
+    switch (endpoint) {
+        case LookinConstraintEndpointFirst:
+            return (self.firstItemType == LookinConstraintItemTypeView) ? self.firstItem : nil;
+        case LookinConstraintEndpointSecond:
+            return (self.secondItemType == LookinConstraintItemTypeView) ? self.secondItem : nil;
+    }
+    return nil;
+}
+
 @end
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

@@ -1671,14 +1671,17 @@
                 @"fullTitle": @"Bounds",
                 @"patch": @(YES)
             },
+            // Attributes that exist on both platforms must appear exactly once
+            // in this literal, with the className split by preprocessor. Two
+            // entries under the same key silently drop one platform: the first
+            // entry wins, so the other platform's className resolves to nil
+            // and the row vanishes from the dashboard.
             LookinAttr_Layout_SafeArea_SafeArea: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
-                @"fullTitle": @"SafeAreaInsets",
-                @"setterString": @"",
-                @"osVersion": @(11)
-            },
-            LookinAttr_Layout_SafeArea_SafeArea: @{
+#else
                 @"className": @"NSView",
+#endif
                 @"fullTitle": @"SafeAreaInsets",
                 @"setterString": @"",
                 @"osVersion": @(11)
@@ -1694,7 +1697,11 @@
                 @"patch": @(YES)
             },
             LookinAttr_AutoLayout_Hugging_Hor: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
+#else
+                @"className": @"NSView",
+#endif
                 @"fullTitle": @"ContentHuggingPriority(Horizontal)",
                 @"getterString": @"lks_horizontalContentHuggingPriority",
                 @"setterString": @"setLks_horizontalContentHuggingPriority:",
@@ -1702,7 +1709,11 @@
                 @"patch": @(YES)
             },
             LookinAttr_AutoLayout_Hugging_Ver: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
+#else
+                @"className": @"NSView",
+#endif
                 @"fullTitle": @"ContentHuggingPriority(Vertical)",
                 @"getterString": @"lks_verticalContentHuggingPriority",
                 @"setterString": @"setLks_verticalContentHuggingPriority:",
@@ -1710,7 +1721,11 @@
                 @"patch": @(YES)
             },
             LookinAttr_AutoLayout_Resistance_Hor: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
+#else
+                @"className": @"NSView",
+#endif
                 @"fullTitle": @"ContentCompressionResistancePriority(Horizontal)",
                 @"getterString": @"lks_horizontalContentCompressionResistancePriority",
                 @"setterString": @"setLks_horizontalContentCompressionResistancePriority:",
@@ -1718,7 +1733,11 @@
                 @"patch": @(YES)
             },
             LookinAttr_AutoLayout_Resistance_Ver: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
+#else
+                @"className": @"NSView",
+#endif
                 @"fullTitle": @"ContentCompressionResistancePriority(Vertical)",
                 @"getterString": @"lks_verticalContentCompressionResistancePriority",
                 @"setterString": @"setLks_verticalContentCompressionResistancePriority:",
@@ -1726,58 +1745,22 @@
                 @"patch": @(YES)
             },
             LookinAttr_AutoLayout_Constraints_Constraints: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
+#else
+                @"className": @"NSView",
+#endif
                 @"getterString": @"lks_constraints",
                 @"setterString": @"",
                 @"typeIfObj": @(LookinAttrTypeCustomObj),
                 @"hideIfNil": @(YES)
             },
             LookinAttr_AutoLayout_IntrinsicSize_Size: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
-                @"fullTitle": @"IntrinsicContentSize",
-                @"setterString": @""
-            },
-            LookinAttr_AutoLayout_Hugging_Hor: @{
+#else
                 @"className": @"NSView",
-                @"fullTitle": @"ContentHuggingPriority(Horizontal)",
-                @"getterString": @"lks_horizontalContentHuggingPriority",
-                @"setterString": @"setLks_horizontalContentHuggingPriority:",
-                @"briefTitle": @"H",
-                @"patch": @(YES)
-            },
-            LookinAttr_AutoLayout_Hugging_Ver: @{
-                @"className": @"NSView",
-                @"fullTitle": @"ContentHuggingPriority(Vertical)",
-                @"getterString": @"lks_verticalContentHuggingPriority",
-                @"setterString": @"setLks_verticalContentHuggingPriority:",
-                @"briefTitle": @"V",
-                @"patch": @(YES)
-            },
-            LookinAttr_AutoLayout_Resistance_Hor: @{
-                @"className": @"NSView",
-                @"fullTitle": @"ContentCompressionResistancePriority(Horizontal)",
-                @"getterString": @"lks_horizontalContentCompressionResistancePriority",
-                @"setterString": @"setLks_horizontalContentCompressionResistancePriority:",
-                @"briefTitle": @"H",
-                @"patch": @(YES)
-            },
-            LookinAttr_AutoLayout_Resistance_Ver: @{
-                @"className": @"NSView",
-                @"fullTitle": @"ContentCompressionResistancePriority(Vertical)",
-                @"getterString": @"lks_verticalContentCompressionResistancePriority",
-                @"setterString": @"setLks_verticalContentCompressionResistancePriority:",
-                @"briefTitle": @"V",
-                @"patch": @(YES)
-            },
-            LookinAttr_AutoLayout_Constraints_Constraints: @{
-                @"className": @"NSView",
-                @"getterString": @"lks_constraints",
-                @"setterString": @"",
-                @"typeIfObj": @(LookinAttrTypeCustomObj),
-                @"hideIfNil": @(YES)
-            },
-            LookinAttr_AutoLayout_IntrinsicSize_Size: @{
-                @"className": @"NSView",
+#endif
                 @"fullTitle": @"IntrinsicContentSize",
                 @"setterString": @""
             },
@@ -1808,14 +1791,11 @@
                 @"patch": @(YES)
             },
             LookinAttr_ViewLayer_Tag_Tag: @{
+#if TARGET_OS_IPHONE
                 @"className": @"UIView",
-                @"fullTitle": @"Tag",
-                @"briefTitle": @"",
-                @"patch": @(NO)
-            },
-            
-            LookinAttr_ViewLayer_Tag_Tag: @{
+#else
                 @"className": @"NSView",
+#endif
                 @"fullTitle": @"Tag",
                 @"briefTitle": @"",
                 @"patch": @(NO)

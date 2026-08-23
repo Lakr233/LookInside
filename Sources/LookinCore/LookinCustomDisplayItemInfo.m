@@ -8,6 +8,8 @@
 //
 
 #import "LookinCustomDisplayItemInfo.h"
+#import "LookinDefines.h"
+#import "NSValue+Lookin.h"
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #endif
@@ -58,6 +60,13 @@
 
 + (BOOL)supportsSecureCoding {
     return YES;
+}
+
+- (BOOL)hasValidFrame {
+    if (!self.frameInWindow) {
+        return NO;
+    }
+    return LookinIsUsableRect([self.frameInWindow CGRectValue]);
 }
 
 @end

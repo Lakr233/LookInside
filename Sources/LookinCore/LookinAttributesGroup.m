@@ -87,7 +87,7 @@
 }
 
 - (BOOL)isUserCustom {
-    return [self.identifier isEqualToString:LookinAttrSec_UserCustom];
+    return [self.identifier isEqualToString:LookinAttrGroup_UserCustom];
 }
 
 @end

@@ -129,6 +129,18 @@ typedef NS_ENUM(NSUInteger, LookinDisplayItemProperty) {
 /// 如果存在 viewObject 则返回 viewObject，否则返回 layerObject
 - (LookinObject *)displayingObject;
 
+/// Whether the item carries usable geometry: for custom items the
+/// frameInWindow value, for everything else the frame itself, must be a
+/// finite, reasonable rectangle.
+- (BOOL)hasValidFrameToRoot;
+
+/// The item's rectangle in the root coordinate space, composed by walking up
+/// the ancestor chain (subtracting each ancestor's bounds origin and flipping
+/// for flipped ancestors). Returns CGRectZero whenever the item — or any
+/// ancestor the walk composes — has no usable geometry, so callers never
+/// receive NaN or infinite components.
+- (CGRect)calculateFrameToRoot;
+
 /// 在 hierarchy 中的层级，比如顶层的 UIWindow.indentLevel 为 0，UIWindow 的 subitem 的 indentLevel 为 1
 - (NSInteger)indentLevel;
 

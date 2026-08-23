@@ -23,6 +23,11 @@ typedef NS_ENUM(NSInteger, LookinConstraintItemType) {
     LookinConstraintItemTypeLayoutGuide
 };
 
+typedef NS_ENUM(NSInteger, LookinConstraintEndpoint) {
+    LookinConstraintEndpointFirst = 0,
+    LookinConstraintEndpointSecond = 1,
+};
+
 @interface LookinAutoLayoutConstraint : NSObject <NSSecureCoding>
 
 + (instancetype)instanceFromNSConstraint:(NSLayoutConstraint *)constraint isEffective:(BOOL)isEffective firstItemType:(LookinConstraintItemType)firstItemType secondItemType:(LookinConstraintItemType)secondItemType;
@@ -43,6 +48,12 @@ typedef NS_ENUM(NSInteger, LookinConstraintItemType) {
 @property(nonatomic, assign) CGFloat constant;
 @property(nonatomic, assign) CGFloat priority;
 @property(nonatomic, copy) NSString *identifier;
+
+/// The item object a jump control for the given endpoint must navigate to:
+/// the first endpoint jumps to firstItem, the second endpoint to secondItem.
+/// Returns nil when that endpoint is not a view (only view endpoints have a
+/// node in the hierarchy to jump to today).
+- (LookinObject *)jumpableItemObjectForEndpoint:(LookinConstraintEndpoint)endpoint;
 
 @end
 

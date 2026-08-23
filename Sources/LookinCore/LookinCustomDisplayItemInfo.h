@@ -14,6 +14,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 该属性可能有值（CGRect）也可能是 nil（nil 时则表示无图像）
 @property(nonatomic, strong, nullable) NSValue *frameInWindow;
+
+/// Whether frameInWindow holds a finite, reasonable rectangle.
+- (BOOL)hasValidFrame;
 @property(nonatomic, copy, nullable) NSString *title;
 @property(nonatomic, copy, nullable) NSString *subtitle;
 @property(nonatomic, copy, nullable) NSString *danceuiSource;

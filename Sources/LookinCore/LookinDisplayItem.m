@@ -17,6 +17,7 @@
 #import "Color+Lookin.h"
 #import "NSArray+Lookin.h"
 #import "NSObject+Lookin.h"
+#import "NSValue+Lookin.h"
 #import "LookinDashboardBlueprint.h"
 
 #if TARGET_OS_IPHONE
@@ -191,6 +192,45 @@
 
 - (LookinObject *)displayingObject {
     return self.windowObject ? : self.viewObject ? : self.layerObject;
+}
+
+- (BOOL)hasValidFrameToRoot {
+    if (self.customInfo) {
+        return [self.customInfo hasValidFrame];
+    }
+    return LookinIsUsableRect(self.frame);
+}
+
+- (CGRect)calculateFrameToRoot {
+    if (self.customInfo) {
+        return [self hasValidFrameToRoot] ? [self.customInfo.frameInWindow CGRectValue] : CGRectZero;
+    }
+    if (!LookinIsUsableRect(self.frame)) {
+        return CGRectZero;
+    }
+    if (!self.superItem) {
+        return self.frame;
+    }
+
+    CGRect superFrameToRoot = [self.superItem calculateFrameToRoot];
+    CGRect superBounds = self.superItem.bounds;
+    if (!LookinIsUsableRect(superBounds)) {
+        superBounds = CGRectZero;
+    }
+    CGRect selfFrame = self.frame;
+
+    CGFloat x = selfFrame.origin.x - superBounds.origin.x + superFrameToRoot.origin.x;
+    CGFloat y;
+
+    if (self.superItem.isFlipped) {
+        y = superFrameToRoot.origin.y + (superBounds.size.height - selfFrame.origin.y - selfFrame.size.height);
+    } else {
+        y = selfFrame.origin.y - superBounds.origin.y + superFrameToRoot.origin.y;
+    }
+
+    CGFloat width = selfFrame.size.width;
+    CGFloat height = selfFrame.size.height;
+    return CGRectMake(x, y, width, height);
 }
 
 - (void)setAttributesGroupList:(NSArray<LookinAttributesGroup *> *)attributesGroupList {

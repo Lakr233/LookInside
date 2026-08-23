@@ -224,12 +224,37 @@ static const double LookinNodeImageMaxLengthInPx = 16384;
 
 typedef NS_OPTIONS(NSUInteger, LookinPreviewBitMask) {
     LookinPreviewBitMask_None = 0,
-    
+
     LookinPreviewBitMask_Selectable = 1 << 1,
     LookinPreviewBitMask_Unselectable = 1 << 2,
-    
+
     LookinPreviewBitMask_HasLight = 1 << 3,
     LookinPreviewBitMask_NoLight = 1 << 4
 };
+
+#pragma mark - Geometry
+
+/// Whether a rect reported by an inspected app is safe to feed into geometry
+/// math. NaN / Inf components poison every CGRect computation they touch and
+/// eventually reach layer and scene-graph geometry on the host, so they are
+/// rejected once here instead of at every call site. The magnitude bound
+/// matches the host's historical LKHelper validation.
+CG_INLINE BOOL LookinIsUsableRect(CGRect rect) {
+    if (CGRectIsNull(rect) || CGRectIsInfinite(rect)) {
+        return NO;
+    }
+    if (isnan(rect.origin.x) || isnan(rect.origin.y) || isnan(rect.size.width) || isnan(rect.size.height)) {
+        return NO;
+    }
+    if (isinf(rect.origin.x) || isinf(rect.origin.y) || isinf(rect.size.width) || isinf(rect.size.height)) {
+        return NO;
+    }
+    if (ABS(rect.origin.x) > 100000 || ABS(rect.origin.y) > 100000
+        || rect.size.width < 0 || rect.size.height < 0
+        || rect.size.width > 100000 || rect.size.height > 100000) {
+        return NO;
+    }
+    return YES;
+}
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */
