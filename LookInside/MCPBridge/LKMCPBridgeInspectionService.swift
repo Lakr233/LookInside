@@ -110,6 +110,13 @@ public final class LKMCPBridgeInspectionService {
             includeLayoutGuides = false
         }
 
+        let includeCells: Bool
+        if case .bool(let raw)? = parameters["includeCells"] {
+            includeCells = raw
+        } else {
+            includeCells = false
+        }
+
         guard let document = LKMCPBridgeLiveDocumentLookup.findLiveDocument(targetIdentifier: targetIdentifier) else {
             return .failure(
                 identifier: identifier,
@@ -149,7 +156,7 @@ public final class LKMCPBridgeInspectionService {
             rootItems = LKMCPBridgeLiveDocumentLookup.topLevelDisplayItems(in: document)
         }
 
-        let nodes = rootItems.map { makeViewNode(from: $0, remainingDepth: depth, includeLayoutGuides: includeLayoutGuides) }
+        let nodes = rootItems.map { makeViewNode(from: $0, remainingDepth: depth, includeLayoutGuides: includeLayoutGuides, includeCells: includeCells) }
         do {
             let payload = try encodeAsJSONValue(nodes)
             return .success(identifier: identifier, result: .object(["roots": payload]))
@@ -167,12 +174,13 @@ public final class LKMCPBridgeInspectionService {
         case .windowScene: return "windowScene"
         case .custom: return "custom"
         case .layoutGuide: return "layoutGuide"
+        case .cell: return "cell"
         case .unspecified: return "view"
         @unknown default: return "view"
         }
     }
 
-    private func makeViewNode(from item: LookinDisplayItem, remainingDepth: Int?, includeLayoutGuides: Bool) -> LKMCPBridgeViewNode {
+    private func makeViewNode(from item: LookinDisplayItem, remainingDepth: Int?, includeLayoutGuides: Bool, includeCells: Bool) -> LKMCPBridgeViewNode {
         let identity = LKMCPBridgeLiveDocumentLookup.objectIdentifierString(for: item)
         let className = item.displayingObject()?.classChainList?.first ?? ""
         let frame = LKMCPBridgeRect(cgRect: LKMCPBridgeLiveDocumentLookup.rootSpaceFrame(for: item))
@@ -182,6 +190,10 @@ public final class LKMCPBridgeInspectionService {
             // diff baselines do not drift when guide nodes enter the tree.
             subitems = subitems.filter { $0.resolvedNodeKind() != .layoutGuide }
         }
+        if includeCells == false {
+            // Same reasoning as includeLayoutGuides, for cell nodes.
+            subitems = subitems.filter { $0.resolvedNodeKind() != .cell }
+        }
         let childIdentifiers = subitems.map(LKMCPBridgeLiveDocumentLookup.objectIdentifierString(for:))
 
         let inlinedChildren: [LKMCPBridgeViewNode]?
@@ -189,7 +201,7 @@ public final class LKMCPBridgeInspectionService {
             inlinedChildren = nil
         } else {
             let nextDepth = remainingDepth.map { $0 - 1 }
-            inlinedChildren = subitems.map { makeViewNode(from: $0, remainingDepth: nextDepth, includeLayoutGuides: includeLayoutGuides) }
+            inlinedChildren = subitems.map { makeViewNode(from: $0, remainingDepth: nextDepth, includeLayoutGuides: includeLayoutGuides, includeCells: includeCells) }
         }
 
         return LKMCPBridgeViewNode(

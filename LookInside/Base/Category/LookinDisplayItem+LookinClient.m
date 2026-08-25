@@ -188,6 +188,7 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
         case LookinDisplayItemNodeKindWindowScene:
             return self.windowObject.oid;
         case LookinDisplayItemNodeKindLayoutGuide:
+        case LookinDisplayItemNodeKindCell:
             return self.kindObject.oid;
         case LookinDisplayItemNodeKindCustom:
             // Custom nodes carry no oid — a known limitation, out of scope

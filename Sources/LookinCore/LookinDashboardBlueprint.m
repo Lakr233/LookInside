@@ -431,6 +431,8 @@
             ],
             LookinAttrGroup_NSCell: @[
                 LookinAttrSec_NSCell_Cell,
+                LookinAttrSec_NSCell_Content,
+                LookinAttrSec_NSCell_Behavior,
                 LookinAttrSec_NSCell_ButtonCell,
                 LookinAttrSec_NSCell_TextFieldCell,
             ],
@@ -1330,14 +1332,32 @@
                 LookinAttr_NSCell_Cell_Alignment,
                 LookinAttr_NSCell_Cell_ControlSize,
             ],
+            LookinAttrSec_NSCell_Content: @[
+                LookinAttr_NSCell_Content_Title,
+                LookinAttr_NSCell_Content_FontName,
+                LookinAttr_NSCell_Content_FontSize,
+                LookinAttr_NSCell_Content_LineBreakMode,
+                LookinAttr_NSCell_Content_Wraps,
+            ],
+            LookinAttrSec_NSCell_Behavior: @[
+                LookinAttr_NSCell_Behavior_Tag,
+                LookinAttr_NSCell_Behavior_Continuous,
+                LookinAttr_NSCell_Behavior_AllowsMixedState,
+                LookinAttr_NSCell_Behavior_SendsActionOnEndEditing,
+            ],
             LookinAttrSec_NSCell_ButtonCell: @[
                 LookinAttr_NSCell_ButtonCell_BezelStyle,
                 LookinAttr_NSCell_ButtonCell_ImagePosition,
                 LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside,
+                LookinAttr_NSCell_ButtonCell_KeyEquivalent,
+                LookinAttr_NSCell_ButtonCell_AlternateTitle,
             ],
             LookinAttrSec_NSCell_TextFieldCell: @[
                 LookinAttr_NSCell_TextFieldCell_Placeholder,
                 LookinAttr_NSCell_TextFieldCell_DrawsBackground,
+                LookinAttr_NSCell_TextFieldCell_TextColor,
+                LookinAttr_NSCell_TextFieldCell_BackgroundColor,
+                LookinAttr_NSCell_TextFieldCell_BezelStyle,
             ],
         };
     });
@@ -1644,6 +1664,8 @@
             LookinAttrSec_LayoutGuide_OwningView: @"OwningView",
             // NSCell
             LookinAttrSec_NSCell_Cell: @"Cell",
+            LookinAttrSec_NSCell_Content: @"Content",
+            LookinAttrSec_NSCell_Behavior: @"Behavior",
             LookinAttrSec_NSCell_ButtonCell: @"NSButtonCell",
             LookinAttrSec_NSCell_TextFieldCell: @"NSTextFieldCell",
             // UIWindowScene
@@ -1976,6 +1998,104 @@
                 @"fullTitle": @"DrawsBackground",
                 @"getterString": @"drawsBackground",
                 @"setterString": @""
+            },
+            LookinAttr_NSCell_Content_Title: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Title",
+                @"getterString": @"title",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_Content_FontName: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"FontName",
+                @"getterString": @"lks_fontName",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_Content_FontSize: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"FontSize",
+                @"getterString": @"lks_fontSize",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Content_LineBreakMode: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"LineBreakMode",
+                @"getterString": @"lineBreakMode",
+                @"setterString": @"",
+                @"enumList": @"NSLineBreakMode"
+            },
+            LookinAttr_NSCell_Content_Wraps: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Wraps",
+                @"getterString": @"wraps",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Behavior_Tag: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Tag",
+                @"getterString": @"tag",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Behavior_Continuous: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"Continuous",
+                @"getterString": @"isContinuous",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Behavior_AllowsMixedState: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"AllowsMixedState",
+                @"getterString": @"allowsMixedState",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_Behavior_SendsActionOnEndEditing: @{
+                @"className": @"NSCell",
+                @"fullTitle": @"SendsActionOnEndEditing",
+                @"getterString": @"sendsActionOnEndEditing",
+                @"setterString": @""
+            },
+            LookinAttr_NSCell_ButtonCell_KeyEquivalent: @{
+                @"className": @"NSButtonCell",
+                @"fullTitle": @"KeyEquivalent",
+                @"getterString": @"keyEquivalent",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_ButtonCell_AlternateTitle: @{
+                @"className": @"NSButtonCell",
+                @"fullTitle": @"AlternateTitle",
+                @"getterString": @"alternateTitle",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeNSString),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_TextFieldCell_TextColor: @{
+                @"className": @"NSTextFieldCell",
+                @"fullTitle": @"TextColor",
+                @"getterString": @"textColor",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_TextFieldCell_BackgroundColor: @{
+                @"className": @"NSTextFieldCell",
+                @"fullTitle": @"BackgroundColor",
+                @"getterString": @"backgroundColor",
+                @"setterString": @"",
+                @"typeIfObj": @(LookinAttrTypeUIColor),
+                @"hideIfNil": @(YES)
+            },
+            LookinAttr_NSCell_TextFieldCell_BezelStyle: @{
+                @"className": @"NSTextFieldCell",
+                @"fullTitle": @"BezelStyle",
+                @"getterString": @"bezelStyle",
+                @"setterString": @"",
+                @"enumList": @"NSTextFieldBezelStyle"
             },
             LookinAttr_ViewLayer_Tag_Tag: @{
 #if TARGET_OS_IPHONE

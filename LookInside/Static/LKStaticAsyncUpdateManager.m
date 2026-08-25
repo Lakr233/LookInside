@@ -235,6 +235,7 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
             oid = item.windowObject.oid;
             break;
         case LookinDisplayItemNodeKindLayoutGuide:
+        case LookinDisplayItemNodeKindCell:
             oid = item.kindObject.oid;
             break;
         case LookinDisplayItemNodeKindCustom:

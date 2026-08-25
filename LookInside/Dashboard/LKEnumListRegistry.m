@@ -183,6 +183,10 @@
             MakeItem(@"NSTextCellType", 1),
             MakeItem(@"NSImageCellType", 2),
         ];
+        mData[@"NSTextFieldBezelStyle"] = @[
+            MakeItem(@"NSTextFieldSquareBezel", 0),
+            MakeItem(@"NSTextFieldRoundedBezel", 1),
+        ];
         mData[@"NSButtonType"] = @[
             MakeItem(@"NSButtonTypeMomentaryLight", 0),
             MakeItem(@"NSButtonTypePushOnPushOff", 1),

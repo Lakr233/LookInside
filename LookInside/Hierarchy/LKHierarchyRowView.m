@@ -449,6 +449,7 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
                 break;
 
             case LookinDisplayItemNodeKindLayoutGuide:
+            case LookinDisplayItemNodeKindCell:
             case LookinDisplayItemNodeKindCustom:
             case LookinDisplayItemNodeKindUnspecified:
                 break;

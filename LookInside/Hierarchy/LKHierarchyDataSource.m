@@ -233,9 +233,10 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
             }
         }
         
-        if (obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide) {
-            // A guide has no pixels: no screenshot task, but it stays in the
-            // preview as a wireframe box.
+        if (obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide
+            || obj.resolvedNodeKind == LookinDisplayItemNodeKindCell) {
+            // Guides and cells have no pixels: no screenshot task, but they
+            // stay in the preview as wireframe boxes.
             obj.doNotFetchScreenshotReason = LookinDoNotFetchScreenshotForNoPixels;
         }
         if (!obj.isUserCustom && !obj.shouldCaptureImage) {

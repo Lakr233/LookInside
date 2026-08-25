@@ -573,6 +573,8 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
                                                         LookinAttrSec_LayoutGuide_OwningView,
 
                                                         LookinAttrSec_NSCell_Cell,
+                                                        LookinAttrSec_NSCell_Content,
+                                                        LookinAttrSec_NSCell_Behavior,
                                                         LookinAttrSec_NSCell_ButtonCell,
                                                         LookinAttrSec_NSCell_TextFieldCell,
 

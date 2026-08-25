@@ -77,6 +77,9 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
     /// apart by customInfo.isSwiftUI, not by a separate kind).
     LookinDisplayItemNodeKindCustom      = 5,
     LookinDisplayItemNodeKindLayoutGuide = 6,
+    /// AppKit-only: an NSControl's cell as a child node of the control
+    /// (cell-node proposal). Wireframe preview, attributes read from the cell.
+    LookinDisplayItemNodeKindCell        = 7,
 };
 
 @interface LookinDisplayItem : NSObject <NSSecureCoding, NSCopying>
@@ -98,10 +101,10 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// guides). Drives the host's visibility toggle for such nodes.
 @property(nonatomic, assign) BOOL representsSystemManagedNode;
 
-/// AppKit only: the NSCell of an NSControl node. The cell is not a tree node
-/// of its own — its attributes ride on the control's node and route to this
-/// object (second-object routing, LookinAttrTargetKindCell). nil everywhere
-/// else, including Mac Catalyst, which is explicitly excluded server-side.
+/// Retired as of the cell-node proposal: cells are first-class tree nodes now
+/// (nodeKind Cell, riding kindObject), so servers no longer assign this. The
+/// declaration stays because the key shipped on the wire in 0.2.9 and wire
+/// rules are only-add-keys-never-remove. Always nil from 0.2.10 on.
 @property(nonatomic, strong) LookinObject *cellObject;
 
 /// nodeKind, falling back to a derivation from the legacy object slots when

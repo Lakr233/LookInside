@@ -335,6 +335,8 @@ LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_LayoutFrame = @"Layo
 LookinAttrSectionIdentifier const LookinAttrSec_LayoutGuide_OwningView = @"LayoutGuide_OwningView";
 
 LookinAttrSectionIdentifier const LookinAttrSec_NSCell_Cell = @"NSCell_Cell";
+LookinAttrSectionIdentifier const LookinAttrSec_NSCell_Content = @"NSCell_Content";
+LookinAttrSectionIdentifier const LookinAttrSec_NSCell_Behavior = @"NSCell_Behavior";
 LookinAttrSectionIdentifier const LookinAttrSec_NSCell_ButtonCell = @"NSCell_ButtonCell";
 LookinAttrSectionIdentifier const LookinAttrSec_NSCell_TextFieldCell = @"NSCell_TextFieldCell";
 
@@ -872,5 +874,19 @@ LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ImagePosition = @"NSCell
 LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside = @"NSCell_ButtonCell_ShowsBorderOnlyWhileMouseInside";
 LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_Placeholder = @"NSCell_TextFieldCell_Placeholder";
 LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_DrawsBackground = @"NSCell_TextFieldCell_DrawsBackground";
+LookinAttrIdentifier const LookinAttr_NSCell_Content_Title = @"NSCell_Content_Title";
+LookinAttrIdentifier const LookinAttr_NSCell_Content_FontName = @"NSCell_Content_FontName";
+LookinAttrIdentifier const LookinAttr_NSCell_Content_FontSize = @"NSCell_Content_FontSize";
+LookinAttrIdentifier const LookinAttr_NSCell_Content_LineBreakMode = @"NSCell_Content_LineBreakMode";
+LookinAttrIdentifier const LookinAttr_NSCell_Content_Wraps = @"NSCell_Content_Wraps";
+LookinAttrIdentifier const LookinAttr_NSCell_Behavior_Tag = @"NSCell_Behavior_Tag";
+LookinAttrIdentifier const LookinAttr_NSCell_Behavior_Continuous = @"NSCell_Behavior_Continuous";
+LookinAttrIdentifier const LookinAttr_NSCell_Behavior_AllowsMixedState = @"NSCell_Behavior_AllowsMixedState";
+LookinAttrIdentifier const LookinAttr_NSCell_Behavior_SendsActionOnEndEditing = @"NSCell_Behavior_SendsActionOnEndEditing";
+LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_KeyEquivalent = @"NSCell_ButtonCell_KeyEquivalent";
+LookinAttrIdentifier const LookinAttr_NSCell_ButtonCell_AlternateTitle = @"NSCell_ButtonCell_AlternateTitle";
+LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_TextColor = @"NSCell_TextFieldCell_TextColor";
+LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_BackgroundColor = @"NSCell_TextFieldCell_BackgroundColor";
+LookinAttrIdentifier const LookinAttr_NSCell_TextFieldCell_BezelStyle = @"NSCell_TextFieldCell_BezelStyle";
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */
