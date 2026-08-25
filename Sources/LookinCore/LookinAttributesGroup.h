@@ -41,6 +41,14 @@
 
 - (BOOL)isUserCustom;
 
+/// Hosts render one card per uniqueKey, so a list carrying the same key twice
+/// makes the shared card get laid out at two positions and leaves a blank gap
+/// at the first one. Makers must not emit duplicates, but the host dedupes
+/// through this as a defense so that already-shipped servers with the bug
+/// (0.2.8/0.2.9 duplicated the scene Layout group) still display correctly.
+/// Keeps the first occurrence of each uniqueKey; order is preserved.
++ (NSArray<LookinAttributesGroup *> *)groupsByKeepingFirstGroupForEachUniqueKey:(NSArray<LookinAttributesGroup *> *)groups;
+
 @end
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

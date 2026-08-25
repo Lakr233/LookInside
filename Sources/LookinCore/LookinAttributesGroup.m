@@ -90,6 +90,22 @@
     return [self.identifier isEqualToString:LookinAttrGroup_UserCustom];
 }
 
++ (NSArray<LookinAttributesGroup *> *)groupsByKeepingFirstGroupForEachUniqueKey:(NSArray<LookinAttributesGroup *> *)groups {
+    NSMutableSet<NSString *> *seenUniqueKeys = [NSMutableSet set];
+    NSMutableArray<LookinAttributesGroup *> *deduplicatedGroups = [NSMutableArray array];
+    for (LookinAttributesGroup *group in groups) {
+        NSString *uniqueKey = group.uniqueKey;
+        if (uniqueKey) {
+            if ([seenUniqueKeys containsObject:uniqueKey]) {
+                continue;
+            }
+            [seenUniqueKeys addObject:uniqueKey];
+        }
+        [deduplicatedGroups addObject:group];
+    }
+    return deduplicatedGroups;
+}
+
 @end
 
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

@@ -153,7 +153,7 @@
         $(self.cardContainerView).width(contentWidth).x(DashboardHorInset).y(self.headerView.$maxY + verMargin);
         
         __block CGFloat y = 0;
-        
+
         [self.groupList enumerateObjectsUsingBlock:^(LookinAttributesGroup * _Nonnull group, NSUInteger idx, BOOL * _Nonnull stop) {
             LKDashboardCardView *view = self.cardViews[group.uniqueKey];
             if (view && !view.hidden) {
@@ -161,7 +161,7 @@
                 y = view.$maxY + verMargin;
             }
         }];
-        
+
         $(self.cardContainerView).height(y);
         $(self.documentView).fullWidth.y(0).toMaxY(self.cardContainerView.$maxY);
     }
@@ -191,12 +191,16 @@
     if (!item) {
         return @[];
     }
-    return [[LKPrivateDiscriminatorStore shared] appendingPrivateDiscriminatorGroupToGroups:[item queryAllAttrGroupList] forDisplayItem:item];
+    NSArray<LookinAttributesGroup *> *groups = [[LKPrivateDiscriminatorStore shared] appendingPrivateDiscriminatorGroupToGroups:[item queryAllAttrGroupList] forDisplayItem:item];
+    // Cards are keyed by uniqueKey, so a duplicated key would lay the shared
+    // card out twice and leave a blank gap. Servers 0.2.8/0.2.9 actually sent
+    // a duplicate Layout group for UIWindowScene nodes.
+    return [LookinAttributesGroup groupsByKeepingFirstGroupForEachUniqueKey:groups];
 }
 
 - (void)reloadWithGroupList:(NSArray<LookinAttributesGroup *> *)list {
     self.groupList = list;
-    
+
     if (list.count > 0) {
         self.scrollView.hidden = NO;
     } else {
