@@ -302,12 +302,19 @@ static BOOL LKAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
                  LookinAttrGroup_NSWindow: NSImageMake(@"dashboard_layer"),
                  LookinAttrGroup_UIWindowScene: NSImageMake(@"dashboard_layer"),
                  LookinAttrGroup_UITraitCollection: NSImageMake(@"dashboard_layer"),
+                 LookinAttrGroup_LayoutGuide: NSImageMake(@"dashboard_autolayout"),
+                 LookinAttrGroup_NSCell: NSImageMake(@"dashboard_control"),
                  LookinAttrGroup_UserCustom: NSImageMake(@"dashboard_custom")
                  };
     });
     NSImage *image = dict[group.identifier];
-    NSAssert(image, @"");
-    return image;
+    // Every blueprint group needs an entry above — registering a new group
+    // means four host-side spots: this table, the group title, the default
+    // sections, and (if applicable) the enum lists. The fallback keeps an
+    // unregistered group rendering with a generic icon instead of crashing
+    // debug builds / blanking release builds.
+    NSAssert(image, @"missing dashboard icon for group %@", group.identifier);
+    return image ?: NSImageMake(@"dashboard_layer");
 }
 
 + (NSImage *)swiftUIAccentImage {
