@@ -4471,6 +4471,9 @@
         }
       }
     },
+    "Show system layout guides" : {
+
+    },
     "Some layer data failed to transmit." : {
       "localizations" : {
         "en" : {
@@ -5010,6 +5013,9 @@
           }
         }
       }
+    },
+    "This object is not in the current hierarchy — it may have been released, filtered out, or come from data captured before it had an identity." : {
+
     },
     "This object may not be a %@ or CALayer." : {
       "comment" : "%@ is NSView or UIView, depending on the inspected app",
