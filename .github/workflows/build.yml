@@ -51,6 +51,10 @@ jobs:
       - name: Show Xcode Version
         run: xcodebuild -version
 
+      - name: Validate Release Workflow
+        if: matrix.slug == 'macos'
+        run: bash Scripts/test-release-workflow.sh
+
       - name: Install xcbeautify
         run: brew install xcbeautify
 

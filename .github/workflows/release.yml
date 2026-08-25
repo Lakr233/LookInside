@@ -1,35 +1,10 @@
 name: Release
+run-name: ${{ github.event.client_payload.release_id }}
 
 on:
-  push:
-    tags:
-      - "*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Version to stamp into the release build, for example 2.2.0.
-        required: true
-        type: string
-      publish_appcast:
-        description: Publish the signed app to the Sparkle appcast.
-        required: false
-        default: false
-        type: boolean
-      publish_release:
-        description: Create or update the GitHub release for a manual run.
-        required: false
-        default: false
-        type: boolean
-      prune_appcast_versions:
-        description: Comma-separated versions to remove from the Sparkle appcast before signing.
-        required: false
-        default: ""
-        type: string
-      prune_appcast_deltas:
-        description: Remove existing Sparkle delta archives while pruning the appcast.
-        required: false
-        default: false
-        type: boolean
+  repository_dispatch:
+    types:
+      - parent-app-release
 
 permissions:
   contents: write
@@ -45,11 +20,11 @@ jobs:
     outputs:
       build_version: ${{ steps.context.outputs.build_version }}
       build_number: ${{ steps.context.outputs.build_number }}
-      publish_release: ${{ steps.context.outputs.publish_release }}
-      publish_appcast: ${{ steps.context.outputs.publish_appcast }}
       artifact_name: ${{ steps.context.outputs.artifact_name }}
-      prune_appcast_versions: ${{ steps.context.outputs.prune_appcast_versions }}
-      prune_appcast_deltas: ${{ steps.context.outputs.prune_appcast_deltas }}
+      source_ref: ${{ steps.context.outputs.source_ref }}
+      injector_ref: ${{ steps.context.outputs.injector_ref }}
+      mcp_ref: ${{ steps.context.outputs.mcp_ref }}
+      release_ref: ${{ steps.context.outputs.release_ref }}
 
     steps:
       - name: Validate Trigger Actor
@@ -63,6 +38,38 @@ jobs:
         id: context
         run: |
           set -euo pipefail
+          VERSION="${{ github.event.client_payload.version }}"
+          SOURCE_REF="${{ github.event.client_payload.source_ref }}"
+          INJECTOR_REF="${{ github.event.client_payload.injector_ref }}"
+          MCP_REF="${{ github.event.client_payload.mcp_ref }}"
+          RELEASE_REF="${{ github.event.client_payload.release_ref }}"
+          PARENT_REPOSITORY="${{ github.event.client_payload.parent_repository }}"
+          PARENT_REF="${{ github.event.client_payload.parent_ref }}"
+          PARENT_SHA="${{ github.event.client_payload.parent_sha }}"
+          RELEASE_ID="${{ github.event.client_payload.release_id }}"
+
+          [[ "$PARENT_REPOSITORY" == "LookInsideApp/LookInside-MonoRepo" ]] || {
+            echo "Release must be dispatched by the LookInside parent ledger." >&2
+            exit 1
+          }
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Release version must match X.Y.Z." >&2
+            exit 1
+          }
+          [[ "$PARENT_REF" == "refs/tags/release/app/$VERSION" ]] || {
+            echo "Parent ref does not match the app release version." >&2
+            exit 1
+          }
+          [[ "$PARENT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid parent SHA." >&2; exit 1; }
+          [[ "$SOURCE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid Host source SHA." >&2; exit 1; }
+          [[ "$INJECTOR_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid Injector source SHA." >&2; exit 1; }
+          [[ "$MCP_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid MCP source SHA." >&2; exit 1; }
+          [[ "$RELEASE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid Release source SHA." >&2; exit 1; }
+          [[ "$RELEASE_ID" == "release/app/$VERSION@$PARENT_SHA/host" ]] || {
+            echo "Release id does not identify the parent tag and commit." >&2
+            exit 1
+          }
+
           APPCAST_URL="https://lookinside-app.com/appcast.xml"
           APPCAST_PATH="${RUNNER_TEMP}/lookinside-appcast.xml"
           curl -fsSL "${APPCAST_URL}" -o "${APPCAST_PATH}"
@@ -93,50 +100,15 @@ jobs:
             exit 1
           fi
           echo "Resolved Sparkle build number ${BUILD_NUMBER} from ${APPCAST_URL}."
-          echo "build_number=${BUILD_NUMBER}" >> "${GITHUB_OUTPUT}"
-
-          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-            echo "build_version=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
-            echo "publish_release=true" >> "${GITHUB_OUTPUT}"
-            echo "publish_appcast=true" >> "${GITHUB_OUTPUT}"
-            echo "artifact_name=LookInside-${GITHUB_REF_NAME}-release" >> "${GITHUB_OUTPUT}"
-            echo "prune_appcast_versions=" >> "${GITHUB_OUTPUT}"
-            echo "prune_appcast_deltas=false" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          VERSION="${{ inputs.version }}"
-          PUBLISH_APPCAST="${{ inputs.publish_appcast }}"
-          PUBLISH_RELEASE="${{ inputs.publish_release }}"
-          PRUNE_APPCAST_VERSIONS="${{ inputs.prune_appcast_versions }}"
-          PRUNE_APPCAST_DELTAS="${{ inputs.prune_appcast_deltas }}"
-          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Manual run version must match x.y.z or vX.Y.Z" >&2
-            exit 1
-          fi
-          if [[ "${PUBLISH_APPCAST}" != "true" && "${PUBLISH_APPCAST}" != "false" ]]; then
-            echo "publish_appcast must be true or false." >&2
-            exit 1
-          fi
-          if [[ "${PUBLISH_RELEASE}" != "true" && "${PUBLISH_RELEASE}" != "false" ]]; then
-            echo "publish_release must be true or false." >&2
-            exit 1
-          fi
-          if [[ "${PRUNE_APPCAST_DELTAS}" != "true" && "${PRUNE_APPCAST_DELTAS}" != "false" ]]; then
-            echo "prune_appcast_deltas must be true or false." >&2
-            exit 1
-          fi
-
-          echo "build_version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "publish_release=${PUBLISH_RELEASE}" >> "${GITHUB_OUTPUT}"
-          echo "publish_appcast=${PUBLISH_APPCAST}" >> "${GITHUB_OUTPUT}"
-          echo "prune_appcast_versions=${PRUNE_APPCAST_VERSIONS}" >> "${GITHUB_OUTPUT}"
-          echo "prune_appcast_deltas=${PRUNE_APPCAST_DELTAS}" >> "${GITHUB_OUTPUT}"
-          if [[ "${PUBLISH_APPCAST}" == "true" ]]; then
-            echo "artifact_name=LookInside-${VERSION}-release" >> "${GITHUB_OUTPUT}"
-          else
-            echo "artifact_name=LookInside-${VERSION}-notarize-test" >> "${GITHUB_OUTPUT}"
-          fi
+          {
+            echo "build_number=${BUILD_NUMBER}"
+            echo "build_version=${VERSION}"
+            echo "artifact_name=LookInside-${VERSION}-release"
+            echo "source_ref=${SOURCE_REF}"
+            echo "injector_ref=${INJECTOR_REF}"
+            echo "mcp_ref=${MCP_REF}"
+            echo "release_ref=${RELEASE_REF}"
+          } >>"${GITHUB_OUTPUT}"
 
   build_package:
     needs: prepare
@@ -154,6 +126,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.source_ref }}
 
       - name: Show Xcode Version
         run: xcodebuild -version
@@ -181,9 +154,11 @@ jobs:
             echo "LOOKINSIDE_INJECTOR_READ_TOKEN or LOOKINSIDE_WEB_RELEASE_TOKEN is required to checkout LookInside-Injector." >&2
             exit 1
           fi
-          git clone --depth 1 \
+          git clone --no-checkout \
             "https://x-access-token:${LOOKINSIDE_INJECTOR_READ_TOKEN}@github.com/LookInsideApp/LookInside-Injector.git" \
             ../LookInside-Injector
+          git -C ../LookInside-Injector checkout --detach "${{ needs.prepare.outputs.injector_ref }}"
+          [[ "$(git -C ../LookInside-Injector rev-parse HEAD)" == "${{ needs.prepare.outputs.injector_ref }}" ]]
 
       - name: Checkout MCP Server
         env:
@@ -194,9 +169,11 @@ jobs:
             echo "LOOKINSIDE_PRIVATE_READ_TOKEN, LOOKINSIDE_WEB_RELEASE_TOKEN, or LOOKINSIDE_INJECTOR_READ_TOKEN is required to checkout LookInside-MCP." >&2
             exit 1
           fi
-          git clone --depth 1 \
+          git clone --no-checkout \
             "https://x-access-token:${LOOKINSIDE_MCP_READ_TOKEN}@github.com/LookInsideApp/LookInside-MCP.git" \
             ../LookInside-MCP
+          git -C ../LookInside-MCP checkout --detach "${{ needs.prepare.outputs.mcp_ref }}"
+          [[ "$(git -C ../LookInside-MCP rev-parse HEAD)" == "${{ needs.prepare.outputs.mcp_ref }}" ]]
 
       - name: Configure Private Package Access
         env:
@@ -264,6 +241,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.source_ref }}
 
       - name: Download Unsigned Artifacts
         uses: actions/download-artifact@v4
@@ -335,7 +313,7 @@ jobs:
       - name: Generate Checksums
         run: |
           cd dist
-          shasum -a 256 *.zip > checksums.txt
+          shasum -a 256 ./*.zip > checksums.txt
 
       - name: Upload Notarized Artifacts
         uses: actions/upload-artifact@v4
@@ -348,13 +326,17 @@ jobs:
           retention-days: 14
 
       - name: Detect Existing GitHub Release
-        if: needs.prepare.outputs.publish_release == 'true'
         id: release_state
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.build_version }}
         run: |
           set -euo pipefail
+          existing_target="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha' 2>/dev/null || true)"
+          if [[ -n "$existing_target" && "$existing_target" != "${{ needs.prepare.outputs.source_ref }}" ]]; then
+            echo "Existing tag $RELEASE_TAG points at $existing_target, not ${{ needs.prepare.outputs.source_ref }}." >&2
+            exit 1
+          fi
           error_file="$RUNNER_TEMP/release-state-error.txt"
           if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
             --silent 2>"$error_file"; then
@@ -369,10 +351,11 @@ jobs:
           exit 1
 
       - name: Publish GitHub Release
-        if: needs.prepare.outputs.publish_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
           tag_name: ${{ needs.prepare.outputs.build_version }}
+          target_commitish: ${{ needs.prepare.outputs.source_ref }}
           generate_release_notes: ${{ steps.release_state.outputs.exists != 'true' }}
           files: |
             dist/*.zip
@@ -380,7 +363,6 @@ jobs:
 
   publish_appcast:
     needs: [prepare, collect_release]
-    if: needs.prepare.outputs.publish_appcast == 'true'
     runs-on: macos-26
     timeout-minutes: 30
     env:
@@ -392,6 +374,7 @@ jobs:
         with:
           fetch-depth: 0
           path: app
+          ref: ${{ needs.prepare.outputs.source_ref }}
 
       - name: Download Release Artifact
         uses: actions/download-artifact@v4
@@ -437,17 +420,51 @@ jobs:
           path: secrets
           token: ${{ secrets.LOOKINSIDE_SECRETS_READ_TOKEN }}
 
+      - name: Checkout Release Tools
+        uses: actions/checkout@v4
+        with:
+          repository: LookInsideApp/LookInside-Release
+          ref: ${{ needs.prepare.outputs.release_ref }}
+          path: release-tools
+          token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+
+      - name: Download Pinned Auth Server Publication
+        env:
+          GH_TOKEN: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p auth-artifact
+          for asset in \
+            lookinside-auth-server.app.zip \
+            lookinside-auth-server.app.zip.sha256 \
+            lookinside-auth-server.app.zip.version; do
+            gh release download storage \
+              --repo LookInsideApp/LookInside-Release \
+              --pattern "$asset" \
+              --dir auth-artifact
+          done
+          [[ "$(tr -d '[:space:]' <auth-artifact/lookinside-auth-server.app.zip.version)" == "${{ needs.prepare.outputs.build_version }}" ]] || {
+            echo "Published Auth Server version does not match the app release." >&2
+            exit 1
+          }
+
+      - name: Stage Auth Server Metadata Into Web Repository
+        run: |
+          set -euo pipefail
+          bash release-tools/Scripts/sync-auth-server-assets-to-web.sh \
+            --web-dir web \
+            --asset auth-artifact/lookinside-auth-server.app.zip \
+            --url https://github.com/LookInsideApp/LookInside-Release/releases/download/storage/lookinside-auth-server.app.zip
+
       - name: Export GitHub Release Notes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [[ "${{ needs.prepare.outputs.publish_release }}" == "true" ]]; then
-            gh release view "${{ needs.prepare.outputs.build_version }}" \
-              --repo "${{ github.repository }}" \
-              --json body \
-              --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
-          fi
+          gh release view "${{ needs.prepare.outputs.build_version }}" \
+            --repo "${{ github.repository }}" \
+            --json body \
+            --jq '.body // ""' > "$RUNNER_TEMP/release-notes.md"
           if [[ ! -f "$RUNNER_TEMP/release-notes.md" || ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
             printf '# LookInside %s\n\nSparkle update build.\n' "${{ needs.prepare.outputs.build_version }}" > "$RUNNER_TEMP/release-notes.md"
           fi
@@ -472,8 +489,8 @@ jobs:
 
       - name: Publish Appcast Into Web Repository
         env:
-          PRUNE_APPCAST_VERSIONS: ${{ needs.prepare.outputs.prune_appcast_versions }}
-          PRUNE_APPCAST_DELTAS: ${{ needs.prepare.outputs.prune_appcast_deltas }}
+          PRUNE_APPCAST_VERSIONS: ""
+          PRUNE_APPCAST_DELTAS: "false"
           ASSET_DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.build_version }}/LookInside-${{ needs.prepare.outputs.build_version }}-macOS-app.zip
         run: |
           set -euo pipefail
@@ -492,7 +509,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/appcast.xml public/downloads/manifest.json public/downloads/lookinside
+          git add public/appcast.xml public/downloads/manifest.json public/downloads/auth-server public/downloads/lookinside
           if git diff --cached --quiet; then
             echo "No Web appcast changes to publish."
             exit 0
