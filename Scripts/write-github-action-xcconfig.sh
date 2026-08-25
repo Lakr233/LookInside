@@ -35,7 +35,7 @@ normalize_version() {
 	local raw="$1"
 	raw="${raw#refs/tags/}"
 	raw="${raw#v}"
-	[[ "$raw" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Invalid version '$1'. Expected x.y.z or vX.Y.Z."
+	[[ "$raw" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || fail "Invalid version '$1'. Expected canonical x.y.z or vX.Y.Z without leading zeroes."
 	echo "$raw"
 }
 
