@@ -332,10 +332,11 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.build_version }}
         run: |
           set -euo pipefail
-          existing_target="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha' 2>/dev/null || true)"
-          if [[ -n "$existing_target" && "$existing_target" != "${{ needs.prepare.outputs.source_ref }}" ]]; then
-            echo "Existing tag $RELEASE_TAG points at $existing_target, not ${{ needs.prepare.outputs.source_ref }}." >&2
-            exit 1
+          if existing_target="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha' 2>/dev/null)"; then
+            if [[ "$existing_target" != "${{ needs.prepare.outputs.source_ref }}" ]]; then
+              echo "Existing tag $RELEASE_TAG points at $existing_target, not ${{ needs.prepare.outputs.source_ref }}." >&2
+              exit 1
+            fi
           fi
           error_file="$RUNNER_TEMP/release-state-error.txt"
           if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \

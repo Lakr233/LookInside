@@ -34,10 +34,12 @@ assert_contains 'checkout --detach "${{ needs.prepare.outputs.injector_ref }}"'
 assert_contains 'checkout --detach "${{ needs.prepare.outputs.mcp_ref }}"'
 assert_contains 'token: ${{ secrets.LOOKINSIDE_WEB_RELEASE_TOKEN }}'
 assert_contains 'target_commitish: ${{ needs.prepare.outputs.source_ref }}'
+assert_contains 'if existing_target="$(gh api'
 assert_contains 'ref: ${{ needs.prepare.outputs.release_ref }}'
 assert_contains 'sync-auth-server-assets-to-web.sh'
 assert_contains 'public/downloads/auth-server'
 assert_absent "workflow_dispatch:"
 assert_absent "tags:"
+assert_absent '2>/dev/null || true'
 
 echo "host release workflow tests passed"
