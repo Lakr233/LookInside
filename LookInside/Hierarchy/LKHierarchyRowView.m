@@ -449,7 +449,13 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
                 break;
 
             case LookinDisplayItemNodeKindLayoutGuide:
+                imageName = @"hierarchy_layoutguide";
+                break;
+
             case LookinDisplayItemNodeKindCell:
+                imageName = @"hierarchy_cell";
+                break;
+
             case LookinDisplayItemNodeKindCustom:
             case LookinDisplayItemNodeKindUnspecified:
                 break;
