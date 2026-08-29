@@ -246,6 +246,20 @@ const CGFloat LookinPreviewMaxZInterspace = 1;
 
 - (void)_updateZIndexForItem:(LookinDisplayItem *)item {
     item.previewZIndex = -1;
+    // A pixelless overlay node (layout guide, cell) marks out a region of the
+    // node that owns it, so it belongs on that node's plane rather than on one
+    // of its own. It always overlaps its super item, so the rule below would
+    // push every guide a full plane forward and thicken the preview for
+    // nothing. Inheriting the super item's zIndex keeps them coplanar;
+    // offsetToAvoidOverlapBug in _updateZPositionByZIndex then nudges them a
+    // hair in front, which is exactly "drawn on its own view".
+    //
+    // flatDisplayItems runs parents before children, so the super item's
+    // zIndex read here was already computed in this same pass.
+    if (item.shouldRenderAsCoplanarPreviewOverlay && item.superItem) {
+        item.previewZIndex = MAX(item.superItem.previewZIndex, 0);
+        return;
+    }
     if (item.displayingInHierarchy) {
         LookinDisplayItem *referenceItem = [self _maxZIndexForOverlappedItemUnderItem:item];
         if (referenceItem) {

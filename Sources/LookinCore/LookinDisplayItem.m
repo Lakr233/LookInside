@@ -232,6 +232,16 @@
     return LookinDisplayItemNodeKindLayer;
 }
 
+- (BOOL)shouldRenderAsCoplanarPreviewOverlay {
+    switch (self.resolvedNodeKind) {
+        case LookinDisplayItemNodeKindLayoutGuide:
+        case LookinDisplayItemNodeKindCell:
+            return YES;
+        default:
+            return NO;
+    }
+}
+
 - (BOOL)hasValidFrameToRoot {
     if (self.customInfo) {
         return [self.customInfo hasValidFrame];

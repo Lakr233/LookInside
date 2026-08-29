@@ -111,6 +111,13 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// the field is Unspecified. All consumers read this, never nodeKind itself.
 - (LookinDisplayItemNodeKind)resolvedNodeKind;
 
+/// Whether this node has no pixels of its own and merely marks out a region of
+/// its super item (layout guides and cells). The preview keeps such a node on
+/// its super item's z plane instead of pushing it onto a plane of its own, and
+/// draws it only while it is selected or hovered — the way Xcode's view
+/// debugger outlines a layout guide inside the view that owns it.
+- (BOOL)shouldRenderAsCoplanarPreviewOverlay;
+
 @property(nonatomic, copy) NSArray<LookinDisplayItem *> *subitems;
 
 @property(nonatomic, assign) BOOL isHidden;

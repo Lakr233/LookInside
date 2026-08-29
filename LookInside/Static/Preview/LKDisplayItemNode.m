@@ -30,6 +30,13 @@
 @property(nonatomic, assign) BOOL isMacTarget;
 @end
 
+/// Rendering order added to a coplanar overlay node's border so it draws after
+/// every ordinary node. Paired with a depth-test-free material, this puts the
+/// highlight box on top of whatever the owning view has stacked over the
+/// region — a guide sitting under an opaque subview still shows its box.
+/// Comfortably above index * 10 + 2 for any hierarchy a person can open.
+static const NSInteger LookinPreviewOverlayBorderRenderingOrderBase = 1000000;
+
 @implementation LKDisplayItemNode
 
 - (instancetype)initWithDataSource:(LKHierarchyDataSource *)dataSource {
@@ -89,11 +96,14 @@
 
 - (void)setDisplayItem:(LookinDisplayItem *)displayItem {
     _displayItem = displayItem;
-    
+
 //    NSLog(@"LKDisplayItemNode - setContentPlane");
     /// 不能把 contents 设置成 nil，否则某些场景下会发生内容渲染错乱的情况
     self.contentPlane.firstMaterial.diffuse.contents = displayItem.backgroundColor ? : [NSColor clearColor];
-    
+    // Nodes are recycled across renders, so the rendering order has to be
+    // recomputed whenever the item changes and not only when the index does.
+    [self _updateRenderingOrder];
+
     /// 这一句会使得 displayItem:propertyDidChange: 被立即调用，参数是 LookinDisplayItemProperty_None
     displayItem.previewItemDelegate = self;
     
@@ -107,11 +117,19 @@
 
 - (void)setIndex:(NSUInteger)index {
 //    NSLog(@"LKDisplayItemNode - setIndex");
-    
+
     _index = index;
-    self.contentNode.renderingOrder = index * 10;
-    self.maskNode.renderingOrder = index * 10 + 1;
-    self.borderNode.renderingOrder = index * 10 + 2;
+    [self _updateRenderingOrder];
+}
+
+- (void)_updateRenderingOrder {
+    self.contentNode.renderingOrder = self.index * 10;
+    self.maskNode.renderingOrder = self.index * 10 + 1;
+    if (self.displayItem.shouldRenderAsCoplanarPreviewOverlay) {
+        self.borderNode.renderingOrder = LookinPreviewOverlayBorderRenderingOrderBase + self.index * 10 + 2;
+    } else {
+        self.borderNode.renderingOrder = self.index * 10 + 2;
+    }
 }
 
 - (void)_renderborderColor {
@@ -138,6 +156,14 @@
     SCNGeometry *geometry = [SCNGeometry geometryWithSources:@[vecSource] elements:@[indexElement]];
     geometry.firstMaterial.doubleSided = YES;
     geometry.firstMaterial.lightingModelName = SCNLightingModelConstant;
+    if (self.displayItem.shouldRenderAsCoplanarPreviewOverlay) {
+        // The box marks out a region of the owning view, so it has to stay
+        // readable even when that region is covered by opaque subviews. Those
+        // subviews sit in front of it on the z axis, so the depth test would
+        // otherwise discard it.
+        geometry.firstMaterial.readsFromDepthBuffer = NO;
+        geometry.firstMaterial.writesToDepthBuffer = NO;
+    }
     return geometry;
 }
 
@@ -174,6 +200,14 @@
         }
     }
     
+    if (self.displayItem.shouldRenderAsCoplanarPreviewOverlay) {
+        // Never hit-testable. A safe-area guide covers its whole view, and it
+        // now sits right on that view's plane, so leaving it selectable would
+        // mean every click landing on the view selects the guide instead. Such
+        // a node is selected from the hierarchy tree, the way Xcode does it.
+        canSelect = NO;
+    }
+
     if (canSelect) {
         self.contentNode.categoryBitMask = LookinPreviewBitMask_Selectable|LookinPreviewBitMask_NoLight;
     } else {
@@ -194,7 +228,18 @@
     self.contentPlane.firstMaterial.diffuse.contents = appropriateScreenshot ?: (self.displayItem.backgroundColor ?: [NSColor clearColor]);
     
     BOOL tooLargeToFetchScreenshot = !appropriateScreenshot && self.displayItem.doNotFetchScreenshotReason == LookinDoNotFetchScreenshotForTooLarge;
-    
+
+    if (self.displayItem.shouldRenderAsCoplanarPreviewOverlay) {
+        // Draw the box only while the node is the one being looked at. These
+        // nodes are coplanar with the view that owns them and there is one on
+        // almost every view (safe area, layout margins), so outlining them all
+        // the time would bury the preview under duplicated rectangles. No mask
+        // either: the point is to outline the region, not to tint it.
+        self.borderColor = (isSelected || isHovered) ? LookinColorMake(100, 146, 199) : [NSColor clearColor];
+        self.maskNode.opacity = 0;
+        return;
+    }
+
     // 更新 border 颜色
     if (isSelected || isHovered) {
         if (tooLargeToFetchScreenshot) {
