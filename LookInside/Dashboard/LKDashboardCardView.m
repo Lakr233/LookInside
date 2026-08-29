@@ -299,13 +299,43 @@ static BOOL LKAttrGroupLooksLikeSwiftUI(LookinAttributesGroup *group) {
                  LookinAttrGroup_NSTextField: NSImageMake(@"dashboard_textfield"),
                  LookinAttrGroup_NSVisualEffectView: NSImageMake(@"dashboard_effectview"),
                  LookinAttrGroup_NSStackView: NSImageMake(@"dashboard_stackview"),
-                 LookinAttrGroup_NSWindow: NSImageMake(@"dashboard_layer"),
-                 LookinAttrGroup_UIWindowScene: NSImageMake(@"dashboard_layer"),
-                 LookinAttrGroup_UITraitCollection: NSImageMake(@"dashboard_layer"),
-                 LookinAttrGroup_LayoutGuide: NSImageMake(@"dashboard_autolayout"),
-                 LookinAttrGroup_NSCell: NSImageMake(@"dashboard_control"),
+                 // NSControl subclasses share the green hue NSControl itself uses.
+                 LookinAttrGroup_NSSlider: NSImageMake(@"dashboard_slider"),
+                 LookinAttrGroup_NSStepper: NSImageMake(@"dashboard_stepper"),
+                 LookinAttrGroup_NSSwitch: NSImageMake(@"dashboard_switch"),
+                 LookinAttrGroup_NSSegmentedControl: NSImageMake(@"dashboard_segmentedcontrol"),
+                 LookinAttrGroup_NSLevelIndicator: NSImageMake(@"dashboard_levelindicator"),
+                 LookinAttrGroup_NSProgressIndicator: NSImageMake(@"dashboard_progressindicator"),
+                 LookinAttrGroup_NSPopUpButton: NSImageMake(@"dashboard_popupbutton"),
+                 LookinAttrGroup_NSComboBox: NSImageMake(@"dashboard_combobox"),
+                 LookinAttrGroup_NSColorWell: NSImageMake(@"dashboard_colorwell"),
+                 LookinAttrGroup_NSDatePicker: NSImageMake(@"dashboard_datepicker"),
+                 // Data containers share the blue hue NSTableView uses.
+                 LookinAttrGroup_NSOutlineView: NSImageMake(@"dashboard_outlineview"),
+                 LookinAttrGroup_NSCollectionView: NSImageMake(@"dashboard_collectionview"),
+                 LookinAttrGroup_NSGridView: NSImageMake(@"dashboard_gridview"),
+                 // Structural containers share the pink hue NSStackView uses.
+                 LookinAttrGroup_NSSplitView: NSImageMake(@"dashboard_splitview"),
+                 LookinAttrGroup_NSTabView: NSImageMake(@"dashboard_tabview"),
+                 LookinAttrGroup_NSBox: NSImageMake(@"dashboard_box"),
+                 // Window chrome gets a graphite hue no content group uses.
+                 LookinAttrGroup_NSWindow: NSImageMake(@"dashboard_window"),
+                 LookinAttrGroup_UIWindowScene: NSImageMake(@"dashboard_windowscene"),
+                 LookinAttrGroup_UITraitCollection: NSImageMake(@"dashboard_traitcollection"),
+                 LookinAttrGroup_LayoutGuide: NSImageMake(@"dashboard_layoutguide"),
+                 LookinAttrGroup_NSCell: NSImageMake(@"dashboard_cell"),
                  LookinAttrGroup_UserCustom: NSImageMake(@"dashboard_custom")
                  };
+#if DEBUG
+        // Fail on the first card rendered rather than only when someone happens
+        // to select the unregistered kind — that is how 16 AppKit control
+        // groups shipped falling back to a borrowed icon. Note this covers the
+        // groups compiled for this platform; the iOS-only groups this macOS
+        // host also renders still rely on the per-lookup assert below.
+        for (LookinAttrGroupIdentifier groupID in [LookinDashboardBlueprint groupIDs]) {
+            NSAssert(dict[groupID], @"missing dashboard icon for group %@", groupID);
+        }
+#endif
     });
     NSImage *image = dict[group.identifier];
     // Every blueprint group needs an entry above — registering a new group
