@@ -187,8 +187,15 @@
                 }
             }
 #endif
-            if (!object || ![object isKindOfClass:[CALayer class]]) {
-                itemDetail.failureCode = -1;
+            if (!object) {
+                // Routine, not a fault: the registry holds weakly and the
+                // inspected app's short-lived internals go away on their own.
+                // Hosts log this without alerting.
+                itemDetail.failureCode = LookinDisplayItemDetailFailureCodeObjectGone;
+                return itemDetail;
+            }
+            if (![object isKindOfClass:[CALayer class]]) {
+                itemDetail.failureCode = LookinDisplayItemDetailFailureCodeUnhandledObject;
                 return itemDetail;
             }
             CALayer *layer = object;

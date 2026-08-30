@@ -48,4 +48,20 @@
 
 @end
 
+/// Values of `failureCode`. The property stays a plain NSInteger on the wire.
+typedef NS_ENUM(NSInteger, LookinDisplayItemDetailFailureCode) {
+    LookinDisplayItemDetailFailureCodeNone = 0,
+    /// The oid resolved to an object no detail branch handles — a real fault
+    /// worth surfacing. The only value servers sent before 2026-08, so old
+    /// hosts alert on exactly this one.
+    LookinDisplayItemDetailFailureCodeUnhandledObject = -1,
+    /// The oid resolved to nothing: the object was released after the
+    /// hierarchy build. The inspected app's short-lived internals (TextKit 2
+    /// fragment views, portals) go away on their own, so this is routine —
+    /// the node keeps showing the data captured at build time and hosts log
+    /// it without alerting. Old hosts treat it as a successful empty detail,
+    /// which is harmless.
+    LookinDisplayItemDetailFailureCodeObjectGone = -2,
+};
+
 #endif /* SHOULD_COMPILE_LOOKIN_SERVER */

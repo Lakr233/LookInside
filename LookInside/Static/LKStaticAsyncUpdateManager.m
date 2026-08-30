@@ -434,14 +434,20 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
     [[app fetchHierarchyDetailWithTaskPackages:packages] subscribeNext:^(NSArray<LookinDisplayItemDetail *> *details) {
         @strongify(self);
         [details enumerateObjectsUsingBlock:^(LookinDisplayItemDetail * _Nonnull detail, NSUInteger idx, BOOL * _Nonnull stop) {
-            if (detail.failureCode == -1) {
-                self.ongoingRequest.failedTasksCount += 1;
-                // The alert this feeds ("Some layer data failed to transmit")
-                // names no node; log which one the dead oid belongs to. The
-                // server logs its half — what the oid resolved to — on the
-                // inspected app's side.
+            if (detail.failureCode != LookinDisplayItemDetailFailureCodeNone) {
+                // ObjectGone is routine: the inspected app released the
+                // object after the hierarchy build (TextKit 2 fragment views,
+                // portals and other short-lived internals go away on their
+                // own). The node keeps the data captured at build time, so
+                // only real faults feed the "Some layer data failed to
+                // transmit" alert.
+                BOOL objectIsGone = (detail.failureCode == LookinDisplayItemDetailFailureCodeObjectGone);
+                if (!objectIsGone) {
+                    self.ongoingRequest.failedTasksCount += 1;
+                }
                 LookinDisplayItem *failedItem = [self.dataSource displayItemWithOid:detail.displayItemOid];
-                NSLog(@"AsyncUpdate - task failed: oid %lu, item %@ (nodeKind %ld, view %@ %@, layer %@ %@)",
+                NSLog(@"AsyncUpdate - task %@: oid %lu, item %@ (nodeKind %ld, view %@ %@, layer %@ %@)",
+                      objectIsGone ? @"skipped, object gone" : @"failed",
                       (unsigned long)detail.displayItemOid,
                       failedItem ? failedItem.title : @"<not in the current tree>",
                       (long)failedItem.resolvedNodeKind,
