@@ -436,6 +436,19 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
         [details enumerateObjectsUsingBlock:^(LookinDisplayItemDetail * _Nonnull detail, NSUInteger idx, BOOL * _Nonnull stop) {
             if (detail.failureCode == -1) {
                 self.ongoingRequest.failedTasksCount += 1;
+                // The alert this feeds ("Some layer data failed to transmit")
+                // names no node; log which one the dead oid belongs to. The
+                // server logs its half — what the oid resolved to — on the
+                // inspected app's side.
+                LookinDisplayItem *failedItem = [self.dataSource displayItemWithOid:detail.displayItemOid];
+                NSLog(@"AsyncUpdate - task failed: oid %lu, item %@ (nodeKind %ld, view %@ %@, layer %@ %@)",
+                      (unsigned long)detail.displayItemOid,
+                      failedItem ? failedItem.title : @"<not in the current tree>",
+                      (long)failedItem.resolvedNodeKind,
+                      failedItem.viewObject.rawClassName ?: @"-",
+                      failedItem.viewObject.memoryAddress ?: @"-",
+                      failedItem.layerObject.rawClassName ?: @"-",
+                      failedItem.layerObject.memoryAddress ?: @"-");
             } else {
                 [self.dataSource modifyWithDisplayItemDetail:detail];
             }
