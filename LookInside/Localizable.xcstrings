@@ -4406,6 +4406,9 @@
         }
       }
     },
+    "Show backing layers" : {
+
+    },
     "Show hidden %@ and CALayer" : {
       "comment" : "%@ is NSView or UIView, depending on the inspected app",
       "localizations" : {

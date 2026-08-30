@@ -242,6 +242,26 @@
     }
 }
 
+- (BOOL)isPixelBearing {
+    switch (self.resolvedNodeKind) {
+        case LookinDisplayItemNodeKindLayoutGuide:
+        case LookinDisplayItemNodeKindCell:
+        case LookinDisplayItemNodeKindViewOuterLayer:
+            return NO;
+        default:
+            return YES;
+    }
+}
+
+- (BOOL)hasPixelBearingSubitems {
+    for (LookinDisplayItem *subitem in self.subitems) {
+        if (subitem.isPixelBearing) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (BOOL)hasValidFrameToRoot {
     if (self.customInfo) {
         return [self.customInfo hasValidFrame];

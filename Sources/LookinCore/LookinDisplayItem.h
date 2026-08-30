@@ -80,6 +80,20 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
     /// AppKit-only: an NSControl's cell as a child node of the control
     /// (cell-node proposal). Wireframe preview, attributes read from the cell.
     LookinDisplayItemNodeKindCell        = 7,
+    /// UIKit-only: the outermost layer of a view whose backing layer UIKit
+    /// wrapped in an intermediate one (_UIMultiLayer, iOS 26+). The geometry and
+    /// the group-compositing rules moved onto it while the contents stayed on
+    /// the view's own backing layer, so it has no pixels of its own — no
+    /// screenshot is ever fetched for it — but it still gets a preview plane of
+    /// its own, parallel to the view it wraps, like any other child node
+    /// (node-pixel-ownership proposal).
+    LookinDisplayItemNodeKindViewOuterLayer = 8,
+    /// A view's backing layer, emitted as a child of that view's node when the
+    /// show-backing-layers toggle is on (backing-layer-toggle proposal). An
+    /// ordinary pixel-bearing node: with the toggle on, content shows on the
+    /// layer that really renders it, and the view nodes above render as
+    /// wireframes. Never emitted while the toggle is off.
+    LookinDisplayItemNodeKindBackingLayer = 9,
 };
 
 @interface LookinDisplayItem : NSObject <NSSecureCoding, NSCopying>
@@ -111,12 +125,33 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// the field is Unspecified. All consumers read this, never nodeKind itself.
 - (LookinDisplayItemNodeKind)resolvedNodeKind;
 
-/// Whether this node has no pixels of its own and merely marks out a region of
-/// its super item (layout guides and cells). The preview keeps such a node on
-/// its super item's z plane instead of pushing it onto a plane of its own, and
-/// draws it only while it is selected or hovered — the way Xcode's view
-/// debugger outlines a layout guide inside the view that owns it.
+/// Whether this node carries pixels of its own that the host can fetch as a
+/// screenshot. Layout guides, cells and a view's outer layer do not: their
+/// pixels — when any exist at all — belong to the view that owns them, and
+/// fetching a screenshot for them would draw that view's content a second time
+/// (the very defect the node-pixel-ownership proposal removes). The host
+/// suppresses the screenshot task for any node answering NO.
+- (BOOL)isPixelBearing;
+
+/// Whether this pixelless node merely marks out a region of its super item
+/// (layout guides and cells). The preview keeps such a node on its super
+/// item's z plane instead of pushing it onto a plane of its own, and draws it
+/// only while it is selected or hovered — the way Xcode's view debugger
+/// outlines a layout guide inside the view that owns it. A view's outer layer
+/// is pixelless but NOT coplanar: it renders as a parallel plane of its own,
+/// like any other child node.
 - (BOOL)shouldRenderAsCoplanarPreviewOverlay;
+
+/// Whether any child of this node carries pixels of its own.
+///
+/// The preview switches an expanded node from its group screenshot to its solo
+/// one so the children's pixels are not drawn twice. Pixelless children draw
+/// no content of their own, so a node whose only children are pixelless has
+/// nothing to exclude — and worse, if it is a leaf view its solo screenshot
+/// does not exist at all (the server returns nil for a layer with no
+/// sublayers), which would blank the node out the moment a layout guide, a
+/// cell or an outer layer was attached to it.
+- (BOOL)hasPixelBearingSubitems;
 
 @property(nonatomic, copy) NSArray<LookinDisplayItem *> *subitems;
 

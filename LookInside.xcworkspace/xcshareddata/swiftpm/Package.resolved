@@ -1,13 +1,22 @@
 {
-  "originHash" : "fa3ea308a0e3fba099f2a1ff13562912b7a5fa2d67a25f3716fb800d589374b8",
+  "originHash" : "2da647f17029fa490bf2ced42c321e7d7316677fdee694c3d4cdb42a16cbd8e6",
   "pins" : [
+    {
+      "identity" : "associatedobject",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/p-x9/AssociatedObject",
+      "state" : {
+        "revision" : "f358e1ccf6761b9d1d53136022a65c601cdc4da3",
+        "version" : "0.15.0"
+      }
+    },
     {
       "identity" : "frameworktoolbox",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Mx-Iris/FrameworkToolbox",
       "state" : {
-        "revision" : "5b558bade955658e5c90ee06e7dca06043b39641",
-        "version" : "0.7.0"
+        "revision" : "3be067f4280e0764cd4b6cd3ed623698ac981114",
+        "version" : "0.9.0"
       }
     },
     {
@@ -65,6 +74,24 @@
       }
     },
     {
+      "identity" : "swift-literal-type-inference",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/p-x9/swift-literal-type-inference.git",
+      "state" : {
+        "revision" : "a67dc0c90511f0b036de8ee51ecba9243d1a5ec0",
+        "version" : "0.6.0"
+      }
+    },
+    {
+      "identity" : "swift-object-association",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/p-x9/swift-object-association.git",
+      "state" : {
+        "revision" : "93806cfecae1f198c894ed5585b93aff0e2d1f5a",
+        "version" : "0.5.0"
+      }
+    },
+    {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax.git",
@@ -80,6 +107,15 @@
       "state" : {
         "revision" : "456b212834f2032312af1ea5f98d214cbaca5a2c",
         "version" : "0.5.102"
+      }
+    },
+    {
+      "identity" : "uifoundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Mx-Iris/UIFoundation",
+      "state" : {
+        "revision" : "33ebdc39d890c26e3773cb5eba2817fe77e1ffee",
+        "version" : "0.15.2"
       }
     }
   ],

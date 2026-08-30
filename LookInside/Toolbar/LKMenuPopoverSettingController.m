@@ -19,6 +19,7 @@
 @property(nonatomic, strong) NSButton *enableOutlineButton;
 @property(nonatomic, strong) NSButton *showInvisiblesButton;
 @property(nonatomic, strong) NSButton *showSystemLayoutGuidesButton;
+@property(nonatomic, strong) NSButton *showBackingLayersButton;
 
 @property(nonatomic, strong) NSSlider *spaceSlider;
 @property(nonatomic, strong) LKLabel *spaceSliderLabel;
@@ -73,6 +74,19 @@
             self.showSystemLayoutGuidesButton.state = NSControlStateValueOff;
         }
 
+        self.showBackingLayersButton = [NSButton new];
+        self.showBackingLayersButton.font = NSFontMake(14);
+        self.showBackingLayersButton.title = NSLocalizedString(@"Show backing layers", nil);
+        [self.showBackingLayersButton setButtonType:NSButtonTypeSwitch];
+        self.showBackingLayersButton.target = self;
+        self.showBackingLayersButton.action = @selector(_handleShowBackingLayersControl);
+        [self.view addSubview:self.showBackingLayersButton];
+        if (manager.showBackingLayers.currentBOOLValue) {
+            self.showBackingLayersButton.state = NSControlStateValueOn;
+        } else {
+            self.showBackingLayersButton.state = NSControlStateValueOff;
+        }
+
         self.spaceSlider = [NSSlider new];
         self.spaceSlider.minValue = LookinPreviewMinZInterspace;
         self.spaceSlider.maxValue = LookinPreviewMaxZInterspace;
@@ -99,8 +113,9 @@
     $(self.enableOutlineButton).x(15).toRight(0).height(24).y(15);
     $(self.showInvisiblesButton).x(15).toRight(0).height(24).y(self.enableOutlineButton.$maxY + 6);
     $(self.showSystemLayoutGuidesButton).x(15).toRight(0).height(24).y(self.showInvisiblesButton.$maxY + 6);
+    $(self.showBackingLayersButton).x(15).toRight(0).height(24).y(self.showSystemLayoutGuidesButton.$maxY + 6);
 
-    $(self.spaceSlider).x(15).toRight(15).height(26).y(self.showSystemLayoutGuidesButton.$maxY + 22);
+    $(self.spaceSlider).x(15).toRight(15).height(26).y(self.showBackingLayersButton.$maxY + 22);
     $(self.spaceSliderLabel).sizeToFit.x(self.spaceSlider.$x + 3).y(self.spaceSlider.$maxY);
     
     $(self.preferenceButton).width(130).horAlign.bottom(4);
@@ -127,6 +142,14 @@
         [self.manager.showSystemLayoutGuides setBOOLValue:YES ignoreSubscriber:nil];
     } else {
         [self.manager.showSystemLayoutGuides setBOOLValue:NO ignoreSubscriber:nil];
+    }
+}
+
+- (void)_handleShowBackingLayersControl {
+    if (self.showBackingLayersButton.state == NSControlStateValueOn) {
+        [self.manager.showBackingLayers setBOOLValue:YES ignoreSubscriber:nil];
+    } else {
+        [self.manager.showBackingLayers setBOOLValue:NO ignoreSubscriber:nil];
     }
 }
 

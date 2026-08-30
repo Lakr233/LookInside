@@ -10,6 +10,7 @@
 #import "LKConnectionManager.h"
 #import "LookinConnectionResponseAttachment.h"
 #import "LKNavigationManager.h"
+#import "LKPreferenceManager.h"
 #import "LKSwiftUIHierarchyDisplayMode.h"
 
 @implementation LKInspectableApp
@@ -20,6 +21,9 @@
         @"clientVersion": [LKHelper lookinReadableVersion],
     }];
     param[LookinParam_SwiftUIDisplayMode] = @([LKSwiftUIHierarchyDisplayModeStore currentMode]);
+    // Backing-layer toggle (backing-layer-toggle proposal): the server only
+    // emits backing layer nodes when this is YES. Old servers ignore the key.
+    param[@"showBackingLayers"] = @([LKPreferenceManager mainManager].showBackingLayers.currentBOOLValue);
     return [self _requestWithType:LookinRequestTypeHierarchy data:param];
 }
 

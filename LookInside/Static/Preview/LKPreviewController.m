@@ -89,6 +89,7 @@ extern NSString *const LKAppShowConsoleNotificationName;
                 }
                 return YES;
             }];
+
             [self.previewView renderWithDisplayItems:validItems discardCache:YES];
         }];
         

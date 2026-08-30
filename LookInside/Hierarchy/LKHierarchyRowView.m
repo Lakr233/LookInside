@@ -426,6 +426,10 @@ static BOOL LKDisplayItemLooksLikeSwiftUI(LookinDisplayItem *item) {
                 break;
 
             case LookinDisplayItemNodeKindLayer:
+            // A view's outer layer is still a layer as far as the row icon goes.
+            case LookinDisplayItemNodeKindViewOuterLayer:
+            // So is a backing layer node (backing-layer-toggle proposal).
+            case LookinDisplayItemNodeKindBackingLayer:
                 [item.layerObject.classChainList enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                     if ([obj isEqualToString:@"CAShapeLayer"]) {
                         imageName = @"hierarchy_shapelayer";

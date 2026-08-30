@@ -100,6 +100,13 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
                                                      name:LKSwiftUIHierarchyDisplayModeDidChangeNotification
                                                    object:nil];
 
+        // Flipping the backing-layer toggle changes the node set itself, so it
+        // always goes through a full server-side reload (backing-layer-toggle
+        // proposal).
+        [[LKPreferenceManager mainManager].showBackingLayers subscribe:self
+                                                               action:@selector(_handleShowBackingLayersDidChange:)
+                                                        relatedObject:nil];
+
         // LKStaticViewController's -setView: runs synchronously inside its
         // designated init, so the per-doc data source / update manager are
         // passed in up-front rather than via post-init property writes.
@@ -391,6 +398,13 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
     }];
 }
 
+- (void)_handleShowBackingLayersDidChange:(LookinMsgActionParams *)param {
+    // No app bound or a reload already running: the new value still applies on
+    // the next manual reload, so refusals stay quiet.
+    [[self reloadHierarchySignalWithInitiator:LKHierarchyReloadInitiatorHost] subscribeError:^(NSError * _Nullable error) {
+    }];
+}
+
 - (RACSignal *)reloadHierarchySignalWithInitiator:(LKHierarchyReloadInitiator)initiator {
     if (self.isFetchingHierarchy) {
         return [RACSignal error:LKStaticWindowControllerReloadErrorMake(
@@ -488,7 +502,7 @@ static NSError *LKStaticWindowControllerReloadErrorMake(LKStaticWindowController
     NSPopover *popover = [[NSPopover alloc] init];
     popover.behavior = NSPopoverBehaviorTransient;
     popover.animates = NO;
-    popover.contentSize = NSMakeSize(IsEnglish ? 270 : 350, 230);
+    popover.contentSize = NSMakeSize(IsEnglish ? 270 : 350, 260);
     LookinAppInfo *inspectedAppInfo = self.inspectableApp.appInfo;
     popover.contentViewController = [[LKMenuPopoverSettingController alloc] initWithPreferenceManager:[LKPreferenceManager mainManager]
                                                                                           isMacTarget:[LKHelper appInfoLooksLikeMacTarget:inspectedAppInfo]];

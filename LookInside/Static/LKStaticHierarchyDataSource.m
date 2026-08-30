@@ -50,10 +50,11 @@
     // SCNNode 的图片的长和宽均不能超过 16384px，这里再随手减掉 100，注意单位是 px 不是 pt
     CGFloat maxLengthInPx = LookinNodeImageMaxLengthInPx - 100;
     [self.flatItems enumerateObjectsUsingBlock:^(LookinDisplayItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if (obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide
-            || obj.resolvedNodeKind == LookinDisplayItemNodeKindCell) {
-            // Guides and cells have no pixels: skip their screenshot task but
-            // keep them in the preview, where they render as wireframe boxes.
+        if (!obj.isPixelBearing) {
+            // Guides, cells and a view's outer layer have no pixels of their
+            // own — fetching a screenshot would draw the owning view's content
+            // a second time. Skip the screenshot task but keep them in the
+            // preview.
             obj.doNotFetchScreenshotReason = LookinDoNotFetchScreenshotForNoPixels;
             return;
         }

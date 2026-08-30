@@ -233,10 +233,12 @@ static BOOL LKSwiftUIItemMatchesSourceTypes(LookinDisplayItem *item, NSArray<NSS
             }
         }
         
-        if (obj.resolvedNodeKind == LookinDisplayItemNodeKindLayoutGuide
-            || obj.resolvedNodeKind == LookinDisplayItemNodeKindCell) {
-            // Guides and cells have no pixels: no screenshot task, but they
-            // stay in the preview as wireframe boxes.
+        if (!obj.isPixelBearing) {
+            // Guides, cells and a view's outer layer have no pixels of their
+            // own — fetching a screenshot would draw the owning view's content
+            // a second time. No screenshot task; they stay in the preview
+            // (guides and cells on their owner's plane, the outer layer as a
+            // parallel plane of its own).
             obj.doNotFetchScreenshotReason = LookinDoNotFetchScreenshotForNoPixels;
         }
         if (!obj.isUserCustom && !obj.shouldCaptureImage) {

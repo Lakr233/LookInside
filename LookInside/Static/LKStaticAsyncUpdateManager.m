@@ -156,7 +156,10 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
             return nil;
         }
         if (item.doNotFetchScreenshotReason == LookinFetchScreenshotPermitted) {
-            if (item.isExpandable && item.isExpanded) {
+            // Mirrors -appropriateScreenshot: a node showing its group
+            // screenshot must not have the solo one fetched first, or the
+            // preview waits on an image it will never display.
+            if (item.isExpandable && item.isExpanded && item.hasPixelBearingSubitems) {
                 return [self _taskFromDisplayItem:item type:LookinStaticAsyncUpdateTaskTypeSoloScreenshot];
             } else {
                 return [self _taskFromDisplayItem:item type:LookinStaticAsyncUpdateTaskTypeGroupScreenshot];
@@ -242,6 +245,10 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
             break;
         case LookinDisplayItemNodeKindView:
         case LookinDisplayItemNodeKindLayer:
+        // A view's outer layer rides layerObject like any other layer node.
+        case LookinDisplayItemNodeKindViewOuterLayer:
+        // So does a backing layer node (backing-layer-toggle proposal).
+        case LookinDisplayItemNodeKindBackingLayer:
         case LookinDisplayItemNodeKindUnspecified: {
             // macOS 上优先使用 viewObject.oid，因为服务端的 detail handler 能为所有 NSView 对象
             // （包括 layer-backed 的 SwiftUI 视图）截图。使用 layerObject.oid 可能访问到已释放的 layer。

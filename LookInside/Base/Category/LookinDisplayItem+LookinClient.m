@@ -196,6 +196,10 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
             return 0;
         case LookinDisplayItemNodeKindView:
         case LookinDisplayItemNodeKindLayer:
+        // A view's outer layer rides layerObject like any other layer node.
+        case LookinDisplayItemNodeKindViewOuterLayer:
+        // So does a backing layer node (backing-layer-toggle proposal).
+        case LookinDisplayItemNodeKindBackingLayer:
         case LookinDisplayItemNodeKindUnspecified:
             // 始终优先使用 layerObject.oid，以匹配上游行为。
             // 上游服务端 detail handler 通过 CALayer OID 解析并截图，
@@ -275,7 +279,11 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
 }
 
 - (NSImage *)appropriateScreenshot {
-    if (self.isExpandable && self.isExpanded) {
+    // Only children that actually draw something justify switching to the solo
+    // screenshot. A node whose children are all pixelless (layout guides,
+    // cells, a view's outer layer) has nothing to exclude, and a leaf view has
+    // no solo screenshot at all — asking for one there blanks it out.
+    if (self.isExpandable && self.isExpanded && self.hasPixelBearingSubitems) {
         return self.soloScreenshot;
     }
     return self.groupScreenshot;

@@ -68,6 +68,11 @@ typedef NS_ENUM(NSInteger, LookinMeasureState) {
 /// 默认显示；关闭只是宿主端过滤，数据仍在。用户自建 guide 不受此开关影响。
 @property(nonatomic, strong, readonly) LookinBOOLMsgAttribute *showSystemLayoutGuides;
 
+/// 是否显示 view 的 backing layer 子树（backing-layer-toggle 提案）。
+/// 默认关闭。开启后像 Xcode 的 Show Layers：每个 view 节点下展开完整 layer 子树，
+/// 内容显示在真正渲染它的 layer 上，view 节点变为线框。切换时重新拉取层级。
+@property(nonatomic, strong, readonly) LookinBOOLMsgAttribute *showBackingLayers;
+
 // 范围是 0 ～ 1
 @property(nonatomic, strong, readonly) LookinDoubleMsgAttribute *zInterspace;
 

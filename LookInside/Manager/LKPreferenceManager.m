@@ -23,6 +23,7 @@ static NSString * const Key_PreviousClientVersion = @"preVer";
 static NSString * const Key_ShowOutline = @"showOutline";
 static NSString * const Key_ShowHiddenItems = @"showHiddenItems";
 static NSString * const Key_ShowSystemLayoutGuides = @"showSystemLayoutGuides";
+static NSString * const Key_ShowBackingLayers = @"showBackingLayers";
 static NSString * const Key_RgbaFormat = @"egbaFormat";
 static NSString * const Key_ZInterspace = @"zInterspace_v095";
 static NSString * const Key_AppearanceType = @"appearanceType";
@@ -103,6 +104,15 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
             [userDefaults setObject:@(YES) forKey:Key_ShowSystemLayoutGuides];
         }
         [self.showSystemLayoutGuides subscribe:self action:@selector(_handleShowSystemLayoutGuidesChange:) relatedObject:nil];
+
+        NSNumber *obj_showBackingLayers = [userDefaults objectForKey:Key_ShowBackingLayers];
+        if (obj_showBackingLayers != nil) {
+            _showBackingLayers = [LookinBOOLMsgAttribute attributeWithBOOL:[obj_showBackingLayers boolValue]];
+        } else {
+            _showBackingLayers = [LookinBOOLMsgAttribute attributeWithBOOL:NO];
+            [userDefaults setObject:@(NO) forKey:Key_ShowBackingLayers];
+        }
+        [self.showBackingLayers subscribe:self action:@selector(_handleShowBackingLayersChange:) relatedObject:nil];
 
         NSNumber *obj_doubleClickBehavior = [userDefaults objectForKey:Key_DoubleClickBehavior];
         if (obj_doubleClickBehavior) {
@@ -368,6 +378,12 @@ static const NSUInteger MaxRememberedExpansionStateBundles = 20;
 - (void)_handleShowSystemLayoutGuidesChange:(LookinMsgActionParams *)param {
     if (self.shouldStoreToLocal) {
         [[NSUserDefaults standardUserDefaults] setObject:@(param.boolValue) forKey:Key_ShowSystemLayoutGuides];
+    }
+}
+
+- (void)_handleShowBackingLayersChange:(LookinMsgActionParams *)param {
+    if (self.shouldStoreToLocal) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(param.boolValue) forKey:Key_ShowBackingLayers];
     }
 }
 
