@@ -142,14 +142,19 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// like any other child node.
 - (BOOL)shouldRenderAsCoplanarPreviewOverlay;
 
-/// Whether any child of this node carries pixels of its own.
+/// Whether any descendant reachable through this node's children carries
+/// pixels of its own. A pixelless child that itself contains pixel-bearing
+/// nodes counts: with the backing-layer toggle ON, a wrapped view's only child
+/// can be its pixelless outer layer holding the pixel-bearing BackingLayer
+/// node — expanding that view must still switch it off its group screenshot,
+/// or the content draws both on the view's plane and on the layer's.
 ///
 /// The preview switches an expanded node from its group screenshot to its solo
-/// one so the children's pixels are not drawn twice. Pixelless children draw
-/// no content of their own, so a node whose only children are pixelless has
-/// nothing to exclude — and worse, if it is a leaf view its solo screenshot
-/// does not exist at all (the server returns nil for a layer with no
-/// sublayers), which would blank the node out the moment a layout guide, a
+/// one so the children's pixels are not drawn twice. Pixelless subtrees draw
+/// no content of their own, so a node whose children contain no pixels at all
+/// has nothing to exclude — and worse, if it is a leaf view its solo
+/// screenshot does not exist at all (the server returns nil for a layer with
+/// no sublayers), which would blank the node out the moment a layout guide, a
 /// cell or an outer layer was attached to it.
 - (BOOL)hasPixelBearingSubitems;
 

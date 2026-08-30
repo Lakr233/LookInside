@@ -201,6 +201,14 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
         // So does a backing layer node (backing-layer-toggle proposal).
         case LookinDisplayItemNodeKindBackingLayer:
         case LookinDisplayItemNodeKindUnspecified:
+            // With the backing-layer toggle ON the layer oid belongs to the
+            // separate BackingLayer child node — requests keyed by it would
+            // land on that node on both ends (the host's oid map and the
+            // server's detail handler agree on this). The view node itself
+            // must route by its view oid.
+            if (self.viewObject.oid && [self lk_ownsSeparateBackingLayerNode]) {
+                return self.viewObject.oid;
+            }
             // 始终优先使用 layerObject.oid，以匹配上游行为。
             // 上游服务端 detail handler 通过 CALayer OID 解析并截图，
             // 这是经过验证的可靠路径。
@@ -213,6 +221,27 @@ static void LKAddUniqueObject(NSMutableArray *array, id object) {
             return self.windowObject.oid;
     }
     return 0;
+}
+
+- (BOOL)lk_ownsSeparateBackingLayerNode {
+    if (!self.layerObject.oid || !self.viewObject.oid) {
+        return NO;
+    }
+    for (LookinDisplayItem *subitem in self.subitems) {
+        if (subitem.resolvedNodeKind == LookinDisplayItemNodeKindBackingLayer) {
+            return subitem.layerObject.oid == self.layerObject.oid;
+        }
+        // On iOS the BackingLayer node nests inside the wrapper node
+        // (view → outer layer → backing layer, Xcode's arrangement).
+        if (subitem.resolvedNodeKind == LookinDisplayItemNodeKindViewOuterLayer) {
+            for (LookinDisplayItem *wrapperChild in subitem.subitems) {
+                if (wrapperChild.resolvedNodeKind == LookinDisplayItemNodeKindBackingLayer) {
+                    return wrapperChild.layerObject.oid == self.layerObject.oid;
+                }
+            }
+        }
+    }
+    return NO;
 }
 
 - (NSArray<NSNumber *> *)availableObjectOidsPreferView:(BOOL)preferView {

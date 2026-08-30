@@ -255,7 +255,7 @@
 
 - (BOOL)hasPixelBearingSubitems {
     for (LookinDisplayItem *subitem in self.subitems) {
-        if (subitem.isPixelBearing) {
+        if (subitem.isPixelBearing || subitem.hasPixelBearingSubitems) {
             return YES;
         }
     }

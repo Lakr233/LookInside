@@ -252,8 +252,10 @@ static BOOL LKCurrentHierarchyContainsSwiftUIItems(LKStaticHierarchyDataSource *
         case LookinDisplayItemNodeKindUnspecified: {
             // macOS 上优先使用 viewObject.oid，因为服务端的 detail handler 能为所有 NSView 对象
             // （包括 layer-backed 的 SwiftUI 视图）截图。使用 layerObject.oid 可能访问到已释放的 layer。
-            // iOS 上优先使用 layerObject.oid，以匹配上游行为。
-            BOOL preferViewOid = [LKHelper appInfoLooksLikeMacTarget:self.dataSource.rawHierarchyInfo.appInfo];
+            // iOS 上优先使用 layerObject.oid，以匹配上游行为；但当独立的 BackingLayer 子节点
+            // 占用了 layer oid（backing-layer-toggle 开启）时，view 节点必须改走 view oid。
+            BOOL preferViewOid = [LKHelper appInfoLooksLikeMacTarget:self.dataSource.rawHierarchyInfo.appInfo]
+                || [item lk_ownsSeparateBackingLayerNode];
             if (preferViewOid && item.viewObject.oid) {
                 oid = item.viewObject.oid;
             } else if (item.layerObject.oid) {

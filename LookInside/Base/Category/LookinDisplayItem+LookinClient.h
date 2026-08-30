@@ -24,6 +24,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSArray<NSNumber *> *)availableObjectOidsPreferView:(BOOL)preferView;
 
+/// Whether a separate BackingLayer child node claimed this view node's layer
+/// oid (backing-layer-toggle proposal, toggle ON). Requests for THIS node
+/// must then route by the view oid — the layer oid now resolves to the child
+/// node on both ends. Keyed off the tree itself rather than the preference,
+/// so it stays NO against servers that ignored the toggle.
+- (BOOL)lk_ownsSeparateBackingLayerNode;
+
 /// 当前 item 是否在预览里用 groupScreenshot 代替了 soloScreenshot。
 - (BOOL)usesGroupScreenshotFallbackInPreview;
 
