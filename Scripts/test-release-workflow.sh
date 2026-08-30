@@ -52,8 +52,15 @@ trap 'rm -rf "$work_dir"' EXIT
 OUTPUT_PATH="$work_dir/release.xcconfig" bash "$xcconfig_writer" --version 2.3.13 --build-number 46 >/dev/null
 grep -F 'MARKETING_VERSION = 2.3.13' "$work_dir/release.xcconfig" >/dev/null
 grep -F 'CURRENT_PROJECT_VERSION = 46' "$work_dir/release.xcconfig" >/dev/null
+OUTPUT_PATH="$work_dir/internal.xcconfig" bash "$xcconfig_writer" --version 2.3.12 --build-number 45.1.7 >/dev/null
+grep -F 'MARKETING_VERSION = 2.3.12' "$work_dir/internal.xcconfig" >/dev/null
+grep -F 'CURRENT_PROJECT_VERSION = 45.1.7' "$work_dir/internal.xcconfig" >/dev/null
 if OUTPUT_PATH="$work_dir/invalid.xcconfig" bash "$xcconfig_writer" --version 02.3.13 --build-number 46 >/dev/null 2>&1; then
 	echo "non-canonical Xcode version unexpectedly passed" >&2
+	exit 1
+fi
+if OUTPUT_PATH="$work_dir/invalid-build.xcconfig" bash "$xcconfig_writer" --version 2.3.13 --build-number 45.100.1 >/dev/null 2>&1; then
+	echo "oversized Xcode build component unexpectedly passed" >&2
 	exit 1
 fi
 
