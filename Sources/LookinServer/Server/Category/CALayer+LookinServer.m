@@ -105,6 +105,43 @@
     [image addRepresentation:bitmapRep];
     return image;
 }
+
+/// renderInContext: silently returns a fully transparent bitmap when the
+/// rendered subtree contains a visible CAPortalLayer. macOS 26's scroll-edge
+/// machinery (NSScrollPocket / BackdropView) and glass materials install
+/// portal and backdrop layers under plain containers, which is why a
+/// collapsed NSScrollView or NSThemeFrame group screenshot came back empty.
+/// Neither layer kind carries CPU-renderable content, so hiding them for the
+/// duration of the offscreen render removes nothing that could ever reach
+/// the bitmap. The model-tree hide takes effect without a commit, and
+/// screenshots only run on the main thread.
+static BOOL LKS_LayerPoisonsRenderInContext(CALayer *layer) {
+    static Class portalLayerClass = nil;
+    static Class backdropLayerClass = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // CoreAnimation-private but stable across many releases. If a rename
+        // ever breaks the lookup we degrade to today's empty render, no crash.
+        portalLayerClass = NSClassFromString(@"CAPortalLayer");
+        backdropLayerClass = NSClassFromString(@"CABackdropLayer");
+    });
+    return (portalLayerClass && [layer isKindOfClass:portalLayerClass])
+        || (backdropLayerClass && [layer isKindOfClass:backdropLayerClass]);
+}
+
+static void LKS_CollectRenderPoisoningSublayers(CALayer *layer, NSMutableArray<CALayer *> *collectedLayers) {
+    for (CALayer *sublayer in layer.sublayers) {
+        if (sublayer.isHidden) {
+            continue;
+        }
+        if (LKS_LayerPoisonsRenderInContext(sublayer)) {
+            // Hiding it hides its whole subtree; no need to walk deeper.
+            [collectedLayers addObject:sublayer];
+        } else {
+            LKS_CollectRenderPoisoningSublayers(sublayer, collectedLayers);
+        }
+    }
+}
 #endif
 
 - (LookinImage *)lks_groupScreenshotWithLowQuality:(BOOL)lowQuality {
@@ -167,9 +204,20 @@
             }];
         }
     }
-    return [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {
-        [self renderInContext:context];
-    }];
+    NSMutableArray<CALayer *> *poisoningLayers = [NSMutableArray array];
+    LKS_CollectRenderPoisoningSublayers(self, poisoningLayers);
+    for (CALayer *poisoningLayer in poisoningLayers) {
+        poisoningLayer.hidden = YES;
+    }
+    @try {
+        return [CALayer _lks_renderImageForSize:self.bounds.size contentsAreFlipped:self.contentsAreFlipped renderBlock:^(CGContextRef context) {
+            [self renderInContext:context];
+        }];
+    } @finally {
+        for (CALayer *poisoningLayer in poisoningLayers) {
+            poisoningLayer.hidden = NO;
+        }
+    }
 #endif
 }
 
