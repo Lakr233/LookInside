@@ -349,6 +349,14 @@
 				Toolbar/LKWindowToolbarAppButton.m,
 				Toolbar/LKWindowToolbarHelper.m,
 				Toolbar/LKWindowToolbarScaleView.m,
+				XcodeViewHierarchy/LKXcodeViewHierarchyBundleReader.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyConverter.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyDocument.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyGzip.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyLayerArchive.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyObjectGraph.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyPixelRecovery.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyValue.swift,
 			);
 			target = AA48F29A21CC0CA50032EC2C /* LookInside */;
 		};

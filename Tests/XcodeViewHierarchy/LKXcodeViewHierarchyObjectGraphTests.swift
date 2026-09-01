@@ -26,6 +26,8 @@ struct LKXcodeViewHierarchyObjectGraphTests {
         testRootGroupsAreRecorded()
         testPropertyForUnknownObjectStillLands()
         testMalformedValueIsReportedNotFatal()
+        testClassChainIsBuiltFromClassInformation()
+        testClassChainOfUnknownClassIsJustItself()
         print("Xcode view hierarchy object graph tests passed")
     }
 
@@ -293,6 +295,39 @@ struct LKXcodeViewHierarchyObjectGraphTests {
         expect(graph.decodingIssues.count == 1, "expected one recorded issue, got \(graph.decodingIssues.count)")
         expect(graph.node("0x1")?.property(named: "hidden")?.value.boolValue == true,
                "a sibling property must still decode after a malformed one")
+    }
+
+    // MARK: - Class information
+
+    /// The capture nests classes by subclass; the inspector reads the chain in
+    /// the other direction, and shows and searches it.
+    private static func testClassChainIsBuiltFromClassInformation() {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: [
+            "version": NSNumber(value: 2),
+            "classInformation": [
+                [
+                    "className": "NSObject",
+                    "subclasses": [
+                        [
+                            "className": "UIResponder",
+                            "subclasses": [
+                                ["className": "UIView", "subclasses": [["className": "UILabel"]]],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+        let graph = builder.build()
+        expect(graph.classChain(forClassName: "UILabel") == ["UILabel", "UIView", "UIResponder", "NSObject"],
+               "chain mismatch: \(graph.classChain(forClassName: "UILabel"))")
+    }
+
+    private static func testClassChainOfUnknownClassIsJustItself() {
+        let graph = LKXcodeViewHierarchyObjectGraphBuilder().build()
+        expect(graph.classChain(forClassName: "MysteryView") == ["MysteryView"],
+               "an unknown class should still yield a one-element chain")
     }
 
     // MARK: - Fixture builders

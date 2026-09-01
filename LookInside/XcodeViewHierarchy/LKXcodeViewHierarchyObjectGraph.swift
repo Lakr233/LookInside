@@ -75,6 +75,8 @@ struct LKXcodeViewHierarchyObjectGraph {
     let nodesByIdentifier: [String: LKXcodeViewHierarchyNode]
     /// Top-level groupings in capture order, each with its root objects.
     let rootGroups: [(groupingIdentifier: String, objectIdentifiers: [String])]
+    /// Superclass of each class the capture described, from `classInformation`.
+    let superclassByClassName: [String: String]
     /// Highest `version` seen across the responses that were merged.
     let formatVersion: Int
     /// Non-fatal problems worth surfacing; a capture still opens with these.
@@ -87,6 +89,23 @@ struct LKXcodeViewHierarchyObjectGraph {
     func rootIdentifiers(inGroup groupingIdentifier: String) -> [String] {
         rootGroups.first { $0.groupingIdentifier == groupingIdentifier }?.objectIdentifiers ?? []
     }
+
+    /// The class and its ancestors, e.g. `["UILabel", "UIView", "UIResponder", "NSObject"]`.
+    ///
+    /// The inspector shows this chain and searches it, so a bare leaf name
+    /// makes a node look like it has no lineage at all.
+    func classChain(forClassName className: String) -> [String] {
+        var chain: [String] = [className]
+        var visited: Set<String> = [className]
+        var current = className
+        // The capture's class table is a tree, but guard the walk anyway: a
+        // malformed one must not spin here.
+        while let superclassName = superclassByClassName[current], visited.insert(superclassName).inserted {
+            chain.append(superclassName)
+            current = superclassName
+        }
+        return chain
+    }
 }
 
 // MARK: - Builder
@@ -95,6 +114,7 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
     private var nodesByIdentifier: [String: LKXcodeViewHierarchyNode] = [:]
     private var rootGroupOrder: [String] = []
     private var rootGroupMembers: [String: [String]] = [:]
+    private var superclassByClassName: [String: String] = [:]
     private var formatVersion = 0
     private var decodingIssues: [String] = []
 
@@ -121,11 +141,33 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
             }
         }
 
+        if let classInformation = response["classInformation"] as? [Any] {
+            for rawEntry in classInformation {
+                guard let entry = rawEntry as? [String: Any] else { continue }
+                ingestingClassInformation(entry, superclassName: nil)
+            }
+        }
+
         if let descriptions = response["topLevelPropertyDescriptions"] as? [String: Any] {
             for (keyPath, rawDescription) in descriptions {
                 guard let description = rawDescription as? [String: Any] else { continue }
                 ingestingTopLevelPropertyDescription(description, keyPath: keyPath, responseVersion: responseVersion)
             }
+        }
+    }
+
+    /// Walks the capture's class table, which is nested by *subclass*, and
+    /// records the inverse — each class's superclass — because that is the
+    /// direction a node's class chain is read in.
+    private func ingestingClassInformation(_ entry: [String: Any], superclassName: String?) {
+        guard let className = entry["className"] as? String else { return }
+        if let superclassName, superclassByClassName[className] == nil {
+            superclassByClassName[className] = superclassName
+        }
+        guard let subclasses = entry["subclasses"] as? [Any] else { return }
+        for rawSubclass in subclasses {
+            guard let subclass = rawSubclass as? [String: Any] else { continue }
+            ingestingClassInformation(subclass, superclassName: className)
         }
     }
 
@@ -352,6 +394,7 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
         LKXcodeViewHierarchyObjectGraph(
             nodesByIdentifier: nodesByIdentifier,
             rootGroups: rootGroupOrder.map { ($0, rootGroupMembers[$0] ?? []) },
+            superclassByClassName: superclassByClassName,
             formatVersion: formatVersion,
             decodingIssues: decodingIssues
         )
