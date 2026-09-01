@@ -211,6 +211,9 @@ enum LKXcodeViewHierarchyConverter {
             owner: windowNode, graph: graph, vocabulary: vocabulary
         ))
         item.subitems = subitems
+        item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
+            for: windowNode, layerNode: associatedLayerNode(of: windowNode, graph: graph), graph: graph
+        )
 
         // A window whose frame the capture did not record still needs bounds
         // for the preview to place it; borrow the root view's.
@@ -252,6 +255,9 @@ enum LKXcodeViewHierarchyConverter {
            let controllerNode = graph.node(controllerIdentifier) {
             item.hostViewControllerObject = makingLookinObject(for: controllerNode, graph: graph)
         }
+        item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
+            for: viewNode, layerNode: associatedLayerNode(of: viewNode, graph: graph), graph: graph
+        )
 
         var subitems: [LookinDisplayItem] = []
         for childIdentifier in viewNode.childIdentifiers {
@@ -293,6 +299,9 @@ enum LKXcodeViewHierarchyConverter {
                 applyingGeometry(from: guideNode, to: item)
             }
             item.alpha = 1
+            item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingLayoutGuideGroups(
+                for: guideNode, graph: graph
+            )
             return item
         }
     }
@@ -311,6 +320,9 @@ enum LKXcodeViewHierarchyConverter {
             item.kindObject = makingLookinObject(for: cellNode, graph: graph)
             applyingGeometry(from: cellNode, to: item)
             item.alpha = 1
+            item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
+                for: cellNode, layerNode: nil, graph: graph
+            )
             return item
         }
     }
@@ -327,6 +339,16 @@ enum LKXcodeViewHierarchyConverter {
     }
 
     // MARK: Node fields
+
+    private static func associatedLayerNode(
+        of node: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> LKXcodeViewHierarchyNode? {
+        guard let layerIdentifier = node.associatedIdentifiers(inGroup: GroupIdentifier.layer).first else {
+            return nil
+        }
+        return graph.node(layerIdentifier)
+    }
 
     private static func makingLookinObject(
         for node: LKXcodeViewHierarchyNode,
