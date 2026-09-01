@@ -41,4 +41,14 @@ swiftc -parse-as-library \
 	-o "$TMPDIR/object-graph-test"
 "$TMPDIR/object-graph-test"
 
+# Pixel recovery: the two-part orientation correction for y-down captures.
+swiftc -parse-as-library \
+	"$SOURCE_DIR/LKXcodeViewHierarchyValue.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyObjectGraph.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyLayerArchive.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyPixelRecovery.swift" \
+	"$TEST_DIR/LKXcodeViewHierarchyPixelRecoveryTests.swift" \
+	-o "$TMPDIR/pixel-recovery-test"
+"$TMPDIR/pixel-recovery-test"
+
 echo "Xcode view hierarchy tests passed"
