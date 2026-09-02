@@ -62,7 +62,14 @@ enum LKXcodeViewHierarchyPixelRecovery {
     /// Must be called from a single thread; it mutates the decoded layer trees
     /// while rendering (detaching sublayers for the solo pass) and restores
     /// them before returning.
-    static func recovering(from graph: LKXcodeViewHierarchyObjectGraph) -> LKXcodeViewHierarchyScreenshots {
+    ///
+    /// `isCancelled` is polled once per layer. When it answers true the render
+    /// stops and nothing is returned: a partial set of images would read as
+    /// missing pixels rather than as an abandoned import.
+    static func recovering(
+        from graph: LKXcodeViewHierarchyObjectGraph,
+        isCancelled: () -> Bool = { false }
+    ) -> LKXcodeViewHierarchyScreenshots {
         let (trees, failedIdentifiers) = LKXcodeViewHierarchyLayerArchive.decodingLayerTrees(in: graph)
         let alignment = LKXcodeViewHierarchyLayerAlignment.aligning(trees: trees, graph: graph)
 
@@ -80,6 +87,11 @@ enum LKXcodeViewHierarchyPixelRecovery {
         defer { CATransaction.commit() }
 
         for (objectIdentifier, layer) in alignment {
+            if isCancelled() {
+                return LKXcodeViewHierarchyScreenshots(
+                    soloByObjectIdentifier: [:], groupByObjectIdentifier: [:], failedArchiveIdentifiers: failedIdentifiers
+                )
+            }
             let isFlipped = layer.contentsAreFlipped()
             if let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
                 groupByObjectIdentifier[objectIdentifier] = groupImage

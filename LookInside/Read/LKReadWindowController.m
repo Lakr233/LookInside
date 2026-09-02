@@ -19,6 +19,45 @@
 #import "LKHierarchyView.h"
 #import "LookinArchiveDocument.h"
 #import "LKHelper.h"
+#import "LKBaseView.h"
+#import "LKLabel.h"
+
+/// What the window shows while a document is still importing in the
+/// background: an indeterminate spinner and one line of text.
+@interface LKReadLoadingView : LKBaseView
+@end
+
+@implementation LKReadLoadingView {
+    NSProgressIndicator *_indicator;
+    LKLabel *_titleLabel;
+}
+
+- (instancetype)initWithFrame:(NSRect)frameRect {
+    if (self = [super initWithFrame:frameRect]) {
+        _indicator = [NSProgressIndicator new];
+        _indicator.indeterminate = YES;
+        _indicator.style = NSProgressIndicatorStyleSpinning;
+        _indicator.controlSize = NSControlSizeRegular;
+        [self addSubview:_indicator];
+        [_indicator startAnimation:nil];
+
+        _titleLabel = [LKLabel new];
+        _titleLabel.textColor = [NSColor secondaryLabelColor];
+        _titleLabel.font = NSFontMake(14);
+        _titleLabel.stringValue = NSLocalizedString(@"Loading capture…", nil);
+        [self addSubview:_titleLabel];
+    }
+    return self;
+}
+
+- (void)layout {
+    [super layout];
+    [_indicator sizeToFit];
+    $(_titleLabel).sizeToFit.x(_indicator.$maxX + 8).midY(_indicator.$midY);
+    $(_indicator, _titleLabel).groupHorAlign.midY(self.$height * .5);
+}
+
+@end
 
 @interface LKReadWindowController () <NSToolbarDelegate>
 
@@ -33,7 +72,6 @@
 @implementation LKReadWindowController
 
 - (instancetype)initWithDocument:(LookinArchiveDocument *)document {
-    LookinHierarchyFile *file = document.hierarchyFile;
     NSSize screenSize = [NSScreen mainScreen].frame.size;
     LKWindow *window = [[LKWindow alloc] initWithContentRect:NSMakeRect(0, 0, screenSize.width * .7, screenSize.height * .7) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskResizable|NSWindowStyleMaskFullSizeContentView backing:NSBackingStoreBuffered defer:YES];
     window.tabbingMode = NSWindowTabbingModeDisallowed;
@@ -45,25 +83,48 @@
     
     if (self = [self initWithWindow:window]) {
         self.preferenceManager = [LKPreferenceManager new];
-        _viewController = [[LKReadViewController alloc] initWithFile:file preferenceManager:self.preferenceManager];
-        window.contentView = self.viewController.view;
-        self.contentViewController = self.viewController;
-        
-        @weakify(self);
-        [RACObserve(self.viewController.hierarchyDataSource, selectedItem) subscribeNext:^(id  _Nullable x) {
-            @strongify(self);
-            NSButton *measureButton = (NSButton *)self.toolbarItemsMap[LKToolBarIdentifier_Measure].view;
-            BOOL canMeasure = !!x;
-            measureButton.enabled = canMeasure;
-        }];
-        
-        NSToolbar *toolbar = [[NSToolbar alloc] init];
-        toolbar.displayMode = NSToolbarDisplayModeIconAndLabel;
-        toolbar.sizeMode = NSToolbarSizeModeRegular;
-        toolbar.delegate = self;
-        window.toolbar = toolbar;
+        if (document.hierarchyFile) {
+            [self _showHierarchyFile:document.hierarchyFile];
+        } else {
+            // The document is still importing in the background (an Xcode
+            // capture): hold the window on a placeholder and build the
+            // reader in place once the file lands.
+            window.contentView = [LKReadLoadingView new];
+            @weakify(self);
+            [[[RACObserve(document, hierarchyFile) ignore:nil] take:1] subscribeNext:^(LookinHierarchyFile *file) {
+                @strongify(self);
+                [self _showHierarchyFile:file];
+            }];
+        }
     }
     return self;
+}
+
+/// Builds the reader for `file` in this window: the view controller, the
+/// measure button's enabled state, and the toolbar, whose items need the
+/// data source to exist.
+- (void)_showHierarchyFile:(LookinHierarchyFile *)file {
+    NSWindow *window = self.window;
+    _viewController = [[LKReadViewController alloc] initWithFile:file preferenceManager:self.preferenceManager];
+    // Setting contentViewController sizes the window to the view; keep the
+    // size the window already has.
+    self.viewController.view.frame = window.contentView.bounds;
+    window.contentView = self.viewController.view;
+    self.contentViewController = self.viewController;
+    
+    @weakify(self);
+    [RACObserve(self.viewController.hierarchyDataSource, selectedItem) subscribeNext:^(id  _Nullable x) {
+        @strongify(self);
+        NSButton *measureButton = (NSButton *)self.toolbarItemsMap[LKToolBarIdentifier_Measure].view;
+        BOOL canMeasure = !!x;
+        measureButton.enabled = canMeasure;
+    }];
+    
+    NSToolbar *toolbar = [[NSToolbar alloc] init];
+    toolbar.displayMode = NSToolbarDisplayModeIconAndLabel;
+    toolbar.sizeMode = NSToolbarSizeModeRegular;
+    toolbar.delegate = self;
+    window.toolbar = toolbar;
 }
 
 #pragma mark - NSToolbarDelegate

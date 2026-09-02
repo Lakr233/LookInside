@@ -457,3 +457,7 @@ enum LKXcodeViewHierarchyConverter {
         return appInfo
     }
 }
+
+extension LKXcodeViewHierarchyConversionError: LocalizedError {
+    var errorDescription: String? { description }
+}

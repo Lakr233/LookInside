@@ -22,6 +22,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         testRecoveryAppliesTheGeometryFlipItself()
         testFlippedSubtreeRendersAsItDoesInsideItsRoot()
         testNestedLayersOfAYDownTreeKeepTheirOrderAtEveryDepth()
+        testCancelledRecoveryProducesNoImages()
         testEmptyLayerProducesNoImage()
         testZeroSizedLayerProducesNoImage()
         testLargeLayerIsScaledWithinTheCap()
@@ -176,6 +177,22 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         expectRows(screenshots, "0x1", "the root", [(5, "red"), (15, "blue"), (22, "green"), (30, "yellow"), (50, "white")])
         expectRows(screenshots, "0x2", "level one", [(5, "red"), (15, "blue"), (22, "green"), (30, "yellow")])
         expectRows(screenshots, "0x4", "level two", [(2, "green"), (10, "yellow")])
+    }
+
+    // MARK: - Cancellation
+
+    /// The document cancels a running import when its window closes, and the
+    /// recovery is the phase that takes the time, so it has to notice.
+    private static func testCancelledRecoveryProducesNoImages() {
+        guard let archiveData = archiveData(rootLayer: orientationFixture(), geometryFlipped: false) else {
+            fail("could not build the archive fixture")
+        }
+        let capture = layerCapture(archiveData: archiveData, tree: LayerNodeFixture("0x1", [LayerNodeFixture("0x2")]))
+        let cancelled = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture, isCancelled: { true })
+        expect(cancelled.groupByObjectIdentifier.isEmpty && cancelled.soloByObjectIdentifier.isEmpty,
+               "a cancelled recovery must not hand back images")
+        let completed = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture)
+        expect(!completed.groupByObjectIdentifier.isEmpty, "the same capture renders when not cancelled")
     }
 
     // MARK: - Skipping

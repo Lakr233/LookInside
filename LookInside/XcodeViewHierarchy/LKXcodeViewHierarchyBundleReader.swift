@@ -94,6 +94,19 @@ enum LKXcodeViewHierarchyBundleReader {
         )
     }
 
+    /// The checks `reading(contentsOf:)` makes before it starts decoding, on
+    /// their own: enough to reject something that is not a capture at open
+    /// time, cheap enough to run before the window appears.
+    static func validatingBundle(at bundleURL: URL) throws {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: bundleURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue
+        else { throw LKXcodeViewHierarchyBundleReadingError.notADirectory(bundleURL) }
+        guard try !orderedResponseURLs(inBundleAt: bundleURL).isEmpty else {
+            throw LKXcodeViewHierarchyBundleReadingError.noUsableResponses(bundleURL)
+        }
+    }
+
     // MARK: Responses
 
     /// Response entries sorted by their numeric suffix, so refinements apply in
@@ -161,4 +174,10 @@ enum LKXcodeViewHierarchyBundleReader {
         if let number = rawValue as? NSNumber { return number.stringValue }
         return nil
     }
+}
+
+/// Shown by the document when an import fails, so the wording must be the
+/// user-facing one rather than "The operation couldn't be completed".
+extension LKXcodeViewHierarchyBundleReadingError: LocalizedError {
+    var errorDescription: String? { description }
 }
