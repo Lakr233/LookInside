@@ -9,16 +9,22 @@
 // archive has the answers pre-materialised on the nodes, and this converter
 // pre-materialises the capture's answers the same way.
 //
-// The capture's tree is not the inspector's tree, and three differences matter:
+// The capture's tree is not the inspector's tree, and four differences matter:
 //
-//  1. **A window's root view is an association, not a child.** A window object
+//  1. **The top level is Xcode's, not the capture's.** The capture's root
+//     groups are flat lists per class (every window, every window controller,
+//     every scene, every root view). Xcode's sidebar derives its top level
+//     from them and this converter replicates that derivation — see
+//     `makingRootDisplayItems` — so a capture opens here with the same rows in
+//     the same order as in Xcode's own View Hierarchy outline.
+//  2. **A window's root view is an association, not a child.** A window object
 //     carries no children at all; the view it hosts hangs off its
 //     `com.apple.*.NSView`/`UIView` association. Reading only `childGroup`
 //     from a window yields an empty hierarchy.
-//  2. **Layers, constraints and view controllers are associations too**, and
+//  3. **Layers, constraints and view controllers are associations too**, and
 //     they must stay out of the view tree. The inspector wants a view's layer
 //     folded into the same node (as `layerObject`), not standing beside it.
-//  3. **Layout guides and AppKit cells become child nodes**, because that is
+//  4. **Layout guides and AppKit cells become child nodes**, because that is
 //     the shape the inspector's node model uses for them (nodeKind
 //     LayoutGuide and Cell, both riding `kindObject`).
 //
@@ -47,12 +53,14 @@ enum LKXcodeViewHierarchyConverter {
     private enum GroupIdentifier {
         static let layer = "com.apple.QuartzCore.CALayer"
 
+        static let uiKitApplication = "com.apple.UIKit.UIApplication"
+        static let uiKitScene = "com.apple.UIKit.UIScene"
         static let uiKitWindow = "com.apple.UIKit.UIWindow"
         static let uiKitView = "com.apple.UIKit.UIView"
         static let uiKitLayoutGuide = "com.apple.UIKit.UILayoutGuide"
         static let uiKitViewController = "com.apple.UIKit.UIViewController"
-        static let uiKitScene = "com.apple.UIKit.UIScene"
 
+        static let appKitApplication = "com.apple.AppKit.NSApplication"
         static let appKitWindow = "com.apple.AppKit.NSWindow"
         static let appKitView = "com.apple.AppKit.NSView"
         static let appKitLayoutGuide = "com.apple.AppKit.NSLayoutGuide"
@@ -61,34 +69,57 @@ enum LKXcodeViewHierarchyConverter {
         static let appKitCell = "com.apple.AppKit.NSCell"
     }
 
+    /// Class names Xcode's sidebar special-cases when deciding what to list.
+    private enum ClassName {
+        /// The only root views Xcode lists at the top level.
+        static let touchBarView = "NSTouchBarView"
+        /// Never listed, whatever its flags say.
+        static let systemOverlayWindow = "_UIWindowSystemOverlayWindow"
+        /// Internal, and never granted the internal-window exception.
+        static let remoteKeyboardWindow = "UIRemoteKeyboardWindow"
+        /// Content that earns an internal or hidden window a row anyway: the
+        /// keyboard and iMessage extension windows host the user's own code.
+        static let externallyRelevantControllers = ["MSMessagesAppViewController", "UIInputViewController"]
+    }
+
     /// Which platform's naming a capture uses; everything else follows from it.
     private struct Vocabulary {
         let isAppKit: Bool
+        let applicationGroup: String
+        /// The group whose objects own windows — window controllers on AppKit,
+        /// scenes on UIKit. Xcode lists these first, each with its windows.
+        let windowOwnerGroup: String
+        /// Whether an owner is a node of its own (a scene) or folds into the
+        /// window's row as its controller (AppKit).
+        let windowOwnerIsSceneNode: Bool
         let windowGroup: String
         let viewGroup: String
         let layoutGuideGroup: String
         let viewControllerGroup: String
         let cellGroup: String?
-        let windowControllerGroup: String?
 
         static let uiKit = Vocabulary(
             isAppKit: false,
+            applicationGroup: GroupIdentifier.uiKitApplication,
+            windowOwnerGroup: GroupIdentifier.uiKitScene,
+            windowOwnerIsSceneNode: true,
             windowGroup: GroupIdentifier.uiKitWindow,
             viewGroup: GroupIdentifier.uiKitView,
             layoutGuideGroup: GroupIdentifier.uiKitLayoutGuide,
             viewControllerGroup: GroupIdentifier.uiKitViewController,
-            cellGroup: nil,
-            windowControllerGroup: nil
+            cellGroup: nil
         )
 
         static let appKit = Vocabulary(
             isAppKit: true,
+            applicationGroup: GroupIdentifier.appKitApplication,
+            windowOwnerGroup: GroupIdentifier.appKitWindowController,
+            windowOwnerIsSceneNode: false,
             windowGroup: GroupIdentifier.appKitWindow,
             viewGroup: GroupIdentifier.appKitView,
             layoutGuideGroup: GroupIdentifier.appKitLayoutGuide,
             viewControllerGroup: GroupIdentifier.appKitViewController,
-            cellGroup: GroupIdentifier.appKitCell,
-            windowControllerGroup: GroupIdentifier.appKitWindowController
+            cellGroup: GroupIdentifier.appKitCell
         )
     }
 
@@ -119,18 +150,90 @@ enum LKXcodeViewHierarchyConverter {
         return file
     }
 
-    // MARK: Tree
+    // MARK: Top level
 
+    /// The top level of the tree, derived the way Xcode's sidebar derives it.
+    ///
+    /// Xcode (DebuggerFoundation's `DBGDebugHierarchyViewObjectAdaptor`, then
+    /// DebuggerUI's `DBGApplicationObject`) builds its View Hierarchy outline
+    /// from the capture's root groups in this order:
+    ///
+    ///  1. every window owner in root-group order — window controllers on
+    ///     AppKit, scenes on UIKit — each followed by the windows that name it
+    ///     as their owner, in window order;
+    ///  2. the windows no listed owner claims, in window order, with child
+    ///     windows flattened in after the root ones;
+    ///  3. root views, of which only an `NSTouchBarView` with children counts.
+    ///
+    /// The owner of the key window moves to the front, with the key window
+    /// first among its windows. Windows that are internal or invisible are
+    /// left out unless they host the user's keyboard or iMessage extension
+    /// code, and a system overlay window is always left out.
+    ///
+    /// A root view that is not a touch bar therefore never appears — a view
+    /// controller's view that is currently detached from any window, say.
+    /// Xcode only shows those in its other outline mode ("View Controller
+    /// Containment"), which the inspector has no counterpart for.
     private static func makingRootDisplayItems(
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary
     ) -> [LookinDisplayItem] {
-        var rootItems: [LookinDisplayItem] = []
         var convertedViewIdentifiers: Set<String> = []
+        let keyWindowIdentifier = keyWindowIdentifier(graph: graph, vocabulary: vocabulary)
 
-        for windowIdentifier in graph.rootIdentifiers(inGroup: vocabulary.windowGroup) {
+        let windowIdentifiers = listedWindowIdentifiers(graph: graph, vocabulary: vocabulary)
+        let listedOwnerIdentifiers = Set(graph.rootIdentifiers(inGroup: vocabulary.windowOwnerGroup))
+        var windowIdentifiersByOwner: [String: [String]] = [:]
+        var unownedWindowIdentifiers: [String] = []
+        for windowIdentifier in windowIdentifiers {
+            guard let windowNode = graph.node(windowIdentifier) else { continue }
+            // Xcode only credits owners that appear in the owner root group;
+            // a window whose owner the capture never listed stays unowned.
+            if let ownerIdentifier = windowNode.associatedIdentifiers(inGroup: vocabulary.windowOwnerGroup).first,
+               listedOwnerIdentifiers.contains(ownerIdentifier) {
+                windowIdentifiersByOwner[ownerIdentifier, default: []].append(windowIdentifier)
+            } else {
+                unownedWindowIdentifiers.append(windowIdentifier)
+            }
+        }
+
+        var ownerIdentifiers = graph.rootIdentifiers(inGroup: vocabulary.windowOwnerGroup)
+        if let keyWindowIdentifier {
+            if let ownerIdentifier = ownerIdentifiers.first(where: {
+                windowIdentifiersByOwner[$0]?.contains(keyWindowIdentifier) == true
+            }) {
+                ownerIdentifiers.moveToFront(ownerIdentifier)
+                windowIdentifiersByOwner[ownerIdentifier]?.moveToFront(keyWindowIdentifier)
+            } else {
+                unownedWindowIdentifiers.moveToFront(keyWindowIdentifier)
+            }
+        }
+
+        var rootItems: [LookinDisplayItem] = []
+        for ownerIdentifier in ownerIdentifiers {
+            let windowItems = (windowIdentifiersByOwner[ownerIdentifier] ?? []).compactMap { windowIdentifier in
+                makingWindowItem(
+                    windowIdentifier: windowIdentifier,
+                    isKeyWindow: windowIdentifier == keyWindowIdentifier,
+                    graph: graph,
+                    vocabulary: vocabulary,
+                    convertedViewIdentifiers: &convertedViewIdentifiers
+                )
+            }
+            if vocabulary.windowOwnerIsSceneNode {
+                // A scene is a node even with no windows, as in a live session.
+                guard let sceneNode = graph.node(ownerIdentifier) else { continue }
+                rootItems.append(makingSceneItem(sceneNode: sceneNode, windowItems: windowItems, graph: graph))
+            } else {
+                // A window controller is not a node here: the window row
+                // carries it as its controller. One without windows has no row.
+                rootItems.append(contentsOf: windowItems)
+            }
+        }
+        for windowIdentifier in unownedWindowIdentifiers {
             guard let windowItem = makingWindowItem(
                 windowIdentifier: windowIdentifier,
+                isKeyWindow: windowIdentifier == keyWindowIdentifier,
                 graph: graph,
                 vocabulary: vocabulary,
                 convertedViewIdentifiers: &convertedViewIdentifiers
@@ -138,25 +241,168 @@ enum LKXcodeViewHierarchyConverter {
             rootItems.append(windowItem)
         }
 
-        // Root views the capture recorded outside any window still belong in
-        // the tree; a detached view is exactly the kind of thing someone opens
-        // a capture to look at.
         for viewIdentifier in graph.rootIdentifiers(inGroup: vocabulary.viewGroup)
         where !convertedViewIdentifiers.contains(viewIdentifier) {
-            guard let viewItem = makingViewItem(
-                viewIdentifier: viewIdentifier,
-                graph: graph,
-                vocabulary: vocabulary,
-                convertedViewIdentifiers: &convertedViewIdentifiers
-            ) else { continue }
+            guard let viewNode = graph.node(viewIdentifier),
+                  !viewNode.childIdentifiers.isEmpty,
+                  isNode(viewNode, kindOfClassNamed: ClassName.touchBarView, graph: graph),
+                  let viewItem = makingViewItem(
+                      viewIdentifier: viewIdentifier,
+                      graph: graph,
+                      vocabulary: vocabulary,
+                      convertedViewIdentifiers: &convertedViewIdentifiers
+                  )
+            else { continue }
             rootItems.append(viewItem)
         }
 
         return rootItems
     }
 
+    /// Every window Xcode would list, in the order it processes them: the
+    /// window root group first, then child windows of those, minus the ones
+    /// its skip rule excludes.
+    private static func listedWindowIdentifiers(
+        graph: LKXcodeViewHierarchyObjectGraph,
+        vocabulary: Vocabulary
+    ) -> [String] {
+        let rootWindowIdentifiers = graph.rootIdentifiers(inGroup: vocabulary.windowGroup)
+        var childWindowIdentifiers: [String] = []
+        for rootWindowIdentifier in rootWindowIdentifiers {
+            appendingChildWindowIdentifiers(
+                of: rootWindowIdentifier, graph: graph, vocabulary: vocabulary, into: &childWindowIdentifiers
+            )
+        }
+
+        var seen: Set<String> = []
+        return (rootWindowIdentifiers + childWindowIdentifiers).filter { windowIdentifier in
+            guard seen.insert(windowIdentifier).inserted, let windowNode = graph.node(windowIdentifier) else {
+                return false
+            }
+            return !shouldSkipWindow(windowNode, graph: graph, vocabulary: vocabulary)
+        }
+    }
+
+    /// An NSWindow's `childGroup` holds its child windows (a UIWindow's holds
+    /// its subviews, which are not windows and are left alone here).
+    private static func appendingChildWindowIdentifiers(
+        of windowIdentifier: String,
+        graph: LKXcodeViewHierarchyObjectGraph,
+        vocabulary: Vocabulary,
+        into childWindowIdentifiers: inout [String]
+    ) {
+        guard let windowNode = graph.node(windowIdentifier) else { return }
+        for childIdentifier in windowNode.childIdentifiers
+        where graph.node(childIdentifier)?.groupingIdentifier == vocabulary.windowGroup {
+            childWindowIdentifiers.append(childIdentifier)
+            appendingChildWindowIdentifiers(
+                of: childIdentifier, graph: graph, vocabulary: vocabulary, into: &childWindowIdentifiers
+            )
+        }
+    }
+
+    /// Xcode's rule for leaving a window out of the sidebar. The flag pair is
+    /// only recorded by the UIKit agent; AppKit captures carry neither, so no
+    /// AppKit window is ever skipped on their account.
+    private static func shouldSkipWindow(
+        _ windowNode: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph,
+        vocabulary: Vocabulary
+    ) -> Bool {
+        if isNode(windowNode, kindOfClassNamed: ClassName.systemOverlayWindow, graph: graph) { return true }
+        guard let isInternal = windowNode.property(named: "internal")?.value.boolValue,
+              let isVisible = windowNode.property(named: "visible")?.value.boolValue,
+              isInternal || !isVisible
+        else { return false }
+        return !hostsExternallyRelevantContent(windowNode, graph: graph, vocabulary: vocabulary)
+    }
+
+    /// Whether an internal or hidden window still deserves a row: the
+    /// keyboard and iMessage extension windows are the system's, but the view
+    /// controllers inside them are the user's.
+    private static func hostsExternallyRelevantContent(
+        _ windowNode: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph,
+        vocabulary: Vocabulary
+    ) -> Bool {
+        if isNode(windowNode, kindOfClassNamed: ClassName.remoteKeyboardWindow, graph: graph) { return false }
+        var pendingControllerIdentifiers = windowNode.associatedIdentifiers(inGroup: vocabulary.viewControllerGroup)
+        var visited: Set<String> = []
+        while !pendingControllerIdentifiers.isEmpty {
+            let controllerIdentifier = pendingControllerIdentifiers.removeFirst()
+            guard visited.insert(controllerIdentifier).inserted,
+                  let controllerNode = graph.node(controllerIdentifier)
+            else { continue }
+            if ClassName.externallyRelevantControllers.contains(where: {
+                isNode(controllerNode, kindOfClassNamed: $0, graph: graph)
+            }) {
+                return true
+            }
+            pendingControllerIdentifiers.append(contentsOf: controllerNode.childIdentifiers)
+        }
+        return false
+    }
+
+    /// The window the application object names as key, if the capture
+    /// recorded one. Xcode reads the pointer off the application, not the
+    /// windows' own flags.
+    private static func keyWindowIdentifier(
+        graph: LKXcodeViewHierarchyObjectGraph,
+        vocabulary: Vocabulary
+    ) -> String? {
+        guard let applicationIdentifier = graph.rootIdentifiers(inGroup: vocabulary.applicationGroup).first,
+              let keyWindowText = graph.node(applicationIdentifier)?.property(named: "keyWindow")?.value.textValue
+        else { return nil }
+        let keyWindowValue = objectIdentifierValue(keyWindowText)
+        guard keyWindowValue != 0 else { return nil }
+        return graph.rootIdentifiers(inGroup: vocabulary.windowGroup)
+            .first { objectIdentifierValue($0) == keyWindowValue }
+            ?? graph.nodesByIdentifier.keys.first { objectIdentifierValue($0) == keyWindowValue }
+    }
+
+    // MARK: Tree
+
+    /// A UIKit scene, the node a live session puts above its windows.
+    private static func makingSceneItem(
+        sceneNode: LKXcodeViewHierarchyNode,
+        windowItems: [LookinDisplayItem],
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> LookinDisplayItem {
+        let item = makingDisplayItem(kind: .windowScene)
+        item.windowObject = makingLookinObject(for: sceneNode, graph: graph)
+        item.alpha = 1
+        item.customDisplayTitle = sceneDisplayTitle(for: sceneNode)
+        item.representedAsKeyWindow = windowItems.contains { $0.representedAsKeyWindow }
+        item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
+            for: sceneNode, layerNode: nil, graph: graph
+        )
+        item.subitems = windowItems
+        return item
+    }
+
+    /// The server's title shape for a scene: class, title, activation state.
+    private static func sceneDisplayTitle(for sceneNode: LKXcodeViewHierarchyNode) -> String {
+        var title = sceneNode.className ?? "UIWindowScene"
+        if let sceneTitle = sceneNode.property(named: "title")?.value.textValue, !sceneTitle.isEmpty {
+            title += " – \(sceneTitle)"
+        }
+        if let activationState = sceneNode.property(named: "activationState")?.value.doubleValue {
+            let stateDescription: String
+            switch Int(activationState) {
+            case -1: stateDescription = "Unattached"
+            case 0: stateDescription = "Foreground Active"
+            case 1: stateDescription = "Foreground Inactive"
+            case 2: stateDescription = "Background"
+            default: stateDescription = "Unknown"
+            }
+            title += " (\(stateDescription))"
+        }
+        return title
+    }
+
     private static func makingWindowItem(
         windowIdentifier: String,
+        isKeyWindow: Bool,
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary,
         convertedViewIdentifiers: inout Set<String>
@@ -165,6 +411,7 @@ enum LKXcodeViewHierarchyConverter {
 
         let item = makingDisplayItem(kind: .window)
         item.windowObject = makingLookinObject(for: windowNode, graph: graph)
+        item.representedAsKeyWindow = isKeyWindow
 
         // A UIWindow is itself a view and owns a layer; an NSWindow is not.
         // Carrying the layer lets the window node resolve a recovered
@@ -179,8 +426,8 @@ enum LKXcodeViewHierarchyConverter {
         }
         applyingVisibility(from: windowNode, to: item)
 
-        if let windowControllerGroup = vocabulary.windowControllerGroup,
-           let controllerIdentifier = windowNode.associatedIdentifiers(inGroup: windowControllerGroup).first,
+        if !vocabulary.windowOwnerIsSceneNode,
+           let controllerIdentifier = windowNode.associatedIdentifiers(inGroup: vocabulary.windowOwnerGroup).first,
            let controllerNode = graph.node(controllerIdentifier) {
             item.hostWindowControllerObject = makingLookinObject(for: controllerNode, graph: graph)
         }
@@ -192,8 +439,11 @@ enum LKXcodeViewHierarchyConverter {
         // Where the window's content hangs differs by platform, and reading
         // only one of the two loses the entire hierarchy on the other. A
         // UIWindow is a view, so its subviews are its own children; an NSWindow
-        // is not, so its content view is an association.
-        var rootViewIdentifiers = windowNode.childIdentifiers
+        // is not, so its content view is an association — and its children,
+        // when it has any, are child windows, which the top level lists.
+        var rootViewIdentifiers = windowNode.childIdentifiers.filter {
+            graph.node($0)?.groupingIdentifier != vocabulary.windowGroup
+        }
         rootViewIdentifiers.append(contentsOf: windowNode.associatedIdentifiers(inGroup: vocabulary.viewGroup))
 
         var subitems: [LookinDisplayItem] = []
@@ -349,6 +599,16 @@ enum LKXcodeViewHierarchyConverter {
         return item
     }
 
+    /// Xcode's `isKindOfTypeWithName:` — the class or any of its ancestors.
+    private static func isNode(
+        _ node: LKXcodeViewHierarchyNode,
+        kindOfClassNamed className: String,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> Bool {
+        guard let nodeClassName = node.className else { return false }
+        return graph.classChain(forClassName: nodeClassName).contains(className)
+    }
+
     private static func associatedLayerNode(
         of node: LKXcodeViewHierarchyNode,
         graph: LKXcodeViewHierarchyObjectGraph
@@ -460,4 +720,13 @@ enum LKXcodeViewHierarchyConverter {
 
 extension LKXcodeViewHierarchyConversionError: LocalizedError {
     var errorDescription: String? { description }
+}
+
+private extension Array where Element: Equatable {
+    /// Moves `element` to index 0 when present; leaves the order otherwise.
+    mutating func moveToFront(_ element: Element) {
+        guard let index = firstIndex(of: element), index != 0 else { return }
+        remove(at: index)
+        insert(element, at: 0)
+    }
 }
