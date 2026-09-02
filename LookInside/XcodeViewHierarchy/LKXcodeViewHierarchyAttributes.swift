@@ -10,16 +10,128 @@
 // with their normal titles, ordering and editors rather than as anonymous
 // key-value rows — with the editors inert, since the document is read-only.
 //
-// Scope is the geometry and the common visual properties, plus Auto Layout
-// sizing. A capture carries hundreds of distinct property names per class;
-// mapping all of them is a separate piece of work, and the ones here are the
-// ones the preview and the tree already depend on being right.
+// The card order and the capture property behind each row live in
+// `LKXcodeViewHierarchyAttributeCatalog`. This file walks that catalog, gates
+// each row on the node's class chain, and converts the decoded capture value
+// into the value type the card expects. A few rows are not one property but a
+// derivation — the class chains, the relations, the Auto Layout constraints,
+// a scene's window count — and are built here directly, the way the server's
+// `lks_relatedClassChainList` / `lks_selfRelation` / `lks_constraints`
+// derive them for a live session.
+//
+// Two of the server's rules are kept so an imported capture reads like a live
+// one: the Auto Layout card is dropped when it has no constraints (sizing
+// priorities alone are not worth a card), and a row whose value is nil is
+// kept or hidden according to the blueprint's `hideIfNil` — a label with no
+// text still shows its Text row; a view with no image shows no image rows.
 
 import AppKit
 import Foundation
 
+// MARK: - Context
+
+/// Per-conversion facts the cards need beyond a node's own properties.
+struct LKXcodeViewHierarchyAttributeEnvironment {
+    let isAppKit: Bool
+    let constraintIndex: LKXcodeViewHierarchyConstraintIndex
+    /// The window the application object names as key, if the capture says.
+    let keyWindowIdentifier: String?
+}
+
+/// What a node is to the inspector, and which neighbours its cards refer to.
+struct LKXcodeViewHierarchyAttributeContext {
+    enum Role {
+        /// A view, including a UIKit window, which is a view too.
+        case view
+        /// An AppKit window, which is not a view.
+        case window
+        case windowScene
+        case cell
+        case layoutGuide
+    }
+
+    let role: Role
+    let environment: LKXcodeViewHierarchyAttributeEnvironment
+    /// The controller whose view this is (or a window's root view controller).
+    var viewControllerNode: LKXcodeViewHierarchyNode? = nil
+    /// An AppKit window's controller.
+    var windowControllerNode: LKXcodeViewHierarchyNode? = nil
+    /// The control owning a cell, or the view owning a layout guide.
+    var ownerNode: LKXcodeViewHierarchyNode? = nil
+    /// The node's parent in the tree, for typing constraint endpoints.
+    var superviewNode: LKXcodeViewHierarchyNode? = nil
+    /// The windows listed under a scene, after Xcode's skip rule.
+    var sceneWindowNodes: [LKXcodeViewHierarchyNode] = []
+}
+
+// MARK: - Constraint index
+
+/// Which constraints mention which object, built once per capture.
+///
+/// A capture lists every `NSLayoutConstraint` in a root group of its own, and
+/// a view's Auto Layout card wants the constraints that involve that view —
+/// the server's `lks_involvedRawConstraints`. Walking the whole group per
+/// view would be quadratic on captures with thousands of constraints.
+final class LKXcodeViewHierarchyConstraintIndex {
+    private static let constraintClassName = "NSLayoutConstraint"
+    private static let endpointPropertyNames = ["firstItem", "secondItem"]
+
+    private let constraintIdentifiersByItemIdentifier: [String: [String]]
+
+    init(graph: LKXcodeViewHierarchyObjectGraph) {
+        var index: [String: [String]] = [:]
+        // Dictionary order is unstable; sort so two imports of one capture
+        // list a view's constraints in the same order.
+        for constraintIdentifier in graph.nodesByIdentifier.keys.sorted() {
+            guard let constraintNode = graph.node(constraintIdentifier),
+                  Self.isConstraint(constraintNode, graph: graph)
+            else { continue }
+            var itemIdentifiers: Set<String> = []
+            for endpointPropertyName in Self.endpointPropertyNames {
+                guard case .objectReference(let reference)? = constraintNode.property(named: endpointPropertyName)?.value
+                else { continue }
+                itemIdentifiers.insert(reference.objectIdentifier)
+            }
+            for itemIdentifier in itemIdentifiers {
+                index[itemIdentifier, default: []].append(constraintIdentifier)
+            }
+        }
+        constraintIdentifiersByItemIdentifier = index
+    }
+
+    func constraintIdentifiers(involving itemIdentifier: String) -> [String] {
+        constraintIdentifiersByItemIdentifier[itemIdentifier] ?? []
+    }
+
+    private static func isConstraint(_ node: LKXcodeViewHierarchyNode, graph: LKXcodeViewHierarchyObjectGraph) -> Bool {
+        if node.groupingIdentifier?.hasSuffix("." + constraintClassName) == true { return true }
+        guard let className = node.className else { return false }
+        return graph.classChain(forClassName: className).contains(constraintClassName)
+    }
+}
+
+// MARK: - Builder
+
 enum LKXcodeViewHierarchyAttributes {
-    /// Builds every attribute group for one captured object.
+    private typealias Catalog = LKXcodeViewHierarchyAttributeCatalog
+    private typealias Specification = LKXcodeViewHierarchyAttributeSpecification
+
+    private enum GroupIdentifier {
+        static let cell = "com.apple.AppKit.NSCell"
+    }
+
+    /// Class names that end the chains the Class card shows, per role.
+    private enum ChainEnd {
+        static let view = ["UIView", "NSView"]
+        static let viewController = ["UIViewController", "NSViewController"]
+        static let window = "NSWindow"
+        static let windowController = "NSWindowController"
+        static let scene = "UIScene"
+        static let cell = "NSCell"
+        static let layoutGuide = ["UILayoutGuide", "NSLayoutGuide"]
+    }
+
+    /// Builds every attribute group for one captured object, in card order.
     ///
     /// `layerNode` is the view's backing layer when it has one: several of the
     /// properties the Layout and View/Layer cards show (position, anchor point,
@@ -27,216 +139,486 @@ enum LKXcodeViewHierarchyAttributes {
     static func makingGroups(
         for node: LKXcodeViewHierarchyNode,
         layerNode: LKXcodeViewHierarchyNode?,
-        graph: LKXcodeViewHierarchyObjectGraph
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
     ) -> [LookinAttributesGroup] {
+        let classChain = graph.classChain(forClassName: node.className ?? "NSObject")
         var groups: [LookinAttributesGroup] = []
-        if let classGroup = makingClassGroup(for: node, graph: graph) { groups.append(classGroup) }
-        if let layoutGroup = makingLayoutGroup(for: node, layerNode: layerNode) { groups.append(layoutGroup) }
-        if let viewLayerGroup = makingViewLayerGroup(for: node, layerNode: layerNode) { groups.append(viewLayerGroup) }
-        if let autoLayoutGroup = makingAutoLayoutGroup(for: node) { groups.append(autoLayoutGroup) }
+        for catalogGroup in Catalog.groups {
+            var sections: [LookinAttributesSection] = []
+            for catalogSection in catalogGroup.sections {
+                let attributes = catalogSection.attributes.compactMap { identifier in
+                    makingAttribute(
+                        identifier, node: node, layerNode: layerNode, classChain: classChain, graph: graph, context: context
+                    )
+                }
+                if !attributes.isEmpty {
+                    sections.append(makingSection(catalogSection.identifier, attributes))
+                }
+            }
+            // The server drops an Auto Layout card that holds only sizing
+            // priorities; a view with no constraints gets no card.
+            if catalogGroup.identifier == LookinAttrGroup_AutoLayout,
+               !sections.contains(where: { $0.identifier == LookinAttrSec_AutoLayout_Constraints }) {
+                continue
+            }
+            if !sections.isEmpty {
+                groups.append(makingGroup(catalogGroup.identifier, sections))
+            }
+        }
         return groups
     }
 
-    /// The Layout Guide card, which replaces the view cards for guide nodes.
-    static func makingLayoutGuideGroups(
-        for guideNode: LKXcodeViewHierarchyNode,
+    // MARK: - One attribute
+
+    private static func makingAttribute(
+        _ identifier: String,
+        node: LKXcodeViewHierarchyNode,
+        layerNode: LKXcodeViewHierarchyNode?,
+        classChain: [String],
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
+    ) -> LookinAttribute? {
+        switch identifier {
+        case LookinAttr_Class_Class_Class:
+            let chains = relatedClassChains(classChain, graph: graph, context: context)
+            return makingAttribute(identifier, .customObj, chains as NSArray)
+
+        case LookinAttr_Relation_Relation_Relation:
+            let relations = relationDescriptions(for: node, context: context)
+            guard !relations.isEmpty else { return nil }
+            return makingAttribute(identifier, .customObj, relations as NSArray)
+
+        case LookinAttr_AutoLayout_Constraints_Constraints:
+            guard context.role == .view else { return nil }
+            let constraints = makingConstraints(for: node, graph: graph, context: context)
+            guard !constraints.isEmpty else { return nil }
+            return makingAttribute(identifier, .customObj, constraints as NSArray)
+
+        case LookinAttr_UIWindowScene_Windows_WindowCount:
+            guard context.role == .windowScene else { return nil }
+            return makingAttribute(identifier, .long, NSNumber(value: context.sceneWindowNodes.count))
+
+        case LookinAttr_UIWindowScene_Windows_KeyWindowClassName:
+            guard context.role == .windowScene,
+                  let keyWindowIdentifier = context.environment.keyWindowIdentifier,
+                  let keyWindowClassName = context.sceneWindowNodes
+                      .first(where: { $0.objectIdentifier == keyWindowIdentifier })?.className
+            else { return nil }
+            return makingAttribute(identifier, .nsString, keyWindowClassName as NSString)
+
+        case LookinAttr_LayoutGuide_OwningView_OwningView:
+            guard context.role == .layoutGuide, let ownerNode = context.ownerNode, let ownerClassName = ownerNode.className
+            else { return nil }
+            // The server's shape: "UIView (0x...)".
+            return makingAttribute(identifier, .nsString, "\(ownerClassName) (\(ownerNode.objectIdentifier))" as NSString)
+
+        default:
+            return makingSpecifiedAttribute(
+                identifier, node: node, layerNode: layerNode, classChain: classChain, graph: graph
+            )
+        }
+    }
+
+    /// A row the catalog maps to a capture property.
+    private static func makingSpecifiedAttribute(
+        _ identifier: String,
+        node: LKXcodeViewHierarchyNode,
+        layerNode: LKXcodeViewHierarchyNode?,
+        classChain: [String],
         graph: LKXcodeViewHierarchyObjectGraph
-    ) -> [LookinAttributesGroup] {
-        var sections: [LookinAttributesSection] = []
-        if let identifier = guideNode.property(named: "identifier")?.value.textValue, !identifier.isEmpty {
-            sections.append(makingSection(
-                LookinAttrSec_LayoutGuide_Identifier,
-                [makingStringAttribute(LookinAttr_LayoutGuide_Identifier_Identifier, identifier)]
-            ))
-        }
-        if let layoutFrame = rect(from: guideNode, propertyName: "layoutFrame") {
-            sections.append(makingSection(
-                LookinAttrSec_LayoutGuide_LayoutFrame,
-                [makingRectAttribute(LookinAttr_LayoutGuide_LayoutFrame_LayoutFrame, layoutFrame)]
-            ))
-        }
-        guard !sections.isEmpty else { return [] }
-
-        var groups = [makingGroup(LookinAttrGroup_LayoutGuide, sections)]
-        if let classGroup = makingClassGroup(for: guideNode, graph: nil) { groups.insert(classGroup, at: 0) }
-        return groups
-    }
-
-    // MARK: - Cards
-
-    private static func makingClassGroup(
-        for node: LKXcodeViewHierarchyNode,
-        graph: LKXcodeViewHierarchyObjectGraph?
-    ) -> LookinAttributesGroup? {
-        guard let className = node.className else { return nil }
-        let attribute = makingStringAttribute(LookinAttr_Class_Class_Class, className)
-        return makingGroup(LookinAttrGroup_Class, [makingSection(LookinAttrSec_Class_Class, [attribute])])
-    }
-
-    private static func makingLayoutGroup(
-        for node: LKXcodeViewHierarchyNode,
-        layerNode: LKXcodeViewHierarchyNode?
-    ) -> LookinAttributesGroup? {
-        var sections: [LookinAttributesSection] = []
-
-        if let frame = rect(from: node, propertyName: "frame") ?? rect(from: layerNode, propertyName: "frame") {
-            sections.append(makingSection(
-                LookinAttrSec_Layout_Frame,
-                [makingRectAttribute(LookinAttr_Layout_Frame_Frame, frame)]
-            ))
-        }
-        if let bounds = rect(from: node, propertyName: "bounds") ?? rect(from: layerNode, propertyName: "bounds") {
-            sections.append(makingSection(
-                LookinAttrSec_Layout_Bounds,
-                [makingRectAttribute(LookinAttr_Layout_Bounds_Bounds, bounds)]
-            ))
-        }
-        if let position = point(from: layerNode ?? node, propertyName: "position") {
-            sections.append(makingSection(
-                LookinAttrSec_Layout_Position,
-                [makingPointAttribute(LookinAttr_Layout_Position_Position, position)]
-            ))
-        }
-        if let anchorPoint = point(from: layerNode ?? node, propertyName: "anchorPoint") {
-            sections.append(makingSection(
-                LookinAttrSec_Layout_AnchorPoint,
-                [makingPointAttribute(LookinAttr_Layout_AnchorPoint_AnchorPoint, anchorPoint)]
-            ))
-        }
-
-        guard !sections.isEmpty else { return nil }
-        return makingGroup(LookinAttrGroup_Layout, sections)
-    }
-
-    private static func makingViewLayerGroup(
-        for node: LKXcodeViewHierarchyNode,
-        layerNode: LKXcodeViewHierarchyNode?
-    ) -> LookinAttributesGroup? {
-        var sections: [LookinAttributesSection] = []
-
-        var visibilityAttributes: [LookinAttribute] = []
-        if let hidden = node.property(named: "hidden")?.value.boolValue
-            ?? layerNode?.property(named: "hidden")?.value.boolValue {
-            visibilityAttributes.append(makingBoolAttribute(LookinAttr_ViewLayer_Visibility_Hidden, hidden))
-        }
-        if let opacity = node.property(named: "alpha")?.value.doubleValue
-            ?? layerNode?.property(named: "opacity")?.value.doubleValue {
-            visibilityAttributes.append(makingFloatAttribute(LookinAttr_ViewLayer_Visibility_Opacity, opacity))
-        }
-        if !visibilityAttributes.isEmpty {
-            sections.append(makingSection(LookinAttrSec_ViewLayer_Visibility, visibilityAttributes))
-        }
-
-        if let backgroundColor = colorComponents(from: layerNode ?? node, propertyName: "backgroundColor") {
-            sections.append(makingSection(
-                LookinAttrSec_ViewLayer_BgColor,
-                [makingColorAttribute(LookinAttr_ViewLayer_BgColor_BgColor, backgroundColor)]
-            ))
-        }
-
-        if let cornerRadius = (layerNode ?? node).property(named: "cornerRadius")?.value.doubleValue {
-            sections.append(makingSection(
-                LookinAttrSec_ViewLayer_Corner,
-                [makingFloatAttribute(LookinAttr_ViewLayer_Corner_Radius, cornerRadius)]
-            ))
-        }
-
-        var borderAttributes: [LookinAttribute] = []
-        if let borderWidth = (layerNode ?? node).property(named: "borderWidth")?.value.doubleValue {
-            borderAttributes.append(makingFloatAttribute(LookinAttr_ViewLayer_Border_Width, borderWidth))
-        }
-        if let borderColor = colorComponents(from: layerNode ?? node, propertyName: "borderColor") {
-            borderAttributes.append(makingColorAttribute(LookinAttr_ViewLayer_Border_Color, borderColor))
-        }
-        if !borderAttributes.isEmpty {
-            sections.append(makingSection(LookinAttrSec_ViewLayer_Border, borderAttributes))
-        }
-
-        if let masksToBounds = (layerNode ?? node).property(named: "masksToBounds")?.value.boolValue {
-            sections.append(makingSection(
-                LookinAttrSec_ViewLayer_InterationAndMasks,
-                [makingBoolAttribute(LookinAttr_ViewLayer_InterationAndMasks_MasksToBounds, masksToBounds)]
-            ))
-        }
-
-        guard !sections.isEmpty else { return nil }
-        return makingGroup(LookinAttrGroup_ViewLayer, sections)
-    }
-
-    /// Auto Layout sizing. The constraint list itself is a richer structure
-    /// than these cards take, so only the per-view sizing values are mapped.
-    private static func makingAutoLayoutGroup(for node: LKXcodeViewHierarchyNode) -> LookinAttributesGroup? {
-        var sections: [LookinAttributesSection] = []
-
-        var huggingAttributes: [LookinAttribute] = []
-        if let horizontal = node.property(named: "contentHuggingPriorityHorizontal")?.value.doubleValue {
-            huggingAttributes.append(makingFloatAttribute(LookinAttr_AutoLayout_Hugging_Hor, horizontal))
-        }
-        if let vertical = node.property(named: "contentHuggingPriorityVertical")?.value.doubleValue {
-            huggingAttributes.append(makingFloatAttribute(LookinAttr_AutoLayout_Hugging_Ver, vertical))
-        }
-        if !huggingAttributes.isEmpty {
-            sections.append(makingSection(LookinAttrSec_AutoLayout_Hugging, huggingAttributes))
-        }
-
-        var resistanceAttributes: [LookinAttribute] = []
-        if let horizontal = node.property(named: "contentCompressionResistancePriorityHorizontal")?.value.doubleValue {
-            resistanceAttributes.append(makingFloatAttribute(LookinAttr_AutoLayout_Resistance_Hor, horizontal))
-        }
-        if let vertical = node.property(named: "contentCompressionResistancePriorityVertical")?.value.doubleValue {
-            resistanceAttributes.append(makingFloatAttribute(LookinAttr_AutoLayout_Resistance_Ver, vertical))
-        }
-        if !resistanceAttributes.isEmpty {
-            sections.append(makingSection(LookinAttrSec_AutoLayout_Resistance, resistanceAttributes))
-        }
-
-        if let intrinsicSize = size(from: node, propertyName: "intrinsicContentSize") {
-            sections.append(makingSection(
-                LookinAttrSec_AutoLayout_IntrinsicSize,
-                [makingSizeAttribute(LookinAttr_AutoLayout_IntrinsicSize_Size, intrinsicSize)]
-            ))
-        }
-
-        guard !sections.isEmpty else { return nil }
-        return makingGroup(LookinAttrGroup_AutoLayout, sections)
-    }
-
-    // MARK: - Value readers
-
-    private static func rect(from node: LKXcodeViewHierarchyNode?, propertyName: String) -> CGRect? {
-        guard let components = node?.property(named: propertyName)?.value.numericComponents(expectedCount: 4)
+    ) -> LookinAttribute? {
+        guard let specification = Catalog.specifications[identifier] else { return nil }
+        guard specification.classNames.isEmpty || specification.classNames.contains(where: classChain.contains)
         else { return nil }
-        return CGRect(x: components[0], y: components[1], width: components[2], height: components[3])
+        guard let property = capturedProperty(for: specification, node: node, layerNode: layerNode, graph: graph)
+        else { return nil }
+
+        if case .absent = property.value {
+            // A captured nil: shown as nil where the blueprint wants it shown.
+            guard !LookinDashboardBlueprint.hideIfNil(withAttrID: identifier),
+                  let attrType = nilCapableAttrType(for: specification.kind)
+            else { return nil }
+            return makingAttribute(identifier, attrType, nil)
+        }
+
+        let isEnumeration = LookinDashboardBlueprint.enumListName(withAttrID: identifier) != nil
+        guard let converted = makingValue(property.value, kind: specification.kind, isEnumeration: isEnumeration)
+        else { return nil }
+        return makingAttribute(identifier, converted.attrType, converted.value)
     }
 
-    private static func point(from node: LKXcodeViewHierarchyNode?, propertyName: String) -> CGPoint? {
-        guard let components = node?.property(named: propertyName)?.value.numericComponents(expectedCount: 2)
-        else { return nil }
-        return CGPoint(x: components[0], y: components[1])
+    /// The first of the specification's candidate properties present on the
+    /// first of its candidate sources.
+    private static func capturedProperty(
+        for specification: Specification,
+        node: LKXcodeViewHierarchyNode,
+        layerNode: LKXcodeViewHierarchyNode?,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> LKXcodeViewHierarchyProperty? {
+        let sourceNodes: [LKXcodeViewHierarchyNode?]
+        switch specification.source {
+        case .node: sourceNodes = [node]
+        case .layer: sourceNodes = [layerNode]
+        case .nodeThenLayer: sourceNodes = [node, layerNode]
+        case .layerThenNode: sourceNodes = [layerNode, node]
+        case .cell: sourceNodes = [cellNode(of: node, graph: graph)]
+        case .screen: sourceNodes = [referencedNode(from: node, propertyName: "screen", graph: graph)]
+        }
+        for sourceNode in sourceNodes {
+            guard let sourceNode else { continue }
+            for propertyName in specification.properties {
+                if let property = sourceNode.property(named: propertyName) { return property }
+            }
+        }
+        return nil
     }
 
-    private static func size(from node: LKXcodeViewHierarchyNode?, propertyName: String) -> CGSize? {
-        guard let components = node?.property(named: propertyName)?.value.numericComponents(expectedCount: 2)
-        else { return nil }
-        return CGSize(width: components[0], height: components[1])
+    private static func cellNode(
+        of node: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> LKXcodeViewHierarchyNode? {
+        guard let cellIdentifier = node.associatedIdentifiers(inGroup: GroupIdentifier.cell).first else { return nil }
+        return graph.node(cellIdentifier)
+    }
+
+    private static func referencedNode(
+        from node: LKXcodeViewHierarchyNode,
+        propertyName: String,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> LKXcodeViewHierarchyNode? {
+        guard case .objectReference(let reference)? = node.property(named: propertyName)?.value else { return nil }
+        return graph.node(reference.objectIdentifier)
+    }
+
+    // MARK: - Values
+
+    /// The attribute value a decoded capture value becomes, typed the way the
+    /// card for that kind reads it (`LookinAttrType.h`).
+    private static func makingValue(
+        _ value: LKXcodeViewHierarchyValue,
+        kind: Specification.Kind,
+        isEnumeration: Bool
+    ) -> (attrType: LookinAttrType, value: Any)? {
+        switch kind {
+        case .bool:
+            guard let boolValue = value.boolValue else { return nil }
+            return (.BOOL, NSNumber(value: boolValue))
+
+        case .integer:
+            guard let integerValue = integerValue(of: value) else { return nil }
+            return (isEnumeration ? .enumLong : .long, NSNumber(value: integerValue))
+
+        case .number:
+            guard let doubleValue = value.doubleValue else { return nil }
+            return (.double, NSNumber(value: doubleValue))
+
+        case .text:
+            guard let text = value.textValue else { return nil }
+            return (.nsString, text as NSString)
+
+        case .color:
+            guard case .color(let color) = value, let components = rgbaComponents(of: color) else { return nil }
+            return (.uiColor, components as NSArray)
+
+        case .rect:
+            guard let components = value.numericComponents(expectedCount: 4) else { return nil }
+            let rect = CGRect(x: components[0], y: components[1], width: components[2], height: components[3])
+            return (.cgRect, NSValue(rect: rect))
+
+        case .point:
+            guard let components = value.numericComponents(expectedCount: 2) else { return nil }
+            return (.cgPoint, NSValue(point: CGPoint(x: components[0], y: components[1])))
+
+        case .size:
+            guard let components = value.numericComponents(expectedCount: 2) else { return nil }
+            return (.cgSize, NSValue(size: CGSize(width: components[0], height: components[1])))
+
+        case .insets:
+            // Both platforms write insets as top, left, bottom, right.
+            guard let components = value.numericComponents(expectedCount: 4) else { return nil }
+            let insets = NSEdgeInsets(top: components[0], left: components[1], bottom: components[2], right: components[3])
+            return (.uiEdgeInsets, NSValue(edgeInsets: insets))
+
+        case .sizeWidth:
+            guard let components = value.numericComponents(expectedCount: 2) else { return nil }
+            return (.double, NSNumber(value: components[0]))
+
+        case .sizeHeight:
+            guard let components = value.numericComponents(expectedCount: 2) else { return nil }
+            return (.double, NSNumber(value: components[1]))
+
+        case .fontName:
+            guard case .font(let font) = value else { return nil }
+            return (.nsString, font.fontName as NSString)
+
+        case .fontSize:
+            guard case .font(let font) = value else { return nil }
+            return (.double, NSNumber(value: font.pointSize))
+
+        case .imageName:
+            guard case .image(let image) = value, let imageName = image.metadata?.imageName, !imageName.isEmpty
+            else { return nil }
+            return (.nsString, imageName as NSString)
+
+        case .imageData:
+            guard case .image(let image) = value else { return nil }
+            return (.customObj, image.encodedData as NSData)
+
+        case .maskBit(let bit):
+            guard let integerValue = integerValue(of: value) else { return nil }
+            return (.BOOL, NSNumber(value: (UInt64(bitPattern: integerValue) & bit) != 0))
+        }
+    }
+
+    /// The type a nil value is reported under; nil for kinds that cannot be nil.
+    private static func nilCapableAttrType(for kind: Specification.Kind) -> LookinAttrType? {
+        switch kind {
+        case .text, .fontName, .imageName: return .nsString
+        case .color: return .uiColor
+        default: return nil
+        }
+    }
+
+    private static func integerValue(of value: LKXcodeViewHierarchyValue) -> Int64? {
+        switch value {
+        case .integer(let integer): return integer
+        case .unsignedInteger(let unsigned): return Int64(bitPattern: unsigned)
+        case .number(let number): return Int64(exactly: number.rounded())
+        case .boolean(let flag): return flag ? 1 : 0
+        default: return nil
+        }
     }
 
     /// RGBA in 0...1, which is what a `LookinAttrTypeUIColor` value carries
     /// (`LookinAttrType.h`). The dashboard decodes that array itself and
     /// asserts on anything else, so no `NSColor` is built here.
-    private static func colorComponents(
-        from node: LKXcodeViewHierarchyNode?,
-        propertyName: String
-    ) -> [NSNumber]? {
-        guard case .color(let captured)? = node?.property(named: propertyName)?.value,
-              captured.components.count >= 3
-        else { return nil }
-        let alpha = captured.components.count >= 4 ? captured.components[3] : 1
-        return [captured.components[0], captured.components[1], captured.components[2], alpha]
-            .map { NSNumber(value: $0) }
+    ///
+    /// The capture writes a colour in its own space: RGB(A), gray(+alpha) for
+    /// the system's white/black colours, and CMYK on occasion. The card only
+    /// knows RGBA, so the others are converted, and wide-gamut components are
+    /// clamped — an approximation the card can show rather than a row lost.
+    private static func rgbaComponents(of color: LKXcodeViewHierarchyColor) -> [NSNumber]? {
+        let components = color.components
+        let rgba: [Double]
+        switch components.count {
+        case 4: rgba = components
+        case 3: rgba = components + [1]
+        case 2: rgba = [components[0], components[0], components[0], components[1]]
+        case 1: rgba = [components[0], components[0], components[0], 1]
+        case 5:
+            let (cyan, magenta, yellow, black) = (components[0], components[1], components[2], components[3])
+            rgba = [(1 - cyan) * (1 - black), (1 - magenta) * (1 - black), (1 - yellow) * (1 - black), components[4]]
+        default: return nil
+        }
+        return rgba.map { NSNumber(value: min(max($0, 0), 1)) }
     }
 
-    // MARK: - Builders
+    // MARK: - Class card
+
+    /// The chains the Class card lists: the node's own, cut at the framework
+    /// class the inspector considers the root of its kind, then its owning
+    /// controller's cut the same way — the server's `lks_relatedClassChainList`.
+    private static func relatedClassChains(
+        _ classChain: [String],
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
+    ) -> [[String]] {
+        var chains: [[String]] = []
+        switch context.role {
+        case .view:
+            chains.append(trimmingChain(classChain, throughAnyOf: ChainEnd.view))
+            if let controllerChain = classChainOfNode(context.viewControllerNode, graph: graph) {
+                chains.append(trimmingChain(controllerChain, throughAnyOf: ChainEnd.viewController))
+            }
+        case .window:
+            chains.append(trimmingChain(classChain, throughAnyOf: [ChainEnd.window]))
+            if let controllerChain = classChainOfNode(context.windowControllerNode, graph: graph) {
+                chains.append(trimmingChain(controllerChain, throughAnyOf: [ChainEnd.windowController]))
+            }
+        case .windowScene:
+            chains.append(trimmingChain(classChain, throughAnyOf: [ChainEnd.scene]))
+        case .cell:
+            chains.append(trimmingChain(classChain, throughAnyOf: [ChainEnd.cell]))
+        case .layoutGuide:
+            chains.append(trimmingChain(classChain, throughAnyOf: ChainEnd.layoutGuide))
+        }
+        return chains
+    }
+
+    private static func classChainOfNode(
+        _ node: LKXcodeViewHierarchyNode?,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> [String]? {
+        guard let className = node?.className else { return nil }
+        return graph.classChain(forClassName: className)
+    }
+
+    /// The chain up to and including the first of the ending classes; the
+    /// whole chain when none of them is an ancestor.
+    private static func trimmingChain(_ chain: [String], throughAnyOf endingClassNames: [String]) -> [String] {
+        guard let endIndex = chain.firstIndex(where: endingClassNames.contains) else { return chain }
+        return Array(chain[...endIndex])
+    }
+
+    // MARK: - Relation card
+
+    /// The server's `lks_selfRelation` strings: who owns this object.
+    private static func relationDescriptions(
+        for node: LKXcodeViewHierarchyNode,
+        context: LKXcodeViewHierarchyAttributeContext
+    ) -> [String] {
+        var relations: [String] = []
+        switch context.role {
+        case .view:
+            if let controllerClassName = context.viewControllerNode?.className {
+                relations.append("(\(controllerClassName) *).view")
+            }
+        case .window:
+            if let controllerClassName = context.windowControllerNode?.className {
+                relations.append("(\(controllerClassName) *).window")
+            }
+            if let delegateDescription = delegateDescription(of: node) {
+                relations.append(delegateDescription)
+            }
+        case .windowScene:
+            if let delegateDescription = delegateDescription(of: node) {
+                relations.append(delegateDescription)
+            }
+        case .cell:
+            if let ownerClassName = context.ownerNode?.className {
+                relations.append("(\(ownerClassName) *).cell")
+            }
+        case .layoutGuide:
+            break
+        }
+        return relations
+    }
+
+    private static func delegateDescription(of node: LKXcodeViewHierarchyNode) -> String? {
+        guard case .objectReference(let reference)? = node.property(named: "delegate")?.value else { return nil }
+        return "(\(reference.className) *) delegate"
+    }
+
+    // MARK: - Constraints
+
+    private enum ConstraintProperty {
+        static let active = "active"
+        static let firstItem = "firstItem"
+        static let firstAttribute = "firstAttribute"
+        static let relation = "relation"
+        static let secondItem = "secondItem"
+        static let secondAttribute = "secondAttribute"
+        static let multiplier = "multiplier"
+        static let constant = "constant"
+        static let priority = "priority"
+        static let identifier = "identifier"
+        /// The view's own record of which constraints decide its layout on
+        /// each axis: comma-separated constraint identifiers.
+        static let affecting = ["horizontalAffectingConstraints", "verticalAffectingConstraints"]
+    }
+
+    /// The constraints involving a view, in the server's model: every active
+    /// constraint naming the view as an item, marked effective when the
+    /// capture lists it among the ones affecting the view's layout.
+    private static func makingConstraints(
+        for node: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
+    ) -> [LookinAutoLayoutConstraint] {
+        let effectiveIdentifiers = affectingConstraintIdentifiers(of: node)
+        let constraintIdentifiers = context.environment.constraintIndex.constraintIdentifiers(involving: node.objectIdentifier)
+        return constraintIdentifiers.compactMap { constraintIdentifier in
+            guard let constraintNode = graph.node(constraintIdentifier) else { return nil }
+            // The whole product ignores inactive constraints, as the server does.
+            if constraintNode.property(named: ConstraintProperty.active)?.value.boolValue == false { return nil }
+
+            let firstAttribute = integerProperty(constraintNode, ConstraintProperty.firstAttribute) ?? 0
+            let secondAttribute = integerProperty(constraintNode, ConstraintProperty.secondAttribute) ?? 0
+            // The model asserts on attribute values outside the ranges it
+            // knows; a capture carrying one of those is dropped rather than
+            // allowed to trip a debug build.
+            guard isRepresentableAttribute(firstAttribute), isRepresentableAttribute(secondAttribute) else { return nil }
+
+            let first = endpoint(of: constraintNode, propertyName: ConstraintProperty.firstItem, for: node, graph: graph, context: context)
+            let second = endpoint(of: constraintNode, propertyName: ConstraintProperty.secondItem, for: node, graph: graph, context: context)
+
+            let constraint = LookinAutoLayoutConstraint()
+            constraint.effective = effectiveIdentifiers.contains(constraintIdentifier)
+            constraint.active = true
+            constraint.firstItem = first.object
+            constraint.firstItemType = first.type
+            constraint.firstAttribute = firstAttribute
+            constraint.secondItem = second.object
+            constraint.secondItemType = second.type
+            constraint.secondAttribute = secondAttribute
+            let relationValue = integerProperty(constraintNode, ConstraintProperty.relation) ?? 0
+            constraint.relation = NSLayoutConstraint.Relation(rawValue: relationValue) ?? .equal
+            constraint.multiplier = CGFloat(constraintNode.property(named: ConstraintProperty.multiplier)?.value.doubleValue ?? 1)
+            constraint.constant = CGFloat(constraintNode.property(named: ConstraintProperty.constant)?.value.doubleValue ?? 0)
+            constraint.priority = CGFloat(constraintNode.property(named: ConstraintProperty.priority)?.value.doubleValue ?? 1000)
+            constraint.identifier = constraintNode.property(named: ConstraintProperty.identifier)?.value.textValue
+            constraint.constraintOid = LKXcodeViewHierarchyConverter.objectIdentifierValue(constraintIdentifier)
+            return constraint
+        }
+    }
+
+    /// `LookinAutoLayoutConstraint` asserts on attributes in 21...31 or above
+    /// 37 — private ones it has no name for. Captures so far use 32, 33, 36
+    /// and 37 among the private values, all of which it accepts.
+    private static func isRepresentableAttribute(_ attribute: Int) -> Bool {
+        !((21...31).contains(attribute) || attribute > 37)
+    }
+
+    private static func affectingConstraintIdentifiers(of node: LKXcodeViewHierarchyNode) -> Set<String> {
+        var identifiers: Set<String> = []
+        for propertyName in ConstraintProperty.affecting {
+            guard let text = node.property(named: propertyName)?.value.textValue else { continue }
+            for identifier in text.split(separator: ",") {
+                let trimmed = identifier.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty { identifiers.insert(trimmed) }
+            }
+        }
+        return identifiers
+    }
+
+    private static func integerProperty(_ node: LKXcodeViewHierarchyNode, _ propertyName: String) -> Int? {
+        guard let value = node.property(named: propertyName)?.value, let integer = integerValue(of: value) else { return nil }
+        return Int(integer)
+    }
+
+    /// One end of a constraint, typed the way the server's
+    /// `_lks_constraintItemTypeForItem:` types it relative to the view.
+    private static func endpoint(
+        of constraintNode: LKXcodeViewHierarchyNode,
+        propertyName: String,
+        for node: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
+    ) -> (object: LookinObject?, type: LookinConstraintItemType) {
+        guard case .objectReference(let reference)? = constraintNode.property(named: propertyName)?.value else {
+            return (nil, .`nil`)
+        }
+        let object = LookinObject()
+        object.oid = LKXcodeViewHierarchyConverter.objectIdentifierValue(reference.objectIdentifier)
+        object.memoryAddress = reference.objectIdentifier
+        object.classChainList = graph.classChain(forClassName: reference.className)
+
+        let type: LookinConstraintItemType
+        if reference.objectIdentifier == node.objectIdentifier {
+            type = .`self`
+        } else if reference.objectIdentifier == context.superviewNode?.objectIdentifier {
+            type = .super
+        } else if object.classChainList?.contains(where: ChainEnd.layoutGuide.contains) == true
+                    || reference.className.hasSuffix("LayoutGuide") {
+            type = .layoutGuide
+        } else {
+            type = .view
+        }
+        return (object, type)
+    }
+
+    // MARK: - Model builders
 
     private static func makingGroup(
         _ identifier: String,
@@ -261,40 +643,12 @@ enum LKXcodeViewHierarchyAttributes {
     private static func makingAttribute(
         _ identifier: String,
         _ attrType: LookinAttrType,
-        _ value: Any
+        _ value: Any?
     ) -> LookinAttribute {
         let attribute = LookinAttribute()
         attribute.identifier = identifier
         attribute.attrType = attrType
         attribute.value = value
         return attribute
-    }
-
-    private static func makingStringAttribute(_ identifier: String, _ value: String) -> LookinAttribute {
-        makingAttribute(identifier, .nsString, value as NSString)
-    }
-
-    private static func makingBoolAttribute(_ identifier: String, _ value: Bool) -> LookinAttribute {
-        makingAttribute(identifier, .BOOL, NSNumber(value: value))
-    }
-
-    private static func makingFloatAttribute(_ identifier: String, _ value: Double) -> LookinAttribute {
-        makingAttribute(identifier, .float, NSNumber(value: value))
-    }
-
-    private static func makingRectAttribute(_ identifier: String, _ value: CGRect) -> LookinAttribute {
-        makingAttribute(identifier, .cgRect, NSValue(rect: value))
-    }
-
-    private static func makingPointAttribute(_ identifier: String, _ value: CGPoint) -> LookinAttribute {
-        makingAttribute(identifier, .cgPoint, NSValue(point: value))
-    }
-
-    private static func makingSizeAttribute(_ identifier: String, _ value: CGSize) -> LookinAttribute {
-        makingAttribute(identifier, .cgSize, NSValue(size: value))
-    }
-
-    private static func makingColorAttribute(_ identifier: String, _ components: [NSNumber]) -> LookinAttribute {
-        makingAttribute(identifier, .uiColor, components as NSArray)
     }
 }

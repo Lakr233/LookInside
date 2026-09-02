@@ -18,6 +18,10 @@ struct LKXcodeViewHierarchyConverterTests {
         testEveryConvertedNodeOptsIntoScreenshots()
         testAppKitTopLevelFollowsXcodeSidebar()
         testUIKitTopLevelFollowsXcodeSidebar()
+        testClassCardListsRelatedClassChains()
+        testUIKitCardsFollowTheCapture()
+        testAppKitCardsReadTheCell()
+        testConstraintsCardFollowsTheServerModel()
         print("Xcode view hierarchy converter tests passed")
     }
 
@@ -151,6 +155,188 @@ struct LKXcodeViewHierarchyConverterTests {
             expect(!everyIdentifier.contains(skippedIdentifier),
                    "window 0x\(String(skippedIdentifier, radix: 16)) should have been skipped")
         }
+    }
+
+    // MARK: - Dashboard cards
+
+    /// The Class card lists the node's chain cut at the framework class the
+    /// inspector treats as the root of its kind, then its controller's chain
+    /// cut the same way — the server's `lks_relatedClassChainList`. The first
+    /// version handed the card a bare class name, and the card, built for
+    /// lists of chains, showed a single line: the lineage the capture records
+    /// in `classInformation` never reached the dashboard.
+    private static func testClassCardListsRelatedClassChains() {
+        let uiKit = convert(uiKitCardsFixture())
+        let scene = uiKit.hierarchyInfo.displayItems?.first
+        expect(classChains(of: scene) == [["UIWindowScene", "UIScene"]],
+               "a scene's chain stops at UIScene; got \(String(describing: classChains(of: scene)))")
+        let window = scene?.subitems?.first
+        expect(classChains(of: window) == [["UIWindow", "UIView"]],
+               "a window's chain stops at UIView and lists no controller; got \(String(describing: classChains(of: window)))")
+        expect(attribute(LookinAttr_Relation_Relation_Relation, of: window) == nil,
+               "a window is not its root view controller's view, so it has no relation row")
+        let button = item(withObjectIdentifier: 0x11, in: uiKit)
+        expect(classChains(of: button) == [["MyButton", "UIButton", "UIControl", "UIView"], ["MyViewController", "UIViewController"]],
+               "a controller's view lists its own chain and the controller's; got \(String(describing: classChains(of: button)))")
+        expect(relations(of: button) == ["(MyViewController *).view"],
+               "relation row mismatch: \(String(describing: relations(of: button)))")
+        let guide = item(withObjectIdentifier: 0x30, in: uiKit)
+        expect(classChains(of: guide) == [["UILayoutGuide"]],
+               "a layout guide's chain stops at UILayoutGuide; got \(String(describing: classChains(of: guide)))")
+
+        let appKit = convert(appKitCardsFixture())
+        let panel = appKit.hierarchyInfo.displayItems?.first
+        expect(classChains(of: panel) == [["NSPanel", "NSWindow"], ["MyWindowController", "NSWindowController"]],
+               "an AppKit window lists its chain to NSWindow and its controller's; got \(String(describing: classChains(of: panel)))")
+        expect(relations(of: panel) == ["(MyWindowController *).window", "(MyDelegate *) delegate"],
+               "window relation rows mismatch: \(String(describing: relations(of: panel)))")
+        let cell = item(withObjectIdentifier: 0x40, in: appKit)
+        expect(classChains(of: cell) == [["NSButtonCell", "NSActionCell", "NSCell"]],
+               "a cell's chain stops at NSCell; got \(String(describing: classChains(of: cell)))")
+        expect(relations(of: cell) == ["(NSButton *).cell"],
+               "cell relation mismatch: \(String(describing: relations(of: cell)))")
+    }
+
+    /// Every UIKit card the catalog maps, on the kinds of value the capture
+    /// writes: text, a font structure, a gray colour widened to RGBA, an enum
+    /// that must come out typed as one, insets, an image with its metadata
+    /// name and bytes, and a nil that the blueprint says to show.
+    private static func testUIKitCardsFollowTheCapture() {
+        let file = convert(uiKitCardsFixture())
+
+        let label = item(withObjectIdentifier: 0x12, in: file)
+        expect(groupIdentifiers(of: label) == [LookinAttrGroup_Class, LookinAttrGroup_Layout, LookinAttrGroup_ViewLayer, LookinAttrGroup_UILabel],
+               "a label's cards come in the blueprint's order; got \(groupIdentifiers(of: label))")
+        expectAttribute(LookinAttr_UILabel_Text_Text, of: label, type: .nsString, equals: "Hello" as NSString)
+        expectAttribute(LookinAttr_UILabel_Font_Name, of: label, type: .nsString, equals: ".SFUI-Regular" as NSString)
+        expectAttribute(LookinAttr_UILabel_Font_Size, of: label, type: .double, equals: NSNumber(value: 17))
+        expectAttribute(LookinAttr_UILabel_NumberOfLines_NumberOfLines, of: label, type: .long, equals: NSNumber(value: 2))
+        expectAttribute(LookinAttr_UILabel_Alignment_Alignment, of: label, type: .enumLong, equals: NSNumber(value: 1))
+        expectAttribute(LookinAttr_UILabel_TextColor_Color, of: label, type: .uiColor,
+                        equals: [1, 1, 1, 0.5].map { NSNumber(value: $0) } as NSArray)
+        expect(attribute(LookinAttr_AutoLayout_Hugging_Hor, of: label) == nil,
+               "sizing priorities alone do not earn an Auto Layout card, as on the server")
+
+        let untitledLabel = item(withObjectIdentifier: 0x16, in: file)
+        guard let textAttribute = attribute(LookinAttr_UILabel_Text_Text, of: untitledLabel) else {
+            fail("a label whose text is nil still shows its Text row")
+        }
+        expect(textAttribute.value == nil, "a captured nil text is reported as nil, not dropped")
+
+        let imageView = item(withObjectIdentifier: 0x13, in: file)
+        expectAttribute(LookinAttr_UIImageView_Name_Name, of: imageView, type: .nsString, equals: "star.fill" as NSString)
+        expectAttribute(LookinAttr_UIImageView_Open_Open, of: imageView, type: .customObj, equals: imageBytes as NSData)
+        expectAttribute(LookinAttr_ViewLayer_ContentMode_Mode, of: imageView, type: .enumLong, equals: NSNumber(value: 1))
+        let emptyImageView = item(withObjectIdentifier: 0x14, in: file)
+        expect(!groupIdentifiers(of: emptyImageView).contains(LookinAttrGroup_UIImageView),
+               "an image view without an image shows no image rows")
+
+        let button = item(withObjectIdentifier: 0x11, in: file)
+        guard let insets = attribute(LookinAttr_UIButton_ContentInsets_Insets, of: button),
+              insets.attrType == .uiEdgeInsets, let insetsValue = insets.value as? NSValue
+        else { fail("a button's content insets come out as an insets value") }
+        expect(NSEdgeInsetsEqual(insetsValue.edgeInsetsValue, NSEdgeInsets(top: 1, left: 2, bottom: 3, right: 4)),
+               "insets are top, left, bottom, right; got \(insetsValue.edgeInsetsValue)")
+        expectAttribute(LookinAttr_UIControl_EnabledSelected_Enabled, of: button, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_ViewLayer_InterationAndMasks_MasksToBounds, of: button, type: .BOOL, equals: NSNumber(value: true))
+
+        let stackView = item(withObjectIdentifier: 0x15, in: file)
+        expectAttribute(LookinAttr_UIStackView_Axis_Axis, of: stackView, type: .enumLong, equals: NSNumber(value: 1))
+        expectAttribute(LookinAttr_UIStackView_Spacing_Spacing, of: stackView, type: .double, equals: NSNumber(value: 8))
+
+        let scene = file.hierarchyInfo.displayItems?.first
+        expectAttribute(LookinAttr_UIWindowScene_Title_Title, of: scene, type: .nsString, equals: "Main" as NSString)
+        expectAttribute(LookinAttr_UIWindowScene_State_ActivationState, of: scene, type: .enumLong, equals: NSNumber(value: 0))
+        expectAttribute(LookinAttr_UIWindowScene_Windows_WindowCount, of: scene, type: .long, equals: NSNumber(value: 1))
+        expectAttribute(LookinAttr_UIWindowScene_Windows_KeyWindowClassName, of: scene, type: .nsString, equals: "UIWindow" as NSString)
+        expectAttribute(LookinAttr_UIWindowScene_Screen_ScreenScale, of: scene, type: .double, equals: NSNumber(value: 3))
+        guard let screenBounds = attribute(LookinAttr_UIWindowScene_Screen_ScreenBounds, of: scene)?.value as? NSValue else {
+            fail("a scene's screen bounds are read through its screen reference")
+        }
+        expect(screenBounds.rectValue == CGRect(x: 0, y: 0, width: 402, height: 874),
+               "screen bounds mismatch: \(screenBounds.rectValue)")
+    }
+
+    /// AppKit keeps a control's bezel style, button type and placeholder on
+    /// its cell, and the capture records them there; the control's cards
+    /// must read through to the cell, while the cell node reads itself. A
+    /// window's style mask and collection behaviour arrive as one integer
+    /// and fan out into the blueprint's one-flag-per-row switches.
+    private static func testAppKitCardsReadTheCell() {
+        let file = convert(appKitCardsFixture())
+
+        let panel = file.hierarchyInfo.displayItems?.first
+        expect(groupIdentifiers(of: panel) == [LookinAttrGroup_Class, LookinAttrGroup_Relation, LookinAttrGroup_Layout, LookinAttrGroup_NSWindow],
+               "a window's cards: class, relation, layout, window; got \(groupIdentifiers(of: panel))")
+        expectAttribute(LookinAttr_NSWindow_Title_Title, of: panel, type: .nsString, equals: "Inspector" as NSString)
+        expectAttribute(LookinAttr_NSWindow_State_KeyWindow, of: panel, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSWindow_Style_Titled, of: panel, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSWindow_Style_Resizable, of: panel, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSWindow_Style_HUDWindow, of: panel, type: .BOOL, equals: NSNumber(value: false))
+        expectAttribute(LookinAttr_NSWindow_CollectionBehavior_FullScreenPrimary, of: panel, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSWindow_CollectionBehavior_CanJoinAllSpaces, of: panel, type: .BOOL, equals: NSNumber(value: false))
+        guard let frame = attribute(LookinAttr_Layout_Frame_Frame, of: panel)?.value as? NSValue else {
+            fail("an AppKit window's frame reaches the Layout card")
+        }
+        expect(frame.rectValue == CGRect(x: 10, y: 20, width: 300, height: 200), "window frame mismatch: \(frame.rectValue)")
+
+        let button = item(withObjectIdentifier: 0x11, in: file)
+        expectAttribute(LookinAttr_NSButton_BezelStyle_BezelStyle, of: button, type: .enumLong, equals: NSNumber(value: 1))
+        expectAttribute(LookinAttr_NSButton_ButtonType_ButtonType, of: button, type: .enumLong, equals: NSNumber(value: 7))
+        expectAttribute(LookinAttr_NSButton_Bordered_Bordered, of: button, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSButton_Title_Title, of: button, type: .nsString, equals: "OK" as NSString)
+        expectAttribute(LookinAttr_NSControl_Font_Name, of: button, type: .nsString, equals: ".SFNS-Regular" as NSString)
+        expectAttribute(LookinAttr_NSControl_Alignment_Alignment, of: button, type: .enumLong, equals: NSNumber(value: 2))
+
+        let textField = item(withObjectIdentifier: 0x12, in: file)
+        expectAttribute(LookinAttr_NSTextField_Placeholder_Placeholder, of: textField, type: .nsString, equals: "Search" as NSString)
+        expectAttribute(LookinAttr_NSTextField_Editable_Editable, of: textField, type: .BOOL, equals: NSNumber(value: true))
+
+        let cell = item(withObjectIdentifier: 0x40, in: file)
+        expect(groupIdentifiers(of: cell) == [LookinAttrGroup_Class, LookinAttrGroup_Relation, LookinAttrGroup_NSCell],
+               "a cell's cards: class, relation, cell; got \(groupIdentifiers(of: cell))")
+        expectAttribute(LookinAttr_NSCell_Cell_Bordered, of: cell, type: .BOOL, equals: NSNumber(value: true))
+        expectAttribute(LookinAttr_NSCell_Content_Title, of: cell, type: .nsString, equals: "OK" as NSString)
+        expectAttribute(LookinAttr_NSCell_ButtonCell_BezelStyle, of: cell, type: .enumLong, equals: NSNumber(value: 1))
+    }
+
+    /// The Auto Layout card carries the server's constraint model: every
+    /// active constraint naming the view as an item, each end typed relative
+    /// to the view (self, superview, another view, a layout guide, nil), and
+    /// marked effective when the capture lists it among the constraints
+    /// affecting the view's layout. Inactive constraints are left out, as the
+    /// whole product leaves them out.
+    private static func testConstraintsCardFollowsTheServerModel() {
+        let file = convert(uiKitCardsFixture())
+        let button = item(withObjectIdentifier: 0x11, in: file)
+        guard let constraintsAttribute = attribute(LookinAttr_AutoLayout_Constraints_Constraints, of: button),
+              constraintsAttribute.attrType == .customObj,
+              let constraints = constraintsAttribute.value as? [LookinAutoLayoutConstraint]
+        else { fail("a view with constraints gets a constraints row carrying LookinAutoLayoutConstraint values") }
+
+        expect(constraints.map(\.constraintOid) == [0xd1, 0xd2, 0xd4],
+               "the active constraints naming the view, in identifier order; got \(constraints.map { String($0.constraintOid, radix: 16) })")
+        expect(constraints.map(\.effective) == [true, false, false],
+               "only the constraint the capture lists as affecting the view is effective; got \(constraints.map(\.effective))")
+        expect(constraints.map(\.firstItemType) == [.`self`, .`self`, .layoutGuide],
+               "first item types mismatch: \(constraints.map(\.firstItemType.rawValue))")
+        expect(constraints.map(\.secondItemType) == [.`nil`, .super, .`self`],
+               "second item types mismatch: \(constraints.map(\.secondItemType.rawValue))")
+        expect(constraints[0].firstAttribute == 7 && constraints[0].constant == 100 && constraints[0].priority == 1000
+               && constraints[0].relation == .equal && constraints[0].secondItem == nil,
+               "width constraint fields mismatch")
+        expect(constraints[1].secondItem?.oid == 0x10 && constraints[1].constant == 8 && constraints[1].relation == .greaterThanOrEqual,
+               "superview constraint fields mismatch")
+        expect(constraints[2].firstItem?.classChainList == ["UILayoutGuide", "NSObject"] && constraints[2].identifier == "guide-leading",
+               "layout guide endpoint carries its class chain and the constraint its identifier")
+
+        let hugging = attribute(LookinAttr_AutoLayout_Hugging_Hor, of: button)
+        expect(hugging?.attrType == .double && (hugging?.value as? NSNumber)?.doubleValue == 250,
+               "sizing priorities ride along once the card exists")
+        let rootView = item(withObjectIdentifier: 0x10, in: file)
+        expect((attribute(LookinAttr_AutoLayout_Constraints_Constraints, of: rootView)?.value as? [LookinAutoLayoutConstraint])?
+            .map(\.constraintOid) == [0xd2],
+               "the superview lists the same constraint from its own side")
     }
 
     // MARK: - Fixture
@@ -317,6 +503,238 @@ struct LKXcodeViewHierarchyConverterTests {
         return builder.build()
     }
 
+    private static let imageBytes = Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+
+    /// A UIKit capture with the class table filled in and one of each kind
+    /// of value the cards read: scene `0xf1` → window `0x1` → root view
+    /// `0x10` holding a button `0x11` (a `MyButton`, the view of
+    /// `MyViewController`), labels `0x12` / `0x16` (the second with nil
+    /// text), image views `0x13` / `0x14` (the second with no image), a stack
+    /// view `0x15`, and a layout guide `0x30`; constraints `0xd1`–`0xd5`.
+    private static func uiKitCardsFixture() -> LKXcodeViewHierarchyObjectGraph {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(
+            groups: [
+                group("com.apple.UIKit.UIApplication", objects: [
+                    object("0xa0", className: "UIApplication", additionalGroups: [
+                        group("com.apple.UIKit.UIWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.UIKit.UIScene", objects: [
+                    object("0xf1", className: "UIWindowScene", additionalGroups: [
+                        group("com.apple.UIKit.UIWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.UIKit.UIWindow", objects: [
+                    object(
+                        "0x1", className: "UIWindow",
+                        childGroup: group("com.apple.UIKit.UIView", objects: [
+                            object(
+                                "0x10", className: "UIView",
+                                childGroup: group("com.apple.UIKit.UIView", objects: [
+                                    object("0x11", className: "MyButton", additionalGroups: [
+                                        group("com.apple.UIKit.UIViewController", objects: [
+                                            object("0xc1", className: "MyViewController"),
+                                        ]),
+                                        group("com.apple.QuartzCore.CALayer", objects: [object("0x21", className: "CALayer")]),
+                                    ]),
+                                    object("0x12", className: "UILabel"),
+                                    object("0x13", className: "UIImageView"),
+                                    object("0x14", className: "UIImageView"),
+                                    object("0x15", className: "UIStackView"),
+                                    object("0x16", className: "UILabel"),
+                                ]),
+                                additionalGroups: [
+                                    group("com.apple.UIKit.UILayoutGuide", objects: [
+                                        object("0x30", className: "UILayoutGuide"),
+                                    ]),
+                                ]
+                            ),
+                        ]),
+                        additionalGroups: [
+                            group("com.apple.UIKit.UIScene", objects: [reference("0xf1")]),
+                            group("com.apple.UIKit.UIViewController", objects: [reference("0xc1")]),
+                        ]
+                    ),
+                ]),
+                group("com.apple.UIKit.NSLayoutConstraint", objects: [
+                    constraint("0xd1", first: ("0x11", "MyButton", 7), relation: 0, second: nil, constant: "100", active: true),
+                    constraint("0xd2", first: ("0x11", "MyButton", 3), relation: 1, second: ("0x10", "UIView", 3), constant: "8", active: true),
+                    constraint("0xd3", first: ("0x11", "MyButton", 8), relation: 0, second: nil, constant: "50", active: false),
+                    constraint("0xd4", first: ("0x30", "UILayoutGuide", 5), relation: 0, second: ("0x11", "MyButton", 5), constant: "0", active: true, identifier: "guide-leading"),
+                    constraint("0xd5", first: ("0x14", "UIImageView", 7), relation: 0, second: nil, constant: "40", active: true),
+                ]),
+                group("com.apple.UIKit.UIScreen", objects: [object("0xe0", className: "UIScreen")]),
+            ],
+            classInformation: [
+                classNode("NSObject", [
+                    classNode("UIResponder", [
+                        classNode("UIView", [
+                            classNode("UIWindow"),
+                            classNode("UIControl", [classNode("UIButton", [classNode("MyButton")])]),
+                            classNode("UILabel"), classNode("UIImageView"), classNode("UIStackView"),
+                        ]),
+                        classNode("UIViewController", [classNode("MyViewController")]),
+                        classNode("UIScene", [classNode("UIWindowScene")]),
+                    ]),
+                    classNode("UILayoutGuide"), classNode("NSLayoutConstraint"), classNode("UIScreen"), classNode("CALayer"),
+                ]),
+            ]
+        ))
+        builder.ingesting(response: response(properties: [
+            "0xa0.keyWindow": propertyDescription(name: "keyWindow", format: "public.plain-text", value: "0x1"),
+            "0xf1.title": propertyDescription(name: "title", format: "public.plain-text", value: "Main"),
+            "0xf1.activationState": propertyDescription(name: "activationState", format: "integer", value: "0"),
+            "0xf1.screen": propertyDescription(name: "screen", format: "objectInfo", value: objectReference("UIScreen", "0xe0")),
+            "0xe0.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0", "0", "402", "874"]),
+            "0xe0.scale": propertyDescription(name: "scale", format: "CGf", value: "3"),
+            "0x1.internal": propertyDescription(name: "internal", format: "b", value: "0"),
+            "0x1.visible": propertyDescription(name: "visible", format: "b", value: "1"),
+
+            "0x11.contentEdgeInsets": propertyDescription(name: "contentEdgeInsets", format: "CGf, CGf, CGf, CGf", value: ["1", "2", "3", "4"]),
+            "0x11.enabled": propertyDescription(name: "enabled", format: "b", value: "1"),
+            "0x11.contentHuggingPriorityHorizontal": propertyDescription(name: "contentHuggingPriorityHorizontal", format: "f", value: "250"),
+            "0x11.horizontalAffectingConstraints": propertyDescription(name: "horizontalAffectingConstraints", format: "public.plain-text", value: "0xd1, 0xd9"),
+            "0x21.masksToBounds": propertyDescription(name: "masksToBounds", format: "b", value: "1"),
+
+            "0x12.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0", "0", "120", "20"]),
+            "0x12.text": propertyDescription(name: "text", format: "public.plain-text", value: "Hello"),
+            "0x12.font": propertyDescription(name: "font", format: "font", value: font(name: ".SFUI-Regular", size: "17")),
+            "0x12.textColor": propertyDescription(name: "textColor", format: "color", value: grayColor(["1", "0.5"])),
+            "0x12.numberOfLines": propertyDescription(name: "numberOfLines", format: "integer", value: "2"),
+            "0x12.textAlignment": propertyDescription(name: "textAlignment", format: "integer", value: "1"),
+            "0x12.hidden": propertyDescription(name: "hidden", format: "b", value: "0"),
+            "0x12.contentHuggingPriorityHorizontal": propertyDescription(name: "contentHuggingPriorityHorizontal", format: "f", value: "250"),
+            "0x16.text": valuelessPropertyDescription(name: "text", format: "public.plain-text"),
+
+            "0x13.image": propertyDescription(name: "image", format: "image", value: image(imageBytes, name: "star.fill")),
+            "0x13.contentMode": propertyDescription(name: "contentMode", format: "integer", value: "1"),
+            "0x14.image": valuelessPropertyDescription(name: "image", format: "public.png"),
+
+            "0x15.axis": propertyDescription(name: "axis", format: "integer", value: "1"),
+            "0x15.spacing": propertyDescription(name: "spacing", format: "CGf", value: "8"),
+        ]))
+        return builder.build()
+    }
+
+    /// An AppKit capture: panel `0x1` (key, owned by `MyWindowController`
+    /// `0xc1`, delegate `MyDelegate`) → content view `0x10` → button `0x11`
+    /// with cell `0x40` and text field `0x12` with cell `0x41`.
+    private static func appKitCardsFixture() -> LKXcodeViewHierarchyObjectGraph {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(
+            groups: [
+                group("com.apple.AppKit.NSApplication", objects: [
+                    object("0xa0", className: "NSApplication", additionalGroups: [
+                        group("com.apple.AppKit.NSWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.AppKit.NSWindowController", objects: [
+                    object("0xc1", className: "MyWindowController", additionalGroups: [
+                        group("com.apple.AppKit.NSWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.AppKit.NSWindow", objects: [
+                    object("0x1", className: "NSPanel", additionalGroups: [
+                        group("com.apple.AppKit.NSView", objects: [reference("0x10")]),
+                        group("com.apple.AppKit.NSWindowController", objects: [reference("0xc1")]),
+                    ]),
+                ]),
+                group("com.apple.AppKit.NSView", objects: [
+                    object(
+                        "0x10", className: "NSView",
+                        childGroup: group("com.apple.AppKit.NSView", objects: [
+                            object("0x11", className: "NSButton", additionalGroups: [
+                                group("com.apple.AppKit.NSCell", objects: [object("0x40", className: "NSButtonCell")]),
+                            ]),
+                            object("0x12", className: "NSTextField", additionalGroups: [
+                                group("com.apple.AppKit.NSCell", objects: [object("0x41", className: "NSTextFieldCell")]),
+                            ]),
+                        ])
+                    ),
+                ]),
+            ],
+            classInformation: [
+                classNode("NSObject", [
+                    classNode("NSResponder", [
+                        classNode("NSView", [classNode("NSControl", [classNode("NSButton"), classNode("NSTextField")])]),
+                        classNode("NSWindow", [classNode("NSPanel")]),
+                        classNode("NSWindowController", [classNode("MyWindowController")]),
+                    ]),
+                    classNode("NSCell", [classNode("NSActionCell", [classNode("NSButtonCell")]), classNode("NSTextFieldCell")]),
+                    classNode("MyDelegate"),
+                ]),
+            ]
+        ))
+        builder.ingesting(response: response(properties: [
+            "0xa0.keyWindow": propertyDescription(name: "keyWindow", format: "public.plain-text", value: "0x1"),
+            "0x1.title": propertyDescription(name: "title", format: "public.plain-text", value: "Inspector"),
+            "0x1.isKeyWindow": propertyDescription(name: "isKeyWindow", format: "b", value: "1"),
+            // uinteger is hexadecimal: f = titled | closable | miniaturizable | resizable.
+            "0x1.styleMask": propertyDescription(name: "styleMask", format: "uinteger", value: "f"),
+            // 80 = fullScreenPrimary (1 << 7).
+            "0x1.collectionBehavior": propertyDescription(name: "collectionBehavior", format: "uinteger", value: "80"),
+            "0x1.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["10", "20", "300", "200"]),
+            "0x1.delegate": propertyDescription(name: "delegate", format: "objectInfo", value: objectReference("MyDelegate", "0xe1")),
+
+            "0x11.title": propertyDescription(name: "title", format: "public.plain-text", value: "OK"),
+            "0x11.font": propertyDescription(name: "font", format: "font", value: font(name: ".SFNS-Regular", size: "13")),
+            "0x11.alignment": propertyDescription(name: "alignment", format: "uinteger", value: "2"),
+            "0x40.bezelStyle": propertyDescription(name: "bezelStyle", format: "uinteger", value: "1"),
+            "0x40._buttonType": propertyDescription(name: "_buttonType", format: "uinteger", value: "7"),
+            "0x40.bordered": propertyDescription(name: "bordered", format: "b", value: "1"),
+            "0x40.title": propertyDescription(name: "title", format: "public.plain-text", value: "OK"),
+
+            "0x12.editable": propertyDescription(name: "editable", format: "b", value: "1"),
+            "0x41.placeholderString": propertyDescription(name: "placeholderString", format: "public.plain-text", value: "Search"),
+        ]))
+        return builder.build()
+    }
+
+    // MARK: - Card helpers
+
+    private static func item(withObjectIdentifier identifier: UInt, in file: LookinHierarchyFile) -> LookinDisplayItem {
+        var found: LookinDisplayItem?
+        walk(file.hierarchyInfo.displayItems ?? []) { item in
+            if found == nil, displayedObjectIdentifier(item) == identifier { found = item }
+        }
+        guard let found else { fail("no node with object identifier 0x\(String(identifier, radix: 16))") }
+        return found
+    }
+
+    private static func attribute(_ identifier: String, of item: LookinDisplayItem?) -> LookinAttribute? {
+        for group in item?.attributesGroupList ?? [] {
+            for section in group.attrSections ?? [] {
+                if let attribute = section.attributes?.first(where: { $0.identifier == identifier }) { return attribute }
+            }
+        }
+        return nil
+    }
+
+    private static func expectAttribute(
+        _ identifier: String,
+        of item: LookinDisplayItem?,
+        type attrType: LookinAttrType,
+        equals expected: NSObject
+    ) {
+        guard let attribute = attribute(identifier, of: item) else { fail("\(identifier) is missing") }
+        expect(attribute.attrType == attrType, "\(identifier) has type \(attribute.attrType.rawValue), expected \(attrType.rawValue)")
+        expect((attribute.value as? NSObject) == expected,
+               "\(identifier) is \(String(describing: attribute.value)), expected \(expected)")
+    }
+
+    private static func groupIdentifiers(of item: LookinDisplayItem?) -> [String] {
+        (item?.attributesGroupList ?? []).compactMap(\.identifier)
+    }
+
+    private static func classChains(of item: LookinDisplayItem?) -> [[String]]? {
+        attribute(LookinAttr_Class_Class_Class, of: item)?.value as? [[String]]
+    }
+
+    private static func relations(of item: LookinDisplayItem?) -> [String]? {
+        attribute(LookinAttr_Relation_Relation_Relation, of: item)?.value as? [String]
+    }
+
     /// The object a row stands for, whichever slot its kind rides.
     private static func displayedObjectIdentifier(_ item: LookinDisplayItem) -> UInt {
         (item.kindObject ?? item.windowObject ?? item.viewObject ?? item.layerObject)?.oid ?? 0
@@ -388,7 +806,8 @@ struct LKXcodeViewHierarchyConverterTests {
 
     private static func response(
         groups: [[String: Any]] = [],
-        properties: [String: Any] = [:]
+        properties: [String: Any] = [:],
+        classInformation: [[String: Any]] = []
     ) -> [String: Any] {
         var topLevelGroups: [String: Any] = [:]
         for group in groups {
@@ -398,6 +817,73 @@ struct LKXcodeViewHierarchyConverterTests {
             "version": NSNumber(value: 2),
             "topLevelGroups": topLevelGroups,
             "topLevelPropertyDescriptions": properties,
+            "classInformation": classInformation,
+        ]
+    }
+
+    /// One entry of the capture's class table, nested by subclass.
+    private static func classNode(_ className: String, _ subclasses: [[String: Any]] = []) -> [String: Any] {
+        ["className": className, "subclasses": subclasses]
+    }
+
+    /// A constraint object with its properties inline, as the capture writes them.
+    private static func constraint(
+        _ objectIdentifier: String,
+        first: (identifier: String, className: String, attribute: Int),
+        relation: Int,
+        second: (identifier: String, className: String, attribute: Int)?,
+        constant: String,
+        active: Bool,
+        identifier: String? = nil
+    ) -> [String: Any] {
+        var properties: [[String: Any]] = [
+            propertyDescription(name: "firstItem", format: "objectInfo", value: objectReference(first.className, first.identifier)),
+            propertyDescription(name: "firstAttribute", format: "integer", value: String(first.attribute)),
+            propertyDescription(name: "relation", format: "integer", value: String(relation)),
+            propertyDescription(name: "secondAttribute", format: "integer", value: String(second?.attribute ?? 0)),
+            propertyDescription(name: "constant", format: "CGf", value: constant),
+            propertyDescription(name: "multiplier", format: "f", value: "1"),
+            propertyDescription(name: "priority", format: "f", value: "1000"),
+            propertyDescription(name: "active", format: "b", value: active ? "1" : "0"),
+        ]
+        if let second {
+            properties.append(propertyDescription(name: "secondItem", format: "objectInfo", value: objectReference(second.className, second.identifier)))
+        } else {
+            properties.append(valuelessPropertyDescription(name: "secondItem", format: "objectInfo"))
+        }
+        if let identifier {
+            properties.append(propertyDescription(name: "identifier", format: "public.plain-text", value: identifier))
+        }
+        var object = object(objectIdentifier, className: "NSLayoutConstraint")
+        object["properties"] = properties
+        return object
+    }
+
+    private static func objectReference(_ className: String, _ objectIdentifier: String) -> [String: Any] {
+        ["className": className, "memoryAddress": objectIdentifier]
+    }
+
+    /// A property whose fetch succeeded with no value: the captured nil.
+    private static func valuelessPropertyDescription(name: String, format: String) -> [String: Any] {
+        ["propertyName": name, "propertyFormat": format, "fetchStatus": NSNumber(value: 4)]
+    }
+
+    private static func font(name: String, size: String) -> [String: Any] {
+        ["fontName": name, "familyName": ".AppleSystemUIFont", "pointSize": size]
+    }
+
+    private static func grayColor(_ hexFloatComponents: [String]) -> [String: Any] {
+        [
+            "colorSpaceName": "kCGColorSpaceExtendedGray",
+            "componentValuesFormat": "CGf, CGf",
+            "componentValues": hexFloatComponents,
+        ]
+    }
+
+    private static func image(_ data: Data, name: String) -> [String: Any] {
+        [
+            "imageData": data.base64EncodedString(),
+            "metadata": ["imageName": name, "width": NSNumber(value: 10), "height": NSNumber(value: 10)],
         ]
     }
 

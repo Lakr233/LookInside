@@ -349,6 +349,7 @@
 				Toolbar/LKWindowToolbarAppButton.m,
 				Toolbar/LKWindowToolbarHelper.m,
 				Toolbar/LKWindowToolbarScaleView.m,
+				XcodeViewHierarchy/LKXcodeViewHierarchyAttributeCatalog.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyAttributes.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyBundleReader.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyConverter.swift,

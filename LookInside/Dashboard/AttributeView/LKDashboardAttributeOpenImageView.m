@@ -50,13 +50,20 @@
 }
 
 - (void)_handleClick {
+    // An imported Xcode capture carries the image's own bytes: there is no
+    // process to fetch them from, and none is needed.
+    if ([self.attribute.value isKindOfClass:[NSData class]]) {
+        [self _openImageData:self.attribute.value];
+        return;
+    }
+
     NSNumber *imageViewOid_num = self.attribute.value;
     if (imageViewOid_num == nil) {
         AlertError(LookinErr_Inner, self.window);
         NSAssert(NO, @"");
         return;
     }
-    
+
     unsigned long imageViewOid = [imageViewOid_num unsignedLongValue];
 
     LKDashboardViewController *dashController = self.dashboardViewController;
@@ -80,28 +87,32 @@
             AlertErrorText(NSLocalizedString(@"Operation failed. The image property value of selected UIImageView is nil.", nil), @"", self.window);
             return;
         }
-        
-        NSString *fileName = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
-        NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"LookInside_UIImageView_%@.png", fileName]];
-        NSError *writeError;
-        BOOL writeSucc = [imageData writeToFile:filePath options:0 error:&writeError];
-        if (!writeSucc) {
-            NSAssert(NO, @"");
-            AlertError(writeError, self.window);
-            return;
-        }
-        [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:filePath]];
-        
-        // 记录临时文件地址以在 Lookin 退出时清理
-        if (![LKHelper sharedInstance].tempImageFiles) {
-            [LKHelper sharedInstance].tempImageFiles = [NSMutableArray array];
-        }
-        [[LKHelper sharedInstance].tempImageFiles addObject:filePath];
-        
+        [self _openImageData:imageData];
+
     } error:^(NSError * _Nullable error) {
         @strongify(self);
         AlertError(error, self.window);
     }];
+}
+
+/// Writes the encoded image to a temporary file and opens it with Preview.
+- (void)_openImageData:(NSData *)imageData {
+    NSString *fileName = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"LookInside_UIImageView_%@.png", fileName]];
+    NSError *writeError;
+    BOOL writeSucc = [imageData writeToFile:filePath options:0 error:&writeError];
+    if (!writeSucc) {
+        NSAssert(NO, @"");
+        AlertError(writeError, self.window);
+        return;
+    }
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:filePath]];
+
+    // 记录临时文件地址以在 Lookin 退出时清理
+    if (![LKHelper sharedInstance].tempImageFiles) {
+        [LKHelper sharedInstance].tempImageFiles = [NSMutableArray array];
+    }
+    [[LKHelper sharedInstance].tempImageFiles addObject:filePath];
 }
 
 @end

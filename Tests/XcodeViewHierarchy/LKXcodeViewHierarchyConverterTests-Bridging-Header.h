@@ -12,6 +12,8 @@
 #import "LookinAttribute.h"
 #import "LookinAttributesGroup.h"
 #import "LookinAttributesSection.h"
+#import "LookinAutoLayoutConstraint.h"
+#import "LookinDashboardBlueprint.h"
 #import "LookinDisplayItem.h"
 #import "LookinObject.h"
 #import "LookinAppInfo.h"

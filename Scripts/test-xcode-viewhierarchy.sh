@@ -83,6 +83,7 @@ swiftc -parse-as-library \
 	"$SOURCE_DIR/LKXcodeViewHierarchyBundleReader.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyLayerArchive.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyPixelRecovery.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyAttributeCatalog.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyAttributes.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyConverter.swift" \
 	"$TEST_DIR/LKXcodeViewHierarchyConverterTests.swift" \

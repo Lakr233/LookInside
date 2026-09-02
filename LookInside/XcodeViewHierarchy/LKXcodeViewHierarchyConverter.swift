@@ -180,6 +180,11 @@ enum LKXcodeViewHierarchyConverter {
     ) -> [LookinDisplayItem] {
         var convertedViewIdentifiers: Set<String> = []
         let keyWindowIdentifier = keyWindowIdentifier(graph: graph, vocabulary: vocabulary)
+        let environment = LKXcodeViewHierarchyAttributeEnvironment(
+            isAppKit: vocabulary.isAppKit,
+            constraintIndex: LKXcodeViewHierarchyConstraintIndex(graph: graph),
+            keyWindowIdentifier: keyWindowIdentifier
+        )
 
         let windowIdentifiers = listedWindowIdentifiers(graph: graph, vocabulary: vocabulary)
         let listedOwnerIdentifiers = Set(graph.rootIdentifiers(inGroup: vocabulary.windowOwnerGroup))
@@ -211,19 +216,27 @@ enum LKXcodeViewHierarchyConverter {
 
         var rootItems: [LookinDisplayItem] = []
         for ownerIdentifier in ownerIdentifiers {
-            let windowItems = (windowIdentifiersByOwner[ownerIdentifier] ?? []).compactMap { windowIdentifier in
+            let ownedWindowIdentifiers = windowIdentifiersByOwner[ownerIdentifier] ?? []
+            let windowItems = ownedWindowIdentifiers.compactMap { windowIdentifier in
                 makingWindowItem(
                     windowIdentifier: windowIdentifier,
                     isKeyWindow: windowIdentifier == keyWindowIdentifier,
                     graph: graph,
                     vocabulary: vocabulary,
+                    environment: environment,
                     convertedViewIdentifiers: &convertedViewIdentifiers
                 )
             }
             if vocabulary.windowOwnerIsSceneNode {
                 // A scene is a node even with no windows, as in a live session.
                 guard let sceneNode = graph.node(ownerIdentifier) else { continue }
-                rootItems.append(makingSceneItem(sceneNode: sceneNode, windowItems: windowItems, graph: graph))
+                rootItems.append(makingSceneItem(
+                    sceneNode: sceneNode,
+                    windowNodes: ownedWindowIdentifiers.compactMap(graph.node),
+                    windowItems: windowItems,
+                    graph: graph,
+                    environment: environment
+                ))
             } else {
                 // A window controller is not a node here: the window row
                 // carries it as its controller. One without windows has no row.
@@ -236,6 +249,7 @@ enum LKXcodeViewHierarchyConverter {
                 isKeyWindow: windowIdentifier == keyWindowIdentifier,
                 graph: graph,
                 vocabulary: vocabulary,
+                environment: environment,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
             rootItems.append(windowItem)
@@ -248,8 +262,10 @@ enum LKXcodeViewHierarchyConverter {
                   isNode(viewNode, kindOfClassNamed: ClassName.touchBarView, graph: graph),
                   let viewItem = makingViewItem(
                       viewIdentifier: viewIdentifier,
+                      superviewNode: nil,
                       graph: graph,
                       vocabulary: vocabulary,
+                      environment: environment,
                       convertedViewIdentifiers: &convertedViewIdentifiers
                   )
             else { continue }
@@ -365,16 +381,20 @@ enum LKXcodeViewHierarchyConverter {
     /// A UIKit scene, the node a live session puts above its windows.
     private static func makingSceneItem(
         sceneNode: LKXcodeViewHierarchyNode,
+        windowNodes: [LKXcodeViewHierarchyNode],
         windowItems: [LookinDisplayItem],
-        graph: LKXcodeViewHierarchyObjectGraph
+        graph: LKXcodeViewHierarchyObjectGraph,
+        environment: LKXcodeViewHierarchyAttributeEnvironment
     ) -> LookinDisplayItem {
         let item = makingDisplayItem(kind: .windowScene)
         item.windowObject = makingLookinObject(for: sceneNode, graph: graph)
         item.alpha = 1
         item.customDisplayTitle = sceneDisplayTitle(for: sceneNode)
         item.representedAsKeyWindow = windowItems.contains { $0.representedAsKeyWindow }
+        var context = LKXcodeViewHierarchyAttributeContext(role: .windowScene, environment: environment)
+        context.sceneWindowNodes = windowNodes
         item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
-            for: sceneNode, layerNode: nil, graph: graph
+            for: sceneNode, layerNode: nil, graph: graph, context: context
         )
         item.subitems = windowItems
         return item
@@ -405,6 +425,7 @@ enum LKXcodeViewHierarchyConverter {
         isKeyWindow: Bool,
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary,
+        environment: LKXcodeViewHierarchyAttributeEnvironment,
         convertedViewIdentifiers: inout Set<String>
     ) -> LookinDisplayItem? {
         guard let windowNode = graph.node(windowIdentifier) else { return nil }
@@ -412,6 +433,10 @@ enum LKXcodeViewHierarchyConverter {
         let item = makingDisplayItem(kind: .window)
         item.windowObject = makingLookinObject(for: windowNode, graph: graph)
         item.representedAsKeyWindow = isKeyWindow
+        // A UIWindow is a view and gets a view's cards; an NSWindow is not.
+        var context = LKXcodeViewHierarchyAttributeContext(
+            role: vocabulary.isAppKit ? .window : .view, environment: environment
+        )
 
         // A UIWindow is itself a view and owns a layer; an NSWindow is not.
         // Carrying the layer lets the window node resolve a recovered
@@ -430,7 +455,11 @@ enum LKXcodeViewHierarchyConverter {
            let controllerIdentifier = windowNode.associatedIdentifiers(inGroup: vocabulary.windowOwnerGroup).first,
            let controllerNode = graph.node(controllerIdentifier) {
             item.hostWindowControllerObject = makingLookinObject(for: controllerNode, graph: graph)
+            context.windowControllerNode = controllerNode
         }
+        // The window's root view controller marks the row, as before; the
+        // cards leave it out, since a window is not that controller's view
+        // and a live session's Class and Relation cards do not list it.
         if let controllerIdentifier = windowNode.associatedIdentifiers(inGroup: vocabulary.viewControllerGroup).first,
            let controllerNode = graph.node(controllerIdentifier) {
             item.hostViewControllerObject = makingLookinObject(for: controllerNode, graph: graph)
@@ -450,18 +479,20 @@ enum LKXcodeViewHierarchyConverter {
         for rootViewIdentifier in rootViewIdentifiers {
             guard let viewItem = makingViewItem(
                 viewIdentifier: rootViewIdentifier,
+                superviewNode: windowNode,
                 graph: graph,
                 vocabulary: vocabulary,
+                environment: environment,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
             subitems.append(viewItem)
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
-            owner: windowNode, graph: graph, vocabulary: vocabulary
+            owner: windowNode, graph: graph, vocabulary: vocabulary, environment: environment
         ))
         item.subitems = subitems
         item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
-            for: windowNode, layerNode: associatedLayerNode(of: windowNode, graph: graph), graph: graph
+            for: windowNode, layerNode: associatedLayerNode(of: windowNode, graph: graph), graph: graph, context: context
         )
 
         // A window whose frame the capture did not record still needs bounds
@@ -475,8 +506,10 @@ enum LKXcodeViewHierarchyConverter {
 
     private static func makingViewItem(
         viewIdentifier: String,
+        superviewNode: LKXcodeViewHierarchyNode?,
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary,
+        environment: LKXcodeViewHierarchyAttributeEnvironment,
         convertedViewIdentifiers: inout Set<String>
     ) -> LookinDisplayItem? {
         // The capture is a graph, not a tree: a view reachable twice would
@@ -499,29 +532,36 @@ enum LKXcodeViewHierarchyConverter {
         }
         applyingVisibility(from: viewNode, to: item)
 
+        var context = LKXcodeViewHierarchyAttributeContext(role: .view, environment: environment)
+        context.superviewNode = superviewNode
         if let controllerIdentifier = viewNode.associatedIdentifiers(inGroup: vocabulary.viewControllerGroup).first,
            let controllerNode = graph.node(controllerIdentifier) {
             item.hostViewControllerObject = makingLookinObject(for: controllerNode, graph: graph)
+            context.viewControllerNode = controllerNode
         }
         item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
-            for: viewNode, layerNode: associatedLayerNode(of: viewNode, graph: graph), graph: graph
+            for: viewNode, layerNode: associatedLayerNode(of: viewNode, graph: graph), graph: graph, context: context
         )
 
         var subitems: [LookinDisplayItem] = []
         for childIdentifier in viewNode.childIdentifiers {
             guard let childItem = makingViewItem(
                 viewIdentifier: childIdentifier,
+                superviewNode: viewNode,
                 graph: graph,
                 vocabulary: vocabulary,
+                environment: environment,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
             subitems.append(childItem)
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
-            owner: viewNode, graph: graph, vocabulary: vocabulary
+            owner: viewNode, graph: graph, vocabulary: vocabulary, environment: environment
         ))
         if let cellGroup = vocabulary.cellGroup {
-            subitems.append(contentsOf: makingCellItems(owner: viewNode, cellGroup: cellGroup, graph: graph))
+            subitems.append(contentsOf: makingCellItems(
+                owner: viewNode, cellGroup: cellGroup, graph: graph, environment: environment
+            ))
         }
         item.subitems = subitems
         return item
@@ -532,9 +572,12 @@ enum LKXcodeViewHierarchyConverter {
     private static func makingLayoutGuideItems(
         owner: LKXcodeViewHierarchyNode,
         graph: LKXcodeViewHierarchyObjectGraph,
-        vocabulary: Vocabulary
+        vocabulary: Vocabulary,
+        environment: LKXcodeViewHierarchyAttributeEnvironment
     ) -> [LookinDisplayItem] {
-        owner.associatedIdentifiers(inGroup: vocabulary.layoutGuideGroup).compactMap { guideIdentifier in
+        var context = LKXcodeViewHierarchyAttributeContext(role: .layoutGuide, environment: environment)
+        context.ownerNode = owner
+        return owner.associatedIdentifiers(inGroup: vocabulary.layoutGuideGroup).compactMap { guideIdentifier in
             guard let guideNode = graph.node(guideIdentifier) else { return nil }
             let item = makingDisplayItem(kind: .layoutGuide)
             item.kindObject = makingLookinObject(for: guideNode, graph: graph)
@@ -546,8 +589,8 @@ enum LKXcodeViewHierarchyConverter {
                 applyingGeometry(from: guideNode, to: item)
             }
             item.alpha = 1
-            item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingLayoutGuideGroups(
-                for: guideNode, graph: graph
+            item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
+                for: guideNode, layerNode: nil, graph: graph, context: context
             )
             return item
         }
@@ -558,16 +601,19 @@ enum LKXcodeViewHierarchyConverter {
     private static func makingCellItems(
         owner: LKXcodeViewHierarchyNode,
         cellGroup: String,
-        graph: LKXcodeViewHierarchyObjectGraph
+        graph: LKXcodeViewHierarchyObjectGraph,
+        environment: LKXcodeViewHierarchyAttributeEnvironment
     ) -> [LookinDisplayItem] {
-        owner.associatedIdentifiers(inGroup: cellGroup).compactMap { cellIdentifier in
+        var context = LKXcodeViewHierarchyAttributeContext(role: .cell, environment: environment)
+        context.ownerNode = owner
+        return owner.associatedIdentifiers(inGroup: cellGroup).compactMap { cellIdentifier in
             guard let cellNode = graph.node(cellIdentifier) else { return nil }
             let item = makingDisplayItem(kind: .cell)
             item.kindObject = makingLookinObject(for: cellNode, graph: graph)
             applyingGeometry(from: cellNode, to: item)
             item.alpha = 1
             item.attributesGroupList = LKXcodeViewHierarchyAttributes.makingGroups(
-                for: cellNode, layerNode: nil, graph: graph
+                for: cellNode, layerNode: nil, graph: graph, context: context
             )
             return item
         }
