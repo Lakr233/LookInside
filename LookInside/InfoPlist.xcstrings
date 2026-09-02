@@ -50,6 +50,22 @@
           }
         }
       }
+    },
+    "Xcode View Hierarchy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode View Hierarchy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode 视图层级"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
