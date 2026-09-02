@@ -127,7 +127,7 @@ enum LKXcodeViewHierarchyAttributes {
             sections.append(makingSection(LookinAttrSec_ViewLayer_Visibility, visibilityAttributes))
         }
 
-        if let backgroundColor = color(from: layerNode ?? node, propertyName: "backgroundColor") {
+        if let backgroundColor = colorComponents(from: layerNode ?? node, propertyName: "backgroundColor") {
             sections.append(makingSection(
                 LookinAttrSec_ViewLayer_BgColor,
                 [makingColorAttribute(LookinAttr_ViewLayer_BgColor_BgColor, backgroundColor)]
@@ -145,7 +145,7 @@ enum LKXcodeViewHierarchyAttributes {
         if let borderWidth = (layerNode ?? node).property(named: "borderWidth")?.value.doubleValue {
             borderAttributes.append(makingFloatAttribute(LookinAttr_ViewLayer_Border_Width, borderWidth))
         }
-        if let borderColor = color(from: layerNode ?? node, propertyName: "borderColor") {
+        if let borderColor = colorComponents(from: layerNode ?? node, propertyName: "borderColor") {
             borderAttributes.append(makingColorAttribute(LookinAttr_ViewLayer_Border_Color, borderColor))
         }
         if !borderAttributes.isEmpty {
@@ -221,17 +221,19 @@ enum LKXcodeViewHierarchyAttributes {
         return CGSize(width: components[0], height: components[1])
     }
 
-    private static func color(from node: LKXcodeViewHierarchyNode?, propertyName: String) -> NSColor? {
+    /// RGBA in 0...1, which is what a `LookinAttrTypeUIColor` value carries
+    /// (`LookinAttrType.h`). The dashboard decodes that array itself and
+    /// asserts on anything else, so no `NSColor` is built here.
+    private static func colorComponents(
+        from node: LKXcodeViewHierarchyNode?,
+        propertyName: String
+    ) -> [NSNumber]? {
         guard case .color(let captured)? = node?.property(named: propertyName)?.value,
               captured.components.count >= 3
         else { return nil }
         let alpha = captured.components.count >= 4 ? captured.components[3] : 1
-        return NSColor(
-            srgbRed: captured.components[0],
-            green: captured.components[1],
-            blue: captured.components[2],
-            alpha: alpha
-        )
+        return [captured.components[0], captured.components[1], captured.components[2], alpha]
+            .map { NSNumber(value: $0) }
     }
 
     // MARK: - Builders
@@ -292,7 +294,7 @@ enum LKXcodeViewHierarchyAttributes {
         makingAttribute(identifier, .cgSize, NSValue(size: value))
     }
 
-    private static func makingColorAttribute(_ identifier: String, _ value: NSColor) -> LookinAttribute {
-        makingAttribute(identifier, .uiColor, value)
+    private static func makingColorAttribute(_ identifier: String, _ components: [NSNumber]) -> LookinAttribute {
+        makingAttribute(identifier, .uiColor, components as NSArray)
     }
 }

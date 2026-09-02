@@ -51,4 +51,44 @@ swiftc -parse-as-library \
 	-o "$TMPDIR/pixel-recovery-test"
 "$TMPDIR/pixel-recovery-test"
 
+# Conversion into the inspector's model: the converter and the attribute
+# builder produce LookinDisplayItem trees, so the Objective-C model
+# (LookinCore, system frameworks only) is compiled in alongside them. The
+# cases guard the fields whose Objective-C defaults differ from what the
+# reader expects — the one place such defaults are neither set by the server
+# nor patched by the archive decoder.
+LOOKIN_CORE_DIR="$ROOT/Sources/LookinCore"
+# LookinDisplayItem pulls one header from the server base sources.
+LOOKIN_SERVER_BASE_DIR="$ROOT/Sources/LookinServerBase"
+# The app's deployment target; against the bare SDK the model's window
+# capture call is already obsoleted.
+DEPLOYMENT_TARGET=14.0
+mkdir -p "$TMPDIR/lookin-core"
+for source_file in "$LOOKIN_CORE_DIR"/*.m "$LOOKIN_CORE_DIR"/Category/*.m "$LOOKIN_SERVER_BASE_DIR"/*.m; do
+	xcrun clang -c -fobjc-arc -w -DSHOULD_COMPILE_LOOKIN_SERVER=1 \
+		-mmacosx-version-min="$DEPLOYMENT_TARGET" \
+		-I "$LOOKIN_CORE_DIR" -I "$LOOKIN_CORE_DIR/include" -I "$LOOKIN_CORE_DIR/Category" \
+		-I "$LOOKIN_SERVER_BASE_DIR" \
+		"$source_file" -o "$TMPDIR/lookin-core/$(basename "$source_file" .m).o"
+done
+swiftc -parse-as-library \
+	-target "$(uname -m)-apple-macos$DEPLOYMENT_TARGET" \
+	-import-objc-header "$TEST_DIR/LKXcodeViewHierarchyConverterTests-Bridging-Header.h" \
+	-Xcc -DSHOULD_COMPILE_LOOKIN_SERVER=1 \
+	-Xcc -I"$LOOKIN_CORE_DIR" -Xcc -I"$LOOKIN_CORE_DIR/include" -Xcc -I"$LOOKIN_CORE_DIR/Category" \
+	-Xcc -I"$LOOKIN_SERVER_BASE_DIR" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyGzip.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyValue.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyObjectGraph.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyBundleReader.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyLayerArchive.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyPixelRecovery.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyAttributes.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyConverter.swift" \
+	"$TEST_DIR/LKXcodeViewHierarchyConverterTests.swift" \
+	"$TMPDIR"/lookin-core/*.o \
+	-framework AppKit -framework QuartzCore \
+	-o "$TMPDIR/converter-test"
+"$TMPDIR/converter-test"
+
 echo "Xcode view hierarchy tests passed"

@@ -163,8 +163,7 @@ enum LKXcodeViewHierarchyConverter {
     ) -> LookinDisplayItem? {
         guard let windowNode = graph.node(windowIdentifier) else { return nil }
 
-        let item = LookinDisplayItem()
-        item.nodeKind = .window
+        let item = makingDisplayItem(kind: .window)
         item.windowObject = makingLookinObject(for: windowNode, graph: graph)
 
         // A UIWindow is itself a view and owns a layer; an NSWindow is not.
@@ -236,8 +235,7 @@ enum LKXcodeViewHierarchyConverter {
               let viewNode = graph.node(viewIdentifier)
         else { return nil }
 
-        let item = LookinDisplayItem()
-        item.nodeKind = .view
+        let item = makingDisplayItem(kind: .view)
         item.viewObject = makingLookinObject(for: viewNode, graph: graph)
         item.isFlipped = vocabulary.isAppKit && (viewNode.property(named: "flipped")?.value.boolValue ?? false)
 
@@ -288,8 +286,7 @@ enum LKXcodeViewHierarchyConverter {
     ) -> [LookinDisplayItem] {
         owner.associatedIdentifiers(inGroup: vocabulary.layoutGuideGroup).compactMap { guideIdentifier in
             guard let guideNode = graph.node(guideIdentifier) else { return nil }
-            let item = LookinDisplayItem()
-            item.nodeKind = .layoutGuide
+            let item = makingDisplayItem(kind: .layoutGuide)
             item.kindObject = makingLookinObject(for: guideNode, graph: graph)
             item.representsSystemManagedNode = looksSystemManaged(guideNode)
             if let layoutFrame = guideNode.property(named: "layoutFrame")?.value.numericComponents(expectedCount: 4) {
@@ -315,8 +312,7 @@ enum LKXcodeViewHierarchyConverter {
     ) -> [LookinDisplayItem] {
         owner.associatedIdentifiers(inGroup: cellGroup).compactMap { cellIdentifier in
             guard let cellNode = graph.node(cellIdentifier) else { return nil }
-            let item = LookinDisplayItem()
-            item.nodeKind = .cell
+            let item = makingDisplayItem(kind: .cell)
             item.kindObject = makingLookinObject(for: cellNode, graph: graph)
             applyingGeometry(from: cellNode, to: item)
             item.alpha = 1
@@ -339,6 +335,19 @@ enum LKXcodeViewHierarchyConverter {
     }
 
     // MARK: Node fields
+
+    /// Every node starts here. `shouldCaptureImage` is opted into explicitly:
+    /// its Objective-C default is NO, and the host reads NO as "the user's
+    /// config excluded this layer", marking the node and its whole subtree
+    /// `noPreview` — the preview then receives nothing (node-model-internals,
+    /// trap 1). The server sets the flag per kind and the archive decoder
+    /// defaults an absent key to YES; an in-memory producer gets neither.
+    private static func makingDisplayItem(kind: LookinDisplayItemNodeKind) -> LookinDisplayItem {
+        let item = LookinDisplayItem()
+        item.nodeKind = kind
+        item.shouldCaptureImage = true
+        return item
+    }
 
     private static func associatedLayerNode(
         of node: LKXcodeViewHierarchyNode,
