@@ -8,31 +8,28 @@
 // so the conversion layer can hand it to the same read path that already
 // serves `.lookin` documents.
 //
-// Orientation is the detail that decides whether the result is usable, and it
-// needs two corrections rather than one. The archive records a
-// `geometryFlipped` flag: UIKit captures set it, AppKit captures do not. An
-// AppKit tree renders correctly with no correction at all. A UIKit tree is
-// y-down, and Core Animation on macOS reads the decoded layers as y-up, which
-// spoils two things independently:
+// Orientation is the detail that decides whether the result is usable, and
+// two facts about Core Animation govern it:
 //
-//   * sublayer *positions* come out in reverse order, and
-//   * layer *contents* would come out mirrored if the context were simply
-//     flipped to compensate.
+//   * `isGeometryFlipped` is relative to the superlayer. Marking a layer flips
+//     the axis for its sublayers; marking a sublayer as well flips it back.
+//     AppKit already writes the flag that way for flipped views, so an AppKit
+//     archive is self-describing. A UIKit archive is y-down at every level and
+//     carries no flags (the archive's own `geometryFlipped` says so), so the
+//     root alone is marked and the whole tree inherits the y-down axis.
+//     Marking every layer, as this once did, flips depth two upside down again.
+//   * The flag is ignored on whichever layer is the root of a render. A layer
+//     whose cumulative flip is odd — `contentsAreFlipped` — comes out mirrored
+//     when rendered on its own, so its context is flipped to make its image
+//     match what it looks like inside the tree. This is the rule the server
+//     applies when it screenshots a live macOS layer, and the one Xcode's own
+//     view debugger uses.
 //
-// Correcting only one is worse than correcting neither, and both failures look
-// like "the flip is wrong" without saying which. Measured on a real capture of
-// a music player screen:
-//
-//     no correction              art at the bottom, text readable
-//     flipped context only       art at the top, every glyph mirrored
-//     geometryFlipped only       art at the bottom, every glyph mirrored
-//     both (what this does)      correct
-//
-// So: set `isGeometryFlipped` on every layer of a y-down tree, which restores
-// each level's sublayer ordering and mirrors the contents, then flip the
-// context, which mirrors everything back. Setting the flag on the root alone
-// does nothing — the archived UIKit layers do not carry the property, so every
-// level has to be told.
+// Both halves are needed. Without the root flag a UIKit tree's sublayers stack
+// in reverse; without the context flip every flipped subtree — an
+// NSOutlineView, an NSTextView, a UIKit screen — reads mirrored, which is how
+// an imported Xcode window once came back with its navigator upside down while
+// the window as a whole rendered fine.
 
 import AppKit
 import Foundation
@@ -69,16 +66,11 @@ enum LKXcodeViewHierarchyPixelRecovery {
         let (trees, failedIdentifiers) = LKXcodeViewHierarchyLayerArchive.decodingLayerTrees(in: graph)
         let alignment = LKXcodeViewHierarchyLayerAlignment.aligning(trees: trees, graph: graph)
 
-        var flippedRootIdentifiers: Set<String> = []
         for tree in trees where tree.isGeometryFlipped {
-            flippedRootIdentifiers.insert(tree.rootObjectIdentifier)
-            // Half of the orientation fix; the context flip in renderingPNG is
-            // the other half, and neither works alone.
-            applyingGeometryFlip(to: tree.rootLayer)
+            // A y-down capture: the root carries the axis and the subtree
+            // inherits it. The context flip in renderingPNG is the other half.
+            tree.rootLayer.isGeometryFlipped = true
         }
-        let flippedIdentifiers = identifiersUnderFlippedRoots(
-            flippedRootIdentifiers: flippedRootIdentifiers, alignment: alignment, graph: graph
-        )
 
         var soloByObjectIdentifier: [String: Data] = [:]
         var groupByObjectIdentifier: [String: Data] = [:]
@@ -88,7 +80,7 @@ enum LKXcodeViewHierarchyPixelRecovery {
         defer { CATransaction.commit() }
 
         for (objectIdentifier, layer) in alignment {
-            let isFlipped = flippedIdentifiers.contains(objectIdentifier)
+            let isFlipped = layer.contentsAreFlipped()
             if let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
                 groupByObjectIdentifier[objectIdentifier] = groupImage
             }
@@ -105,28 +97,6 @@ enum LKXcodeViewHierarchyPixelRecovery {
             groupByObjectIdentifier: groupByObjectIdentifier,
             failedArchiveIdentifiers: failedIdentifiers
         )
-    }
-
-    /// Marks a y-down tree as such at every level, so Core Animation orders
-    /// each layer's sublayers the way the capturing platform did.
-    private static func applyingGeometryFlip(to layer: CALayer) {
-        layer.isGeometryFlipped = true
-        for sublayer in layer.sublayers ?? [] { applyingGeometryFlip(to: sublayer) }
-    }
-
-    /// Every aligned identifier that sits inside a geometry-flipped tree.
-    private static func identifiersUnderFlippedRoots(
-        flippedRootIdentifiers: Set<String>,
-        alignment: [String: CALayer],
-        graph: LKXcodeViewHierarchyObjectGraph
-    ) -> Set<String> {
-        var flipped: Set<String> = []
-        var pending = Array(flippedRootIdentifiers)
-        while let objectIdentifier = pending.popLast() {
-            guard alignment[objectIdentifier] != nil, flipped.insert(objectIdentifier).inserted else { continue }
-            pending.append(contentsOf: graph.node(objectIdentifier)?.childIdentifiers ?? [])
-        }
-        return flipped
     }
 
     // MARK: - Rendering
@@ -163,7 +133,8 @@ enum LKXcodeViewHierarchyPixelRecovery {
 
         context.scaleBy(x: scale, y: scale)
         if isFlipped {
-            // Undo the bottom-left origin so top-left-origin content lands upright.
+            // The layer's cumulative flip is odd: mirror the context so the
+            // image matches how the layer looks inside its tree.
             context.translateBy(x: 0, y: bounds.height)
             context.scaleBy(x: 1, y: -1)
         }

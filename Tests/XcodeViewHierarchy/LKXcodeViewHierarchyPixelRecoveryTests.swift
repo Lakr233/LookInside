@@ -4,20 +4,24 @@ import QuartzCore
 
 /// Coverage for recovering pixels from a capture's layer archives.
 ///
-/// The orientation cases are the reason this file exists. A UIKit capture is
-/// y-down and Core Animation on macOS reads it as y-up, which needs two
-/// separate corrections — marking every layer geometry-flipped, and flipping
-/// the render context. Applying one without the other produces an image that
-/// is wrong in a way no assertion on file size or pixel count would catch:
-/// either the subviews come out in reverse order, or every glyph is mirrored.
-/// The tests below place a marker in a known corner and check where it lands,
-/// which is the smallest thing that can tell those apart.
+/// The orientation cases are the reason this file exists. Two facts about
+/// Core Animation govern them: `isGeometryFlipped` is relative to the
+/// superlayer, and it is ignored on whichever layer is the root of a render.
+/// So a y-down (UIKit) tree needs the flag on its root only, and any layer
+/// whose cumulative flip is odd needs its render context flipped when drawn
+/// on its own. Getting either wrong produces an image no assertion on file
+/// size or pixel count would catch: subviews in reverse order, every glyph
+/// mirrored, or a flipped subtree upside down while the whole window is
+/// fine. The tests below place markers in known places and check where they
+/// land, which is the smallest thing that can tell those apart.
 @main
 struct LKXcodeViewHierarchyPixelRecoveryTests {
     static func main() {
         testUnflippedTreeKeepsSublayerPosition()
         testFlippedTreeInvertsSublayerPosition()
         testRecoveryAppliesTheGeometryFlipItself()
+        testFlippedSubtreeRendersAsItDoesInsideItsRoot()
+        testNestedLayersOfAYDownTreeKeepTheirOrderAtEveryDepth()
         testEmptyLayerProducesNoImage()
         testZeroSizedLayerProducesNoImage()
         testLargeLayerIsScaledWithinTheCap()
@@ -39,7 +43,8 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         expect(rendered.contentIsUpright, "a y-up tree should not mirror the band's content")
     }
 
-    /// UIKit captures are y-down, and correcting them takes both halves.
+    /// UIKit captures are y-down, and correcting them takes both halves: the
+    /// geometry flag on the root, and the context flip when rendering.
     ///
     /// The two assertions here are what tell the halves apart. Dropping the
     /// context flip leaves the band at the bottom; dropping the geometry flag
@@ -88,6 +93,89 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         let rendered = measuring(bitmap)
         expect(rendered.bandIsAtTop, "recovery must put a y-down capture's band at the top")
         expect(rendered.contentIsUpright, "recovery must not leave a y-down capture's content mirrored")
+    }
+
+    /// AppKit marks a flipped view's layer geometry-flipped *relative to its
+    /// superlayer*, and Core Animation ignores that flag on whichever layer is
+    /// the root of a render. A flipped subtree rendered on its own therefore
+    /// comes out mirrored unless the context is flipped for it — which is how
+    /// every outline view, text view and split view of an imported Xcode
+    /// window came back upside down while the window as a whole rendered
+    /// fine. The contract: a layer's own image looks exactly like its region
+    /// of the root's image.
+    private static func testFlippedSubtreeRendersAsItDoesInsideItsRoot() {
+        let root = CALayer()
+        root.bounds = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let flippedChild = CALayer()
+        flippedChild.bounds = CGRect(x: 0, y: 0, width: 100, height: 40)
+        flippedChild.anchorPoint = .zero
+        flippedChild.position = CGPoint(x: 0, y: 60)   // the top 40 rows of the root
+        flippedChild.isGeometryFlipped = true
+        let band = CALayer()
+        band.bounds = CGRect(x: 0, y: 0, width: 100, height: 20)
+        band.anchorPoint = .zero
+        band.position = .zero
+        band.contents = twoToneImage()
+        band.contentsGravity = .resize
+        flippedChild.addSublayer(band)
+        root.addSublayer(flippedChild)
+
+        guard let rootData = LKXcodeViewHierarchyPixelRecovery.renderingPNG(
+            of: root, includingSublayers: true, isFlipped: false
+        ), let rootImage = NSBitmapImageRep(data: rootData)?.cgImage,
+        let childRegion = rootImage.cropping(
+            to: CGRect(x: 0, y: 0, width: rootImage.width, height: rootImage.height * 40 / 100)
+        ) else { fail("could not render the root fixture") }
+        let insideRoot = measuring(NSBitmapImageRep(cgImage: childRegion))
+
+        guard let archiveData = archiveData(rootLayer: root, geometryFlipped: false) else {
+            fail("could not build the archive fixture")
+        }
+        let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(
+            from: layerCapture(archiveData: archiveData, tree: LayerNodeFixture("0x1", [LayerNodeFixture("0x2")]))
+        )
+        guard let childData = screenshots.groupByObjectIdentifier["0x2"],
+              let childBitmap = NSBitmapImageRep(data: childData)
+        else { fail("recovery produced no image for the flipped child") }
+        let onItsOwn = measuring(childBitmap)
+
+        expect(onItsOwn.bandIsAtTop == insideRoot.bandIsAtTop && onItsOwn.bandIsAtBottom == insideRoot.bandIsAtBottom,
+               "the flipped child's band moved: inside the root it is at the \(insideRoot.bandIsAtTop ? "top" : "bottom"), on its own at the \(onItsOwn.bandIsAtTop ? "top" : "bottom")")
+        expect(onItsOwn.contentIsUpright == insideRoot.contentIsUpright,
+               "the flipped child's content is mirrored relative to how it renders inside the root")
+    }
+
+    /// `isGeometryFlipped` is relative to the superlayer, so marking every
+    /// layer of a y-down tree flips each level back and forth: depth one
+    /// comes out right, depth two upside down again. Only the root may carry
+    /// the flag; every layer then inherits the y-down axis, and each layer's
+    /// own render is flipped exactly when its cumulative parity is odd.
+    private static func testNestedLayersOfAYDownTreeKeepTheirOrderAtEveryDepth() {
+        // Positions as UIKit archives them: y measured downwards.
+        let root = coloredLayer(width: 100, height: 100, at: .zero, color: .white)
+        let levelOne = coloredLayer(width: 100, height: 40, at: .zero, color: .blue)                   // top of the root
+        let bandOne = coloredLayer(width: 100, height: 10, at: .zero, color: .red)                     // top of level one
+        let levelTwo = coloredLayer(width: 100, height: 20, at: CGPoint(x: 0, y: 20), color: .yellow)  // lower half of level one
+        let bandTwo = coloredLayer(width: 100, height: 5, at: .zero, color: .green)                    // top of level two
+        levelTwo.addSublayer(bandTwo)
+        levelOne.addSublayer(bandOne)
+        levelOne.addSublayer(levelTwo)
+        root.addSublayer(levelOne)
+
+        guard let archiveData = archiveData(rootLayer: root, geometryFlipped: true) else {
+            fail("could not build the archive fixture")
+        }
+        let capture = layerCapture(archiveData: archiveData, tree: LayerNodeFixture("0x1", [
+            LayerNodeFixture("0x2", [
+                LayerNodeFixture("0x3"),
+                LayerNodeFixture("0x4", [LayerNodeFixture("0x5")]),
+            ]),
+        ]))
+        let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture)
+
+        expectRows(screenshots, "0x1", "the root", [(5, "red"), (15, "blue"), (22, "green"), (30, "yellow"), (50, "white")])
+        expectRows(screenshots, "0x2", "level one", [(5, "red"), (15, "blue"), (22, "green"), (30, "yellow")])
+        expectRows(screenshots, "0x4", "level two", [(2, "green"), (10, "yellow")])
     }
 
     // MARK: - Skipping
@@ -197,6 +285,75 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         return image
     }
 
+    private struct LayerNodeFixture {
+        let identifier: String
+        let children: [LayerNodeFixture]
+
+        init(_ identifier: String, _ children: [LayerNodeFixture] = []) {
+            self.identifier = identifier
+            self.children = children
+        }
+    }
+
+    /// A capture whose CALayer group mirrors `tree`, with the archive on its root.
+    private static func layerCapture(archiveData: Data, tree: LayerNodeFixture) -> LKXcodeViewHierarchyObjectGraph {
+        func describing(_ node: LayerNodeFixture) -> [String: Any] {
+            var object: [String: Any] = ["objectID": node.identifier, "className": "CALayer"]
+            if !node.children.isEmpty {
+                object["childGroup"] = [
+                    "groupingID": "com.apple.QuartzCore.CALayer",
+                    "debugHierarchyObjects": node.children.map(describing),
+                ]
+            }
+            return object
+        }
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: [
+            "version": NSNumber(value: 2),
+            "topLevelGroups": [
+                "com.apple.QuartzCore.CALayer": [
+                    "groupingID": "com.apple.QuartzCore.CALayer",
+                    "debugHierarchyObjects": [describing(tree)],
+                ],
+            ],
+            "topLevelPropertyDescriptions": [
+                "\(tree.identifier).encodedPresentationLayer": [
+                    "propertyName": "encodedPresentationLayer",
+                    "propertyFormat": "public.data",
+                    "propertyValue": archiveData.base64EncodedString(),
+                    "fetchStatus": NSNumber(value: 4),
+                ],
+            ],
+        ])
+        return builder.build()
+    }
+
+    private static func coloredLayer(width: CGFloat, height: CGFloat, at position: CGPoint, color: NSColor) -> CALayer {
+        let layer = CALayer()
+        layer.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+        layer.anchorPoint = .zero
+        layer.position = position
+        layer.backgroundColor = color.cgColor
+        return layer
+    }
+
+    /// Samples the middle column of a recovered image at the given rows,
+    /// counted from the top, and names the colour found.
+    private static func expectRows(
+        _ screenshots: LKXcodeViewHierarchyScreenshots,
+        _ objectIdentifier: String,
+        _ label: String,
+        _ expectations: [(row: Int, color: String)]
+    ) {
+        guard let data = screenshots.groupByObjectIdentifier[objectIdentifier],
+              let bitmap = NSBitmapImageRep(data: data)
+        else { fail("recovery produced no image for \(label)") }
+        let column = bitmap.pixelsWide / 2
+        let actual = expectations.map { colorName(bitmap, x: column, y: $0.row) }
+        let expected = expectations.map(\.color)
+        expect(actual == expected, "\(label) rows \(expectations.map(\.row)): expected \(expected), got \(actual)")
+    }
+
     private static func archiveData(rootLayer: CALayer, geometryFlipped: Bool) -> Data? {
         let archiver = NSKeyedArchiver(requiringSecureCoding: false)
         archiver.encode(
@@ -256,15 +413,24 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
     }
 
     private static func colorName(_ bitmap: NSBitmapImageRep, x: Int, y: Int) -> String {
-        guard let color = bitmap.colorAt(x: x, y: y), color.alphaComponent > 0.5 else { return "clear" }
-        if color.redComponent > 0.5, color.greenComponent < 0.5 { return "red" }
-        if color.greenComponent > 0.5, color.redComponent < 0.5 { return "green" }
-        return "other"
+        guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), color.alphaComponent > 0.5 else {
+            return "clear"
+        }
+        let (red, green, blue) = (color.redComponent > 0.5, color.greenComponent > 0.5, color.blueComponent > 0.5)
+        switch (red, green, blue) {
+        case (true, true, true): return "white"
+        case (true, true, false): return "yellow"
+        case (true, false, false): return "red"
+        case (false, true, false): return "green"
+        case (false, false, true): return "blue"
+        default: return "other"
+        }
     }
 
+    /// The flag is relative to the superlayer, so the root alone carries it
+    /// and the subtree inherits the y-down axis.
     private static func applyGeometryFlip(to layer: CALayer) {
         layer.isGeometryFlipped = true
-        for sublayer in layer.sublayers ?? [] { applyGeometryFlip(to: sublayer) }
     }
 
     // MARK: - Helpers

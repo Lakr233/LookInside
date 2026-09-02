@@ -37,7 +37,7 @@ struct LKXcodeViewHierarchyLayerTree {
     /// Object identifier of the captured layer this archive is rooted at.
     let rootObjectIdentifier: String
     let rootLayer: CALayer
-    /// AppKit captures set this; it decides the direction of the y axis.
+    /// True for a y-down tree (UIKit captures); AppKit captures leave it false.
     let isGeometryFlipped: Bool
 }
 
