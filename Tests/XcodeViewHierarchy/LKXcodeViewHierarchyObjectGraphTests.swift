@@ -3,10 +3,12 @@ import Foundation
 /// Coverage for merging a `.viewhierarchy` capture's responses into one object graph.
 ///
 /// Each case here stands for a merge rule taken from Xcode's own reader
-/// (`DBGDataCoordinatorTargetHub`). They share a failure signature: break any
-/// one of them and the import still succeeds, still shows a tree, and is
-/// quietly wrong — duplicated nodes, a view's layer promoted to a subview, or
-/// a property blanked by a later response that only meant "unchanged".
+/// (`DBGDataCoordinatorTargetHub`), plus the one rule this reader adds on top
+/// of it: a new capture replaces the previous one whole. They share a failure
+/// signature: break any one of them and the import still succeeds, still
+/// shows a tree, and is quietly wrong — duplicated nodes, a view's layer
+/// promoted to a subview, a property blanked by a later response that only
+/// meant "unchanged", or a replaced view lingering beside its replacement.
 @main
 struct LKXcodeViewHierarchyObjectGraphTests {
     static func main() {
@@ -28,6 +30,8 @@ struct LKXcodeViewHierarchyObjectGraphTests {
         testMalformedValueIsReportedNotFatal()
         testClassChainIsBuiltFromClassInformation()
         testClassChainOfUnknownClassIsJustItself()
+        testNewCaptureReplacesTheEarlierOne()
+        testReusedAddressesDoNotFormACycle()
         print("Xcode view hierarchy object graph tests passed")
     }
 
@@ -83,40 +87,35 @@ struct LKXcodeViewHierarchyObjectGraphTests {
                "constraint associations missing")
     }
 
-    /// A reference names an object described in full elsewhere; applying it as
-    /// an update would erase that description.
+    /// A reference names an object described in full elsewhere in the same
+    /// capture; applying it as an update would erase that description. Root
+    /// groups are ingested in key order, so the layer group here is read
+    /// before the view group that references it.
     private static func testReferenceDoesNotClobberDescribedObject() {
-        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
-        builder.ingesting(response: response(groups: [
+        let graph = graphFrom(groups: [
             group("com.apple.QuartzCore.CALayer", objects: [object("0x9", className: "CALayer")]),
-        ]))
-        builder.ingesting(response: response(groups: [
             group("com.apple.UIKit.UIView", objects: [
                 object("0x1", className: "UIView", additionalGroups: [
                     group("com.apple.QuartzCore.CALayer", objects: [reference("0x9")]),
                 ]),
             ]),
-        ]))
-        let graph = builder.build()
+        ])
         expect(graph.node("0x9")?.className == "CALayer",
                "a later reference erased the described class: \(String(describing: graph.node("0x9")?.className))")
     }
 
-    /// The reverse order also has to work: the reference arrives first, the
-    /// full description later.
+    /// The reverse order also has to work: the reference is read first (the
+    /// AppKit group key sorts before the QuartzCore one), the full description
+    /// later.
     private static func testReferenceBeforeDescriptionIsFilledInLater() {
-        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
-        builder.ingesting(response: response(groups: [
-            group("com.apple.UIKit.UIView", objects: [
-                object("0x1", className: "UIView", additionalGroups: [
+        let graph = graphFrom(groups: [
+            group("com.apple.AppKit.NSView", objects: [
+                object("0x1", className: "NSView", additionalGroups: [
                     group("com.apple.QuartzCore.CALayer", objects: [reference("0x9")]),
                 ]),
             ]),
-        ]))
-        builder.ingesting(response: response(groups: [
             group("com.apple.QuartzCore.CALayer", objects: [object("0x9", className: "CALayer")]),
-        ]))
-        let graph = builder.build()
+        ])
         expect(graph.node("0x9")?.className == "CALayer", "the later description was not applied")
     }
 
@@ -328,6 +327,81 @@ struct LKXcodeViewHierarchyObjectGraphTests {
         let graph = LKXcodeViewHierarchyObjectGraphBuilder().build()
         expect(graph.classChain(forClassName: "MysteryView") == ["MysteryView"],
                "an unknown class should still yield a one-element chain")
+    }
+
+    // MARK: - Repeated captures
+
+    /// A document can hold several captures of one process: Xcode records
+    /// every request of a session, and each re-capture appends a hierarchy
+    /// response of its own. Every capture is complete by itself, and objects
+    /// freed in between have had their addresses reused, so merging captures
+    /// by address leaves stale views beside their replacements. The latest
+    /// capture is the document; the earlier ones are discarded whole.
+    private static func testNewCaptureReplacesTheEarlierOne() {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(groups: [
+            group("com.apple.AppKit.NSView", objects: [
+                object("0x1", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                    object("0x2", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                        object("0x3", className: "NSTableRowView"),
+                    ])),
+                ])),
+            ]),
+        ]))
+        builder.ingesting(response: response(properties: [
+            "0x2.hidden": propertyDescription(name: "hidden", format: "b", value: "0"),
+        ]))
+        // The second capture: 0x2 is gone, 0x4 took its place, and the
+        // address 0x3 now belongs to a different object.
+        builder.ingesting(response: response(groups: [
+            group("com.apple.AppKit.NSView", objects: [
+                object("0x1", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                    object("0x4", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                        object("0x3", className: "NSTextField"),
+                    ])),
+                ])),
+            ]),
+        ]))
+        let graph = builder.build()
+        expect(graph.captureCount == 2, "expected two captures, got \(graph.captureCount)")
+        expect(graph.node("0x1")?.childIdentifiers == ["0x4"],
+               "the earlier capture's child survived: \(String(describing: graph.node("0x1")?.childIdentifiers))")
+        expect(graph.node("0x2") == nil, "an object only the earlier capture described must be gone")
+        expect(graph.node("0x3")?.className == "NSTextField",
+               "a reused address must carry the latest class: \(String(describing: graph.node("0x3")?.className))")
+        expect(graph.rootIdentifiers(inGroup: "com.apple.AppKit.NSView") == ["0x1"],
+               "root list mismatch: \(graph.rootIdentifiers(inGroup: "com.apple.AppKit.NSView"))")
+    }
+
+    /// The shape that crashes Xcode itself when it opens such a document: two
+    /// objects whose addresses swapped roles between captures. Merged by
+    /// address, each is the other's child, and any walk of the tree recurses
+    /// until the stack is gone.
+    private static func testReusedAddressesDoNotFormACycle() {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(groups: [
+            group("com.apple.AppKit.NSView", objects: [
+                object("0x1", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                    object("0x2", className: "NSImageView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                        object("0x3", className: "_NSImageViewSimpleImageView"),
+                    ])),
+                ])),
+            ]),
+        ]))
+        builder.ingesting(response: response(groups: [
+            group("com.apple.AppKit.NSView", objects: [
+                object("0x1", className: "NSView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                    object("0x3", className: "NSTableCellView", childGroup: group("com.apple.AppKit.NSView", objects: [
+                        object("0x2", className: "NSImageView"),
+                    ])),
+                ])),
+            ]),
+        ]))
+        let graph = builder.build()
+        expect(graph.node("0x3")?.childIdentifiers == ["0x2"],
+               "the latest capture's children were lost: \(String(describing: graph.node("0x3")?.childIdentifiers))")
+        expect(graph.node("0x2")?.childIdentifiers.isEmpty == true,
+               "the earlier capture's children leaked into a reused address: \(String(describing: graph.node("0x2")?.childIdentifiers))")
     }
 
     // MARK: - Fixture builders

@@ -22,6 +22,18 @@
 //     `topLevelPropertyDescriptions`, keyed `"<objectID>.<propertyName>"`, in a
 //     later response than the object itself.
 //
+// A fifth rule is this reader's own, and departs from Xcode's:
+//
+//  5. **A response with `topLevelGroups` is a whole new capture.** Xcode
+//     records every request of a session, so a document holds one hierarchy
+//     response per capture — complete on its own, followed by that capture's
+//     property responses. Objects freed between captures have their addresses
+//     reused by unrelated objects, so merging captures by `objectID` leaves
+//     stale views beside their replacements, and can make two objects each
+//     other's child — the shape that sends Xcode's own reader into unbounded
+//     recursion when it opens such a document. The latest capture is the
+//     document; everything before it is discarded whole.
+//
 // Everything here is Foundation-only and free of the app's Objective-C model,
 // which is what lets it be unit tested by compiling this file with its test.
 
@@ -81,6 +93,9 @@ struct LKXcodeViewHierarchyObjectGraph {
     let formatVersion: Int
     /// Non-fatal problems worth surfacing; a capture still opens with these.
     let decodingIssues: [String]
+    /// How many hierarchy captures the document held. Only the last one is
+    /// represented here; see rule 5 in the file comment.
+    let captureCount: Int
 
     func node(_ objectIdentifier: String) -> LKXcodeViewHierarchyNode? {
         nodesByIdentifier[objectIdentifier]
@@ -117,6 +132,7 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
     private var superclassByClassName: [String: String] = [:]
     private var formatVersion = 0
     private var decodingIssues: [String] = []
+    private var captureCount = 0
 
     /// Cap on recorded issues; a badly mismatched capture must not fill memory
     /// with one message per property.
@@ -126,13 +142,18 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
 
     // MARK: Ingestion
 
-    /// Merges one response's contents into the graph. Responses should be fed
-    /// in capture order, because later ones refine earlier ones.
+    /// Merges one response's contents into the graph. Responses must be fed
+    /// in capture order: a hierarchy response starts a new capture, and the
+    /// property responses after it refine that capture's objects.
     func ingesting(response: [String: Any]) {
         let responseVersion = (response["version"] as? NSNumber)?.intValue ?? 0
         formatVersion = max(formatVersion, responseVersion)
 
-        if let topLevelGroups = response["topLevelGroups"] as? [String: Any] {
+        if let topLevelGroups = response["topLevelGroups"] as? [String: Any], !topLevelGroups.isEmpty {
+            // Rule 5: a new capture replaces everything before it. Only the
+            // capture's "Initial request" response carries root groups; the
+            // fetches that follow it ship an empty dictionary under this key.
+            beginningCapture()
             // Dictionary iteration order is unstable, so sort for a deterministic
             // graph: two reads of the same file must produce the same tree.
             for groupingIdentifier in topLevelGroups.keys.sorted() {
@@ -349,6 +370,18 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
 
     // MARK: Bookkeeping
 
+    /// Drops the previous capture. Each capture ships its own class table and
+    /// its own property responses, so nothing from before it is still needed,
+    /// and keeping any of it is how stale objects get back into the tree.
+    private func beginningCapture() {
+        captureCount += 1
+        nodesByIdentifier.removeAll()
+        rootGroupOrder.removeAll()
+        rootGroupMembers.removeAll()
+        superclassByClassName.removeAll()
+        decodingIssues.removeAll()
+    }
+
     private func nodeForIdentifier(_ objectIdentifier: String) -> LKXcodeViewHierarchyNode {
         if let existing = nodesByIdentifier[objectIdentifier] { return existing }
         let created = LKXcodeViewHierarchyNode(objectIdentifier: objectIdentifier)
@@ -396,7 +429,8 @@ final class LKXcodeViewHierarchyObjectGraphBuilder {
             rootGroups: rootGroupOrder.map { ($0, rootGroupMembers[$0] ?? []) },
             superclassByClassName: superclassByClassName,
             formatVersion: formatVersion,
-            decodingIssues: decodingIssues
+            decodingIssues: decodingIssues,
+            captureCount: captureCount
         )
     }
 }
