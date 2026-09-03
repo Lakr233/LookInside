@@ -356,6 +356,7 @@
 				XcodeViewHierarchy/LKXcodeViewHierarchyDocument.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyGzip.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyLayerArchive.swift,
+				XcodeViewHierarchy/LKXcodeViewHierarchyLayerTopology.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyObjectGraph.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyPixelRecovery.swift,
 				XcodeViewHierarchy/LKXcodeViewHierarchyValue.swift,

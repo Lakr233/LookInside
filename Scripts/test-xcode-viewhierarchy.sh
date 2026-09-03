@@ -46,6 +46,7 @@ swiftc -parse-as-library \
 	"$SOURCE_DIR/LKXcodeViewHierarchyValue.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyObjectGraph.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyLayerArchive.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyLayerTopology.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyPixelRecovery.swift" \
 	"$TEST_DIR/LKXcodeViewHierarchyPixelRecoveryTests.swift" \
 	-o "$TMPDIR/pixel-recovery-test"
@@ -82,6 +83,7 @@ swiftc -parse-as-library \
 	"$SOURCE_DIR/LKXcodeViewHierarchyObjectGraph.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyBundleReader.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyLayerArchive.swift" \
+	"$SOURCE_DIR/LKXcodeViewHierarchyLayerTopology.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyPixelRecovery.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyAttributeCatalog.swift" \
 	"$SOURCE_DIR/LKXcodeViewHierarchyAttributes.swift" \

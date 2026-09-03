@@ -32,6 +32,14 @@
     [self addWindowController:wc];
 }
 
+- (BOOL)canRebuildHierarchyFile {
+    return NO;
+}
+
+- (void)rebuildHierarchyFileShowingBackingLayers:(BOOL)showBackingLayers {
+    // An archive holds the tree the server sent; there is nothing to rebuild from.
+}
+
 - (NSData *)dataOfType:(NSString *)typeName error:(NSError **)outError {
     if (!self.hierarchyFile) {
         NSAssert(NO, @"");

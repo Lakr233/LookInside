@@ -22,6 +22,9 @@ struct LKXcodeViewHierarchyConverterTests {
         testUIKitCardsFollowTheCapture()
         testAppKitCardsReadTheCell()
         testConstraintsCardFollowsTheServerModel()
+        testLayerNodesFollowTheServerShape()
+        testBackingLayerToggleExpandsTheLayerTree()
+        testWrappedUIKitViewsKeepXcodesNesting()
         print("Xcode view hierarchy converter tests passed")
     }
 
@@ -337,6 +340,280 @@ struct LKXcodeViewHierarchyConverterTests {
         expect((attribute(LookinAttr_AutoLayout_Constraints_Constraints, of: rootView)?.value as? [LookinAutoLayoutConstraint])?
             .map(\.constraintOid) == [0xd2],
                "the superview lists the same constraint from its own side")
+    }
+
+    // MARK: - Layer nodes
+
+    /// Toggle off — the server's default shape. A view and its backing layer
+    /// are one node routed by the layer; the sublayers that back no view are
+    /// layer nodes at their z positions among the subviews; AppKit's drawing
+    /// containers stay inside the view; and a layer node's cards are the
+    /// layer rows only.
+    private static func testLayerNodesFollowTheServerShape() {
+        let file = convert(appKitLayerTreeFixture(), screenshots: layerTreeScreenshots(), showingBackingLayers: false)
+        let contentView = item(withObjectIdentifier: 0x10, in: file)
+        expect(contentView.layerObject?.oid == 0x100, "a merged view node rides its backing layer")
+        expect(childShape(of: contentView) == ["layer:0x101", "view:0x11", "layer:0x103"],
+               "orphan sublayers sit at their z positions and the drawing container is hidden; got \(childShape(of: contentView))")
+        let subview = item(withObjectIdentifier: 0x11, in: file)
+        expect(childShape(of: subview).isEmpty, "a drawing container is not a node with the toggle off; got \(childShape(of: subview))")
+
+        let gradient = item(withObjectIdentifier: 0x101, in: file)
+        expect(gradient.nodeKind == .layer, "an orphan sublayer is a layer node")
+        expect(gradient.frame == CGRect(x: 10, y: 10, width: 50, height: 50), "a layer node keeps the layer's frame; got \(gradient.frame)")
+        expect(classChains(of: gradient) == [["CAGradientLayer", "CALayer"]],
+               "a layer node's chain stops at CALayer; got \(String(describing: classChains(of: gradient)))")
+        expect(attribute(LookinAttr_Layout_Frame_Frame, of: gradient) != nil, "a layer node answers the layer rows")
+        expect(attribute(LookinAttr_ViewLayer_Tag_Tag, of: gradient) == nil, "a layer node has no view rows")
+
+        expect(file.soloScreenshots?[0x100] == imageData("solo-100"), "the merged node's solo is the layer's own content")
+        expect(file.groupScreenshots?[0x100] == imageData("group-100"), "the merged node's group is the whole subtree")
+        expect(file.groupScreenshots?[0x10] == nil && file.soloScreenshots?[0x10] == nil,
+               "nothing is filed under the view oid while the layer routes the node")
+        expect(file.groupScreenshots?[0x101] == imageData("group-101"), "a layer node's images are filed under its own oid")
+    }
+
+    /// Toggle on: the backing layer is a node of its own, first among the
+    /// view's children, carrying every sublayer that backs no view — drawing
+    /// containers included — and the pixels move with it: the view node has
+    /// no solo and routes by its own oid, the backing layer's group leaves
+    /// out the subviews' planes.
+    private static func testBackingLayerToggleExpandsTheLayerTree() {
+        let file = convert(appKitLayerTreeFixture(), screenshots: layerTreeScreenshots(), showingBackingLayers: true)
+        let contentView = item(withObjectIdentifier: 0x10, in: file)
+        expect(childShape(of: contentView) == ["backingLayer:0x100", "view:0x11"],
+               "the backing layer comes first, then the subviews; got \(childShape(of: contentView))")
+        let backingLayer = item(withObjectIdentifier: 0x100, in: file)
+        expect(backingLayer.nodeKind == .backingLayer, "the backing layer node has its own kind")
+        expect(backingLayer.frame == CGRect(x: 0, y: 0, width: 200, height: 100),
+               "the backing layer covers its view edge to edge; got \(backingLayer.frame)")
+        expect(childShape(of: backingLayer) == ["layer:0x101", "layer:0x102", "layer:0x103"],
+               "the backing layer carries the non-view sublayers, drawing container included; got \(childShape(of: backingLayer))")
+        let subview = item(withObjectIdentifier: 0x11, in: file)
+        expect(childShape(of: subview) == ["backingLayer:0x110"], "a leaf view still gets its backing layer; got \(childShape(of: subview))")
+        expect(childShape(of: item(withObjectIdentifier: 0x110, in: file)) == ["layer:0x111"],
+               "the label's drawing container is where its text lives")
+
+        expect(file.groupScreenshots?[0x10] == imageData("group-100"), "the view node keeps the folded look, filed under the view oid")
+        expect(file.soloScreenshots?[0x10] == nil, "the view node has no solo: expanded it is a wireframe")
+        expect(file.soloScreenshots?[0x100] == imageData("solo-100"), "the backing layer's solo is its own content")
+        expect(file.groupScreenshots?[0x100] == imageData("excluding-100"),
+               "the backing layer's group leaves out the subviews' planes")
+        expect(file.groupScreenshots?[0x110] == imageData("group-110"),
+               "a backing layer with no views beneath shows its whole subtree")
+    }
+
+    /// iOS 26 wraps a view's backing layer in a `_UIMultiLayer`, and the
+    /// capture associates the view with the wrapper. The node rides the
+    /// backing layer beneath (the sublayer whose delegate is the view) with
+    /// the wrapper's geometry. Toggle off, the wrapper follows the view as a
+    /// pixelless coplanar child; toggle on, Xcode's nesting applies: view →
+    /// wrapper → backing layer, with anything else parked on the wrapper as
+    /// the wrapper's own child.
+    private static func testWrappedUIKitViewsKeepXcodesNesting() {
+        let screenshots = LKXcodeViewHierarchyScreenshots(
+            soloByObjectIdentifier: [:],
+            groupByObjectIdentifier: ["0x1000": imageData("group-1000"), "0x1201": imageData("group-1201")],
+            failedArchiveIdentifiers: []
+        )
+        let folded = convert(uiKitWrapperFixture(), screenshots: screenshots, showingBackingLayers: false)
+        let foldedImageView = item(withObjectIdentifier: 0x11, in: folded)
+        expect(foldedImageView.layerObject?.oid == 0x1201, "the node rides the backing layer beneath the wrapper")
+        expect(foldedImageView.frame == CGRect(x: 10, y: 20, width: 40, height: 30),
+               "geometry comes from the wrapper, which UIKit moved it onto; got \(foldedImageView.frame)")
+        expect(childShape(of: foldedImageView) == ["layer:0x1202", "viewOuterLayer:0x1200"],
+               "toggle off: parked sublayers, then the wrapper as a coplanar child; got \(childShape(of: foldedImageView))")
+        let wrapper = item(withObjectIdentifier: 0x1200, in: folded)
+        expect(wrapper.frame == CGRect(x: 0, y: 0, width: 40, height: 30), "the wrapper covers the view it wraps; got \(wrapper.frame)")
+        expect(folded.groupScreenshots?[0x1201] == imageData("group-1201"), "the merged node's images are filed under the backing layer")
+
+        let expanded = convert(uiKitWrapperFixture(), screenshots: screenshots, showingBackingLayers: true)
+        let expandedImageView = item(withObjectIdentifier: 0x11, in: expanded)
+        expect(childShape(of: expandedImageView) == ["viewOuterLayer:0x1200"],
+               "toggle on: the wrapper is the only layer child; got \(childShape(of: expandedImageView))")
+        expect(childShape(of: item(withObjectIdentifier: 0x1200, in: expanded)) == ["backingLayer:0x1201", "layer:0x1202"],
+               "the backing layer nests inside the wrapper with the parked sublayer beside it")
+        expect(expanded.groupScreenshots?[0x11] == imageData("group-1201"), "the view node routes by its own oid")
+        let window = item(withObjectIdentifier: 0x1, in: expanded)
+        expect(childShape(of: window) == ["backingLayer:0x1000", "view:0x10"],
+               "a UIWindow is a view and gets its backing layer too; got \(childShape(of: window))")
+        expect(expanded.groupScreenshots?[0x1] == imageData("group-1000"), "the window node routes by the window oid")
+    }
+
+    /// The kinds and objects of a node's children, e.g. `["layer:0x101", "view:0x11"]`.
+    private static func childShape(of item: LookinDisplayItem) -> [String] {
+        (item.subitems ?? []).map { subitem in
+            let kindName: String
+            switch subitem.nodeKind {
+            case .layer: kindName = "layer"
+            case .view: kindName = "view"
+            case .window: kindName = "window"
+            case .windowScene: kindName = "windowScene"
+            case .layoutGuide: kindName = "layoutGuide"
+            case .cell: kindName = "cell"
+            case .viewOuterLayer: kindName = "viewOuterLayer"
+            case .backingLayer: kindName = "backingLayer"
+            default: kindName = "other"
+            }
+            return "\(kindName):0x\(String(displayedObjectIdentifier(subitem), radix: 16))"
+        }
+    }
+
+    /// Stand-in image bytes; the converter files them without looking inside.
+    private static func imageData(_ label: String) -> Data {
+        Data(label.utf8)
+    }
+
+    private static func layerTreeScreenshots() -> LKXcodeViewHierarchyScreenshots {
+        LKXcodeViewHierarchyScreenshots(
+            soloByObjectIdentifier: ["0x100": imageData("solo-100")],
+            groupByObjectIdentifier: [
+                "0x100": imageData("group-100"), "0x101": imageData("group-101"), "0x102": imageData("group-102"),
+                "0x110": imageData("group-110"), "0x111": imageData("group-111"),
+            ],
+            groupExcludingHostedViewsByObjectIdentifier: ["0x100": imageData("excluding-100")],
+            failedArchiveIdentifiers: []
+        )
+    }
+
+    /// An AppKit window whose content view's backing layer carries, in z
+    /// order: an orphan gradient layer, the subview's backing layer, a drawing
+    /// container (AppKit's own drawing: no delegate, a backing store for
+    /// contents) and an image layer the app assigned. The subview's backing
+    /// layer holds the label's own drawing container.
+    private static func appKitLayerTreeFixture() -> LKXcodeViewHierarchyObjectGraph {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(
+            groups: [
+                group("com.apple.AppKit.NSWindow", objects: [
+                    object("0x1", className: "NSWindow", additionalGroups: [
+                        group("com.apple.AppKit.NSView", objects: [reference("0x10")]),
+                    ]),
+                ]),
+                group("com.apple.AppKit.NSView", objects: [
+                    object(
+                        "0x10", className: "NSView",
+                        childGroup: group("com.apple.AppKit.NSView", objects: [
+                            object("0x11", className: "NSTextField", additionalGroups: [
+                                group("com.apple.QuartzCore.CALayer", objects: [reference("0x110")]),
+                            ]),
+                        ]),
+                        additionalGroups: [
+                            group("com.apple.QuartzCore.CALayer", objects: [reference("0x100")]),
+                        ]
+                    ),
+                ]),
+                group("com.apple.QuartzCore.CALayer", objects: [
+                    object("0x100", className: "NSViewBackingLayer", childGroup: group("com.apple.QuartzCore.CALayer", objects: [
+                        object("0x101", className: "CAGradientLayer"),
+                        object("0x110", className: "NSViewBackingLayer", childGroup: group("com.apple.QuartzCore.CALayer", objects: [
+                            object("0x111", className: "ContentLayer"),
+                        ])),
+                        object("0x102", className: "ContentLayer"),
+                        object("0x103", className: "CALayer"),
+                    ])),
+                ]),
+            ],
+            properties: [
+                "0x10.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+7", "0x1.9p+6"]),
+                "0x11.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+6", "0x1.4p+4"]),
+                "0x100.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+7", "0x1.9p+6"]),
+                "0x100.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+7", "0x1.9p+6"]),
+                "0x101.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x1.4p+3", "0x1.4p+3", "0x1.9p+5", "0x1.9p+5"]),
+                "0x101.hidden": propertyDescription(name: "hidden", format: "b", value: "0"),
+                "0x102.delegate": valuelessPropertyDescription(name: "delegate", format: "objectInfo"),
+                "0x102.contentsDescription": propertyDescription(name: "contentsDescription", format: "public.plain-text", value: "<CABackingStore 0x1 (buffer [200 100] A8)>"),
+                "0x103.contentsDescription": propertyDescription(name: "contentsDescription", format: "public.plain-text", value: "<CGImage 0x2 width = 10, height = 10>"),
+                "0x110.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+6", "0x1.4p+4"]),
+                "0x110.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.9p+6", "0x1.4p+4"]),
+                "0x111.delegate": valuelessPropertyDescription(name: "delegate", format: "objectInfo"),
+                "0x111.contentsDescription": propertyDescription(name: "contentsDescription", format: "public.plain-text", value: "<CABackingStore 0x3 (buffer [100 20] A8)>"),
+            ],
+            classInformation: [
+                classNode("NSObject", [
+                    classNode("CALayer", [classNode("CAGradientLayer"), classNode("NSViewBackingLayer"), classNode("ContentLayer")]),
+                    classNode("NSResponder", [
+                        classNode("NSView", [classNode("NSControl", [classNode("NSTextField")])]),
+                        classNode("NSWindow"),
+                    ]),
+                ]),
+            ]
+        ))
+        return builder.build()
+    }
+
+    /// A UIKit window with one root view and an image view whose backing
+    /// layer UIKit wrapped in a `_UIMultiLayer`, with a second layer parked
+    /// on the wrapper that belongs to someone else.
+    private static func uiKitWrapperFixture() -> LKXcodeViewHierarchyObjectGraph {
+        let builder = LKXcodeViewHierarchyObjectGraphBuilder()
+        builder.ingesting(response: response(
+            groups: [
+                group("com.apple.UIKit.UIApplication", objects: [
+                    object("0xa0", className: "UIApplication", additionalGroups: [
+                        group("com.apple.UIKit.UIWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.UIKit.UIScene", objects: [
+                    object("0xf1", className: "UIWindowScene", additionalGroups: [
+                        group("com.apple.UIKit.UIWindow", objects: [reference("0x1")]),
+                    ]),
+                ]),
+                group("com.apple.UIKit.UIWindow", objects: [
+                    object(
+                        "0x1", className: "UIWindow",
+                        childGroup: group("com.apple.UIKit.UIView", objects: [
+                            object(
+                                "0x10", className: "UIView",
+                                childGroup: group("com.apple.UIKit.UIView", objects: [
+                                    object("0x11", className: "UIImageView", additionalGroups: [
+                                        group("com.apple.QuartzCore.CALayer", objects: [reference("0x1200")]),
+                                    ]),
+                                ]),
+                                additionalGroups: [
+                                    group("com.apple.QuartzCore.CALayer", objects: [reference("0x1100")]),
+                                ]
+                            ),
+                        ]),
+                        additionalGroups: [
+                            group("com.apple.UIKit.UIScene", objects: [reference("0xf1")]),
+                            group("com.apple.QuartzCore.CALayer", objects: [reference("0x1000")]),
+                        ]
+                    ),
+                ]),
+                group("com.apple.QuartzCore.CALayer", objects: [
+                    object("0x1000", className: "CALayer", childGroup: group("com.apple.QuartzCore.CALayer", objects: [
+                        object("0x1100", className: "CALayer", childGroup: group("com.apple.QuartzCore.CALayer", objects: [
+                            object("0x1200", className: "_UIMultiLayer", childGroup: group("com.apple.QuartzCore.CALayer", objects: [
+                                object("0x1201", className: "CALayer"),
+                                object("0x1202", className: "CALayer"),
+                            ])),
+                        ])),
+                    ])),
+                ]),
+            ],
+            properties: [
+                "0x1000.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.2cp+8", "0x1.9p+8"]),
+                "0x1000.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.2cp+8", "0x1.9p+8"]),
+                "0x1100.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.2cp+8", "0x1.9p+8"]),
+                "0x1200.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x1.4p+3", "0x1.4p+4", "0x1.4p+5", "0x1.ep+4"]),
+                "0x1200.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.4p+5", "0x1.ep+4"]),
+                "0x1200.delegate": propertyDescription(name: "delegate", format: "objectInfo", value: objectReference("UIImageView", "0x11")),
+                "0x1201.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.4p+5", "0x1.ep+4"]),
+                "0x1201.bounds": propertyDescription(name: "bounds", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.4p+5", "0x1.ep+4"]),
+                "0x1201.delegate": propertyDescription(name: "delegate", format: "objectInfo", value: objectReference("UIImageView", "0x11")),
+                "0x1202.frame": propertyDescription(name: "frame", format: "CGf, CGf, CGf, CGf", value: ["0x0p+0", "0x0p+0", "0x1.4p+5", "0x1.ep+4"]),
+                "0x1202.delegate": propertyDescription(name: "delegate", format: "objectInfo", value: objectReference("UIView", "0x99")),
+            ],
+            classInformation: [
+                classNode("NSObject", [
+                    classNode("CALayer", [classNode("_UIMultiLayer")]),
+                    classNode("UIResponder", [classNode("UIView", [classNode("UIImageView"), classNode("UIWindow")])]),
+                    classNode("UIScene", [classNode("UIWindowScene")]),
+                ]),
+            ]
+        ))
+        return builder.build()
     }
 
     // MARK: - Fixture
@@ -786,6 +1063,20 @@ struct LKXcodeViewHierarchyConverterTests {
 
     /// Runs the converter over a graph with no recovered pixels.
     private static func convert(_ graph: LKXcodeViewHierarchyObjectGraph) -> LookinHierarchyFile {
+        convert(
+            graph,
+            screenshots: LKXcodeViewHierarchyScreenshots(
+                soloByObjectIdentifier: [:], groupByObjectIdentifier: [:], failedArchiveIdentifiers: []
+            ),
+            showingBackingLayers: false
+        )
+    }
+
+    private static func convert(
+        _ graph: LKXcodeViewHierarchyObjectGraph,
+        screenshots: LKXcodeViewHierarchyScreenshots,
+        showingBackingLayers: Bool
+    ) -> LookinHierarchyFile {
         let bundle = LKXcodeViewHierarchyBundle(
             metadata: LKXcodeViewHierarchyBundleMetadata(
                 documentVersion: "1", runnableDisplayName: "Fixture", runnableProcessIdentifier: 1
@@ -794,11 +1085,10 @@ struct LKXcodeViewHierarchyConverterTests {
             failedResponseCount: 0,
             succeededResponseCount: 2
         )
-        let screenshots = LKXcodeViewHierarchyScreenshots(
-            soloByObjectIdentifier: [:], groupByObjectIdentifier: [:], failedArchiveIdentifiers: []
-        )
         do {
-            return try LKXcodeViewHierarchyConverter.makingHierarchyFile(from: bundle, screenshots: screenshots)
+            return try LKXcodeViewHierarchyConverter.makingHierarchyFile(
+                from: bundle, screenshots: screenshots, showingBackingLayers: showingBackingLayers
+            )
         } catch {
             fail("conversion failed: \(error)")
         }

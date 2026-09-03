@@ -40,6 +40,13 @@ struct LKXcodeViewHierarchyScreenshots {
     let soloByObjectIdentifier: [String: Data]
     /// PNG data for each node rendered with its whole subtree.
     let groupByObjectIdentifier: [String: Data]
+    /// PNG data for each node rendered with its subtree minus the subtrees of
+    /// the layers that back a view: what a layer node shows once the views
+    /// beneath it render on nodes of their own (the server's
+    /// `lks_groupScreenshotExcludingHostedSubtreesWithLowQuality:`). Present
+    /// only where a hosted layer exists below the node; elsewhere the group
+    /// image already is that picture.
+    var groupExcludingHostedViewsByObjectIdentifier: [String: Data] = [:]
     /// Layer archives that failed to decode; the nodes below them have no pixels.
     let failedArchiveIdentifiers: [String]
 }
@@ -72,6 +79,7 @@ enum LKXcodeViewHierarchyPixelRecovery {
     ) -> LKXcodeViewHierarchyScreenshots {
         let (trees, failedIdentifiers) = LKXcodeViewHierarchyLayerArchive.decodingLayerTrees(in: graph)
         let alignment = LKXcodeViewHierarchyLayerAlignment.aligning(trees: trees, graph: graph)
+        let topology = LKXcodeViewHierarchyLayerTopology(graph: graph)
 
         for tree in trees where tree.isGeometryFlipped {
             // A y-down capture: the root carries the axis and the subtree
@@ -81,6 +89,7 @@ enum LKXcodeViewHierarchyPixelRecovery {
 
         var soloByObjectIdentifier: [String: Data] = [:]
         var groupByObjectIdentifier: [String: Data] = [:]
+        var groupExcludingHostedViewsByObjectIdentifier: [String: Data] = [:]
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -96,6 +105,16 @@ enum LKXcodeViewHierarchyPixelRecovery {
             if let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
                 groupByObjectIdentifier[objectIdentifier] = groupImage
             }
+            // The views beneath a layer node render on planes of their own;
+            // a layer node's group therefore leaves their subtrees out.
+            let hostedDescendants = topology.hostedDescendantIdentifiers(of: objectIdentifier, graph: graph)
+                .compactMap { alignment[$0] }
+            if !hostedDescendants.isEmpty,
+               let excludingImage = renderingPNG(
+                   of: layer, includingSublayers: true, hiding: hostedDescendants, isFlipped: isFlipped
+               ) {
+                groupExcludingHostedViewsByObjectIdentifier[objectIdentifier] = excludingImage
+            }
             // A node with no sublayers renders identically either way; storing
             // the second copy would double the memory for no visible gain.
             guard let sublayers = layer.sublayers, !sublayers.isEmpty else { continue }
@@ -107,13 +126,21 @@ enum LKXcodeViewHierarchyPixelRecovery {
         return LKXcodeViewHierarchyScreenshots(
             soloByObjectIdentifier: soloByObjectIdentifier,
             groupByObjectIdentifier: groupByObjectIdentifier,
+            groupExcludingHostedViewsByObjectIdentifier: groupExcludingHostedViewsByObjectIdentifier,
             failedArchiveIdentifiers: failedIdentifiers
         )
     }
 
     // MARK: - Rendering
 
-    static func renderingPNG(of layer: CALayer, includingSublayers: Bool, isFlipped: Bool) -> Data? {
+    /// `hiddenLayers` are hidden for the duration of the render and restored
+    /// afterwards; they must be descendants of `layer`.
+    static func renderingPNG(
+        of layer: CALayer,
+        includingSublayers: Bool,
+        hiding hiddenLayers: [CALayer] = [],
+        isFlipped: Bool
+    ) -> Data? {
         let bounds = layer.bounds
         guard bounds.width >= minimumRenderedEdgeLength, bounds.height >= minimumRenderedEdgeLength,
               bounds.width.isFinite, bounds.height.isFinite
@@ -139,8 +166,11 @@ enum LKXcodeViewHierarchyPixelRecovery {
             detachedSublayers = existingSublayers
             layer.sublayers = nil
         }
+        let layersHiddenForRender = hiddenLayers.filter { !$0.isHidden }
+        for hiddenLayer in layersHiddenForRender { hiddenLayer.isHidden = true }
         defer {
             if let detachedSublayers { layer.sublayers = detachedSublayers }
+            for hiddenLayer in layersHiddenForRender { hiddenLayer.isHidden = false }
         }
 
         context.scaleBy(x: scale, y: scale)

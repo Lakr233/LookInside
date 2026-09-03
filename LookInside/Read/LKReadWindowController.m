@@ -65,7 +65,7 @@
 
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSToolbarItem *> *toolbarItemsMap;
 
-@property(nonatomic, strong) LKPreferenceManager *preferenceManager;
+@property(nonatomic, strong, readwrite) LKPreferenceManager *preferenceManager;
 
 @end
 
@@ -83,21 +83,41 @@
     
     if (self = [self initWithWindow:window]) {
         self.preferenceManager = [LKPreferenceManager new];
-        if (document.hierarchyFile) {
-            [self _showHierarchyFile:document.hierarchyFile];
-        } else {
+        if (!document.hierarchyFile) {
             // The document is still importing in the background (an Xcode
-            // capture): hold the window on a placeholder and build the
-            // reader in place once the file lands.
+            // capture): hold the window on a placeholder until the file lands.
             window.contentView = [LKReadLoadingView new];
-            @weakify(self);
-            [[[RACObserve(document, hierarchyFile) ignore:nil] take:1] subscribeNext:^(LookinHierarchyFile *file) {
-                @strongify(self);
-                [self _showHierarchyFile:file];
-            }];
         }
+        // Every file the document produces gets a reader built in place: the
+        // one that lands after the import, and each rebuild the backing-layer
+        // toggle asks for.
+        @weakify(self);
+        [[[RACObserve(document, hierarchyFile) ignore:nil] distinctUntilChanged] subscribeNext:^(LookinHierarchyFile *file) {
+            @strongify(self);
+            [self _showHierarchyFile:file];
+        }];
+        // Flipping the toggle changes the node set itself, so — as in a live
+        // session — the tree is rebuilt whole, by the document, when it can.
+        [self.preferenceManager.showBackingLayers subscribe:self
+                                                     action:@selector(_handleShowBackingLayersDidChange:)
+                                              relatedObject:nil];
     }
     return self;
+}
+
+- (void)_handleShowBackingLayersDidChange:(LookinMsgActionParams *)param {
+    LookinArchiveDocument *document = self.document;
+    if (![document canRebuildHierarchyFile]) {
+        return;
+    }
+    // Back to the placeholder; the new file's reader replaces it. Toolbar
+    // items belong to one toolbar, so they are made afresh for the new one.
+    self.contentViewController = nil;
+    _viewController = nil;
+    self.toolbarItemsMap = nil;
+    self.window.toolbar = nil;
+    self.window.contentView = [LKReadLoadingView new];
+    [document rebuildHierarchyFileShowingBackingLayers:param.boolValue];
 }
 
 /// Builds the reader for `file` in this window: the view controller, the

@@ -16,32 +16,72 @@
 // import, most of it rendering the recovered layer trees, and none of that
 // belongs on the main thread. The window controller observes `hierarchyFile`
 // and builds the reader in place when the import finishes.
+//
+// The import itself is split the same way: decoding and rendering produce an
+// `LKXcodeViewHierarchyImportedCapture`, which the document keeps; shaping it
+// into a tree is cheap and is redone whenever the window's show-backing-layers
+// toggle flips, the way a live session reloads its hierarchy for that toggle.
 
 import AppKit
 import Foundation
 
+/// A capture decoded and rendered, but not yet shaped into a tree: what the
+/// document keeps so the tree can be rebuilt for the other setting of the
+/// show-backing-layers toggle without decoding or rendering again.
+struct LKXcodeViewHierarchyImportedCapture {
+    let bundle: LKXcodeViewHierarchyBundle
+    let screenshots: LKXcodeViewHierarchyScreenshots
+}
+
 enum LKXcodeViewHierarchyImporter {
-    /// Reads a capture and converts it into the inspector's model.
+    /// Reads a capture and recovers its pixels: the expensive half.
     ///
     /// Synchronous and not cheap; run it off the main thread. It must stay on
     /// one thread because pixel recovery mutates the decoded layer trees while
     /// rendering. `isCancelled` is polled between phases and once per rendered
     /// layer; once it answers true the import throws `CancellationError`.
-    static func importingHierarchyFile(
+    static func importingCapture(
         at url: URL,
         isCancelled: () -> Bool = { false }
-    ) throws -> LookinHierarchyFile {
+    ) throws -> LKXcodeViewHierarchyImportedCapture {
         let bundle = try LKXcodeViewHierarchyBundleReader.reading(contentsOf: url)
         if isCancelled() { throw CancellationError() }
         let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(from: bundle.graph, isCancelled: isCancelled)
         if isCancelled() { throw CancellationError() }
-        return try LKXcodeViewHierarchyConverter.makingHierarchyFile(from: bundle, screenshots: screenshots)
+        return LKXcodeViewHierarchyImportedCapture(bundle: bundle, screenshots: screenshots)
+    }
+
+    /// Shapes an imported capture into the inspector's model: the cheap half,
+    /// repeated whenever the backing-layer toggle flips.
+    static func makingHierarchyFile(
+        from capture: LKXcodeViewHierarchyImportedCapture,
+        showingBackingLayers: Bool
+    ) throws -> LookinHierarchyFile {
+        try LKXcodeViewHierarchyConverter.makingHierarchyFile(
+            from: capture.bundle, screenshots: capture.screenshots, showingBackingLayers: showingBackingLayers
+        )
+    }
+
+    /// Both halves in one go.
+    static func importingHierarchyFile(
+        at url: URL,
+        showingBackingLayers: Bool = false,
+        isCancelled: () -> Bool = { false }
+    ) throws -> LookinHierarchyFile {
+        let capture = try importingCapture(at: url, isCancelled: isCancelled)
+        if isCancelled() { throw CancellationError() }
+        return try makingHierarchyFile(from: capture, showingBackingLayers: showingBackingLayers)
     }
 }
 
 @objc(LKXcodeViewHierarchyDocument)
 final class LKXcodeViewHierarchyDocument: LookinArchiveDocument {
     private var importTask: Task<Void, Never>?
+    private var rebuildTask: Task<Void, Never>?
+    /// Kept for the document's lifetime so the tree can be rebuilt when the
+    /// show-backing-layers toggle flips; the layer archives themselves are
+    /// not kept — the rendered images are all a rebuild needs.
+    private var importedCapture: LKXcodeViewHierarchyImportedCapture?
 
     /// Validates the package and starts the import, returning before the
     /// import finishes so the window can open on its placeholder.
@@ -49,22 +89,58 @@ final class LKXcodeViewHierarchyDocument: LookinArchiveDocument {
         try LKXcodeViewHierarchyBundleReader.validatingBundle(at: url)
         importTask?.cancel()
         importTask = Task.detached(priority: .userInitiated) { [weak self] in
-            let outcome: Result<LookinHierarchyFile, Error>
+            let outcome: Result<LKXcodeViewHierarchyImportedCapture, Error>
             do {
-                outcome = .success(try LKXcodeViewHierarchyImporter.importingHierarchyFile(at: url) { Task.isCancelled })
+                outcome = .success(try LKXcodeViewHierarchyImporter.importingCapture(at: url) { Task.isCancelled })
             } catch {
                 outcome = .failure(error)
             }
             // A closed document has nothing to show and no window to complain on.
-            guard !Task.isCancelled else { return }
-            await MainActor.run { self?.finishingImport(with: outcome) }
+            guard !Task.isCancelled, let document = self else { return }
+            await MainActor.run { document.finishingImport(with: outcome) }
         }
     }
 
     override func close() {
         importTask?.cancel()
         importTask = nil
+        rebuildTask?.cancel()
+        rebuildTask = nil
         super.close()
+    }
+
+    override func canRebuildHierarchyFile() -> Bool {
+        importedCapture != nil
+    }
+
+    /// Shapes the kept capture into a new tree off the main thread and hands
+    /// it to the window through `hierarchyFile`. A flip that arrives while a
+    /// rebuild is still running supersedes it.
+    override func rebuildHierarchyFile(showingBackingLayers: Bool) {
+        guard let importedCapture else { return }
+        rebuildTask?.cancel()
+        rebuildTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let outcome: Result<LookinHierarchyFile, Error>
+            do {
+                outcome = .success(try LKXcodeViewHierarchyImporter.makingHierarchyFile(
+                    from: importedCapture, showingBackingLayers: showingBackingLayers
+                ))
+            } catch {
+                outcome = .failure(error)
+            }
+            guard !Task.isCancelled, let document = self else { return }
+            await MainActor.run { document.finishingRebuild(with: outcome) }
+        }
+    }
+
+    /// The window's own preference set decides; a rebuild is only ever asked
+    /// for through it, and before it exists the persisted default applies.
+    @MainActor
+    private var showsBackingLayersPreference: Bool {
+        if let windowController = windowControllers.first as? LKReadWindowController {
+            return windowController.preferenceManager.showBackingLayers.currentBOOLValue
+        }
+        return LKPreferenceManager.main().showBackingLayers.currentBOOLValue
     }
 
     /// The task has to be created where `close()` can cancel it, on the
@@ -74,19 +150,36 @@ final class LKXcodeViewHierarchyDocument: LookinArchiveDocument {
     }
 
     @MainActor
-    private func finishingImport(with outcome: Result<LookinHierarchyFile, Error>) {
+    private func finishingImport(with outcome: Result<LKXcodeViewHierarchyImportedCapture, Error>) {
         importTask = nil
+        switch outcome {
+        case .success(let capture):
+            importedCapture = capture
+            rebuildHierarchyFile(showingBackingLayers: showsBackingLayersPreference)
+        case .failure(let error):
+            presentingFailure(error)
+        }
+    }
+
+    @MainActor
+    private func finishingRebuild(with outcome: Result<LookinHierarchyFile, Error>) {
+        rebuildTask = nil
         switch outcome {
         case .success(let file):
             // The window controller observes this and builds the reader in place.
             hierarchyFile = file
         case .failure(let error):
-            let alert = NSAlert(error: error)
-            if let window = windowForSheet {
-                alert.beginSheetModal(for: window) { [weak self] _ in self?.close() }
-            } else {
-                close()
-            }
+            presentingFailure(error)
+        }
+    }
+
+    @MainActor
+    private func presentingFailure(_ error: Error) {
+        let alert = NSAlert(error: error)
+        if let window = windowForSheet {
+            alert.beginSheetModal(for: window) { [weak self] _ in self?.close() }
+        } else {
+            close()
         }
     }
 }

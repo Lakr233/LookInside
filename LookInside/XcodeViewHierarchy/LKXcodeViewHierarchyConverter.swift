@@ -125,16 +125,29 @@ enum LKXcodeViewHierarchyConverter {
 
     // MARK: Entry point
 
+    /// Converts a capture into the inspector's model.
+    ///
+    /// `showingBackingLayers` selects the tree's shape the way the inspector's
+    /// show-backing-layers toggle does for a live session: off, a view and its
+    /// backing layer are one node and only orphan sublayers appear as layer
+    /// nodes; on, every view expands into its full layer subtree, with the
+    /// pixels on the layer that really renders them (backing-layer-toggle
+    /// proposal). The recovered images are the same either way; what changes
+    /// is which node each image is filed under.
     static func makingHierarchyFile(
         from bundle: LKXcodeViewHierarchyBundle,
-        screenshots: LKXcodeViewHierarchyScreenshots
+        screenshots: LKXcodeViewHierarchyScreenshots,
+        showingBackingLayers: Bool = false
     ) throws -> LookinHierarchyFile {
         let graph = bundle.graph
         let vocabulary = graph.rootGroups.contains { $0.groupingIdentifier.hasPrefix("com.apple.AppKit.") }
             ? Vocabulary.appKit
             : Vocabulary.uiKit
+        let session = ConversionSession(
+            graph: graph, vocabulary: vocabulary, screenshots: screenshots, showsBackingLayers: showingBackingLayers
+        )
 
-        let displayItems = makingRootDisplayItems(graph: graph, vocabulary: vocabulary)
+        let displayItems = makingRootDisplayItems(session: session)
         guard !displayItems.isEmpty else { throw LKXcodeViewHierarchyConversionError.noWindowsOrRootViews }
 
         let hierarchyInfo = LookinHierarchyInfo()
@@ -145,9 +158,81 @@ enum LKXcodeViewHierarchyConverter {
         let file = LookinHierarchyFile()
         file.serverVersion = Int32(LOOKIN_SERVER_VERSION)
         file.hierarchyInfo = hierarchyInfo
-        file.soloScreenshots = keyingByObjectIdentifier(screenshots.soloByObjectIdentifier)
-        file.groupScreenshots = keyingByObjectIdentifier(screenshots.groupByObjectIdentifier)
+        file.soloScreenshots = session.soloScreenshotsByOid
+        file.groupScreenshots = session.groupScreenshotsByOid
         return file
+    }
+
+    // MARK: Conversion session
+
+    /// What one conversion carries along: the options it runs under, the
+    /// recovered images it files, and where it has filed them so far.
+    ///
+    /// Images are filed by the walk rather than copied over wholesale because
+    /// the inspector looks a node's images up by the oid the node routes by,
+    /// and that oid depends on the tree's shape: a merged view node routes by
+    /// its layer, a view node with a separate BackingLayer child routes by
+    /// the view itself (`bestObjectOidPreferView:`), and a layer node shows a
+    /// group image that leaves out the views beneath it.
+    private final class ConversionSession {
+        let graph: LKXcodeViewHierarchyObjectGraph
+        let vocabulary: Vocabulary
+        let screenshots: LKXcodeViewHierarchyScreenshots
+        let showsBackingLayers: Bool
+        let topology: LKXcodeViewHierarchyLayerTopology
+        let environment: LKXcodeViewHierarchyAttributeEnvironment
+        /// Layers already emitted as nodes. The capture's layer tree is a
+        /// tree, but a layer reachable twice must not appear twice.
+        var convertedLayerIdentifiers: Set<String> = []
+        private(set) var soloScreenshotsByOid: [NSNumber: Data] = [:]
+        private(set) var groupScreenshotsByOid: [NSNumber: Data] = [:]
+
+        init(
+            graph: LKXcodeViewHierarchyObjectGraph,
+            vocabulary: Vocabulary,
+            screenshots: LKXcodeViewHierarchyScreenshots,
+            showsBackingLayers: Bool
+        ) {
+            self.graph = graph
+            self.vocabulary = vocabulary
+            self.screenshots = screenshots
+            self.showsBackingLayers = showsBackingLayers
+            topology = LKXcodeViewHierarchyLayerTopology(graph: graph)
+            environment = LKXcodeViewHierarchyAttributeEnvironment(
+                isAppKit: vocabulary.isAppKit,
+                constraintIndex: LKXcodeViewHierarchyConstraintIndex(graph: graph),
+                keyWindowIdentifier: LKXcodeViewHierarchyConverter.keyWindowIdentifier(graph: graph, vocabulary: vocabulary)
+            )
+        }
+
+        /// Files the images of the layer `imageIdentifier` under the object the
+        /// node routes by. With `excludingHostedViews` the group image leaves
+        /// out the subtrees of the layers that back a view — the shape of a
+        /// layer node, whose views render on nodes of their own — and is
+        /// absent when that render drew nothing, rather than falling back to
+        /// a picture that includes those views.
+        func filing(
+            soloOf soloIdentifier: String?,
+            groupOf groupIdentifier: String?,
+            excludingHostedViews: Bool,
+            under keyIdentifier: String
+        ) {
+            let oid = LKXcodeViewHierarchyConverter.objectIdentifierValue(keyIdentifier)
+            guard oid != 0 else { return }
+            let key = NSNumber(value: UInt64(oid))
+            if let soloIdentifier, let solo = screenshots.soloByObjectIdentifier[soloIdentifier] {
+                soloScreenshotsByOid[key] = solo
+            }
+            guard let groupIdentifier else { return }
+            let hostsViews = excludingHostedViews
+                && !topology.hostedDescendantIdentifiers(of: groupIdentifier, graph: graph).isEmpty
+            let group = hostsViews
+                ? screenshots.groupExcludingHostedViewsByObjectIdentifier[groupIdentifier]
+                : screenshots.groupByObjectIdentifier[groupIdentifier]
+            if let group {
+                groupScreenshotsByOid[key] = group
+            }
+        }
     }
 
     // MARK: Top level
@@ -174,17 +259,12 @@ enum LKXcodeViewHierarchyConverter {
     /// controller's view that is currently detached from any window, say.
     /// Xcode only shows those in its other outline mode ("View Controller
     /// Containment"), which the inspector has no counterpart for.
-    private static func makingRootDisplayItems(
-        graph: LKXcodeViewHierarchyObjectGraph,
-        vocabulary: Vocabulary
-    ) -> [LookinDisplayItem] {
+    private static func makingRootDisplayItems(session: ConversionSession) -> [LookinDisplayItem] {
+        let graph = session.graph
+        let vocabulary = session.vocabulary
+        let environment = session.environment
+        let keyWindowIdentifier = environment.keyWindowIdentifier
         var convertedViewIdentifiers: Set<String> = []
-        let keyWindowIdentifier = keyWindowIdentifier(graph: graph, vocabulary: vocabulary)
-        let environment = LKXcodeViewHierarchyAttributeEnvironment(
-            isAppKit: vocabulary.isAppKit,
-            constraintIndex: LKXcodeViewHierarchyConstraintIndex(graph: graph),
-            keyWindowIdentifier: keyWindowIdentifier
-        )
 
         let windowIdentifiers = listedWindowIdentifiers(graph: graph, vocabulary: vocabulary)
         let listedOwnerIdentifiers = Set(graph.rootIdentifiers(inGroup: vocabulary.windowOwnerGroup))
@@ -224,6 +304,7 @@ enum LKXcodeViewHierarchyConverter {
                     graph: graph,
                     vocabulary: vocabulary,
                     environment: environment,
+                    session: session,
                     convertedViewIdentifiers: &convertedViewIdentifiers
                 )
             }
@@ -250,6 +331,7 @@ enum LKXcodeViewHierarchyConverter {
                 graph: graph,
                 vocabulary: vocabulary,
                 environment: environment,
+                session: session,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
             rootItems.append(windowItem)
@@ -266,6 +348,7 @@ enum LKXcodeViewHierarchyConverter {
                       graph: graph,
                       vocabulary: vocabulary,
                       environment: environment,
+                      session: session,
                       convertedViewIdentifiers: &convertedViewIdentifiers
                   )
             else { continue }
@@ -426,6 +509,7 @@ enum LKXcodeViewHierarchyConverter {
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary,
         environment: LKXcodeViewHierarchyAttributeEnvironment,
+        session: ConversionSession,
         convertedViewIdentifiers: inout Set<String>
     ) -> LookinDisplayItem? {
         guard let windowNode = graph.node(windowIdentifier) else { return nil }
@@ -441,11 +525,11 @@ enum LKXcodeViewHierarchyConverter {
         // A UIWindow is itself a view and owns a layer; an NSWindow is not.
         // Carrying the layer lets the window node resolve a recovered
         // screenshot, which is keyed by layer identity like every other node.
-        if let layerIdentifier = windowNode.associatedIdentifiers(inGroup: GroupIdentifier.layer).first,
-           let layerNode = graph.node(layerIdentifier) {
-            item.layerObject = makingLookinObject(for: layerNode, graph: graph)
-            applyingGeometry(from: layerNode, fallback: windowNode, to: item)
-            applyingBackgroundColor(from: layerNode, to: item)
+        let ownedLayers = resolvingOwnedLayers(of: windowNode, graph: graph)
+        if let ownedLayers {
+            item.layerObject = makingLookinObject(for: ownedLayers.backingNode, graph: graph)
+            applyingGeometry(from: ownedLayers.associatedNode, fallback: windowNode, to: item)
+            applyingBackgroundColor(from: ownedLayers.backingNode, to: item)
         } else {
             applyingGeometry(from: windowNode, to: item)
         }
@@ -475,7 +559,7 @@ enum LKXcodeViewHierarchyConverter {
         }
         rootViewIdentifiers.append(contentsOf: windowNode.associatedIdentifiers(inGroup: vocabulary.viewGroup))
 
-        var subitems: [LookinDisplayItem] = []
+        var rootViewItems: [LookinDisplayItem] = []
         for rootViewIdentifier in rootViewIdentifiers {
             guard let viewItem = makingViewItem(
                 viewIdentifier: rootViewIdentifier,
@@ -483,9 +567,18 @@ enum LKXcodeViewHierarchyConverter {
                 graph: graph,
                 vocabulary: vocabulary,
                 environment: environment,
+                session: session,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
-            subitems.append(viewItem)
+            rootViewItems.append(viewItem)
+        }
+        var subitems = rootViewItems
+        if let ownedLayers {
+            // A UIWindow's layer tree is a view's: its orphan sublayers and,
+            // with the toggle on, its backing layer become nodes too.
+            subitems = assemblingLayerAwareChildren(
+                ownerIdentifier: windowIdentifier, ownedLayers: ownedLayers, subviewItems: rootViewItems, session: session
+            )
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
             owner: windowNode, graph: graph, vocabulary: vocabulary, environment: environment
@@ -510,6 +603,7 @@ enum LKXcodeViewHierarchyConverter {
         graph: LKXcodeViewHierarchyObjectGraph,
         vocabulary: Vocabulary,
         environment: LKXcodeViewHierarchyAttributeEnvironment,
+        session: ConversionSession,
         convertedViewIdentifiers: inout Set<String>
     ) -> LookinDisplayItem? {
         // The capture is a graph, not a tree: a view reachable twice would
@@ -522,11 +616,16 @@ enum LKXcodeViewHierarchyConverter {
         item.viewObject = makingLookinObject(for: viewNode, graph: graph)
         item.isFlipped = vocabulary.isAppKit && (viewNode.property(named: "flipped")?.value.boolValue ?? false)
 
-        if let layerIdentifier = viewNode.associatedIdentifiers(inGroup: GroupIdentifier.layer).first,
-           let layerNode = graph.node(layerIdentifier) {
-            item.layerObject = makingLookinObject(for: layerNode, graph: graph)
-            applyingGeometry(from: layerNode, fallback: viewNode, to: item)
-            applyingBackgroundColor(from: layerNode, to: item)
+        // The node's layer is the backing layer — the one whose contents are
+        // the view's own drawing — which on iOS 26 sits below the wrapper the
+        // capture associates with the view. Geometry comes from the wrapper
+        // when there is one: UIKit moved position, bounds and visibility onto
+        // it and reset the backing layer to the view's origin.
+        let ownedLayers = resolvingOwnedLayers(of: viewNode, graph: graph)
+        if let ownedLayers {
+            item.layerObject = makingLookinObject(for: ownedLayers.backingNode, graph: graph)
+            applyingGeometry(from: ownedLayers.associatedNode, fallback: viewNode, to: item)
+            applyingBackgroundColor(from: ownedLayers.backingNode, to: item)
         } else {
             applyingGeometry(from: viewNode, to: item)
         }
@@ -543,7 +642,7 @@ enum LKXcodeViewHierarchyConverter {
             for: viewNode, layerNode: associatedLayerNode(of: viewNode, graph: graph), graph: graph, context: context
         )
 
-        var subitems: [LookinDisplayItem] = []
+        var subviewItems: [LookinDisplayItem] = []
         for childIdentifier in viewNode.childIdentifiers {
             guard let childItem = makingViewItem(
                 viewIdentifier: childIdentifier,
@@ -551,9 +650,16 @@ enum LKXcodeViewHierarchyConverter {
                 graph: graph,
                 vocabulary: vocabulary,
                 environment: environment,
+                session: session,
                 convertedViewIdentifiers: &convertedViewIdentifiers
             ) else { continue }
-            subitems.append(childItem)
+            subviewItems.append(childItem)
+        }
+        var subitems = subviewItems
+        if let ownedLayers {
+            subitems = assemblingLayerAwareChildren(
+                ownerIdentifier: viewIdentifier, ownedLayers: ownedLayers, subviewItems: subviewItems, session: session
+            )
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
             owner: viewNode, graph: graph, vocabulary: vocabulary, environment: environment
@@ -565,6 +671,271 @@ enum LKXcodeViewHierarchyConverter {
         }
         item.subitems = subitems
         return item
+    }
+
+    // MARK: Layer nodes
+
+    /// The layers a view (or a UIKit window) owns, as the capture records them.
+    private struct OwnedLayers {
+        /// The layer the capture associates with the object: its backing
+        /// layer, or on iOS 26 the `_UIMultiLayer` wrapper UIKit put above it.
+        let associatedNode: LKXcodeViewHierarchyNode
+        /// The layer whose contents are the object's own drawing.
+        let backingNode: LKXcodeViewHierarchyNode
+        /// The wrapper, when UIKit installed one; nil elsewhere.
+        let outerNode: LKXcodeViewHierarchyNode?
+    }
+
+    private static let multiLayerWrapperClassName = "_UIMultiLayer"
+
+    /// Resolves a view's layers from its `layer` association.
+    ///
+    /// On iOS 26 UIKit wraps a view's backing layer in a `_UIMultiLayer`, and
+    /// the capture associates the view with that wrapper. The backing layer
+    /// is the wrapper's sublayer whose delegate is the view — the wrapper's
+    /// delegate is the view too, but any other layer parked on the wrapper
+    /// belongs to someone else (the server's `lks_viewWrappedAsOuterLayer`).
+    private static func resolvingOwnedLayers(
+        of node: LKXcodeViewHierarchyNode,
+        graph: LKXcodeViewHierarchyObjectGraph
+    ) -> OwnedLayers? {
+        guard let associatedNode = associatedLayerNode(of: node, graph: graph) else { return nil }
+        guard isNode(associatedNode, kindOfClassNamed: multiLayerWrapperClassName, graph: graph) else {
+            return OwnedLayers(associatedNode: associatedNode, backingNode: associatedNode, outerNode: nil)
+        }
+        let wrappedLayerNodes = associatedNode.childIdentifiers.compactMap(graph.node)
+        let backingNode = wrappedLayerNodes.first { wrappedLayerNode in
+            guard case .objectReference(let delegate)? = wrappedLayerNode.property(named: "delegate")?.value else {
+                return false
+            }
+            return delegate.objectIdentifier == node.objectIdentifier
+        } ?? wrappedLayerNodes.first
+        guard let backingNode else {
+            return OwnedLayers(associatedNode: associatedNode, backingNode: associatedNode, outerNode: nil)
+        }
+        return OwnedLayers(associatedNode: associatedNode, backingNode: backingNode, outerNode: associatedNode)
+    }
+
+    /// The children of a view node, in the shape the show-backing-layers
+    /// toggle selects, and the view's own images filed where the node will
+    /// look for them.
+    ///
+    /// Toggle off (the server's default shape): the subviews sit at their z
+    /// positions among the backing layer's sublayers, the sublayers that back
+    /// no view become layer nodes between them, and AppKit's drawing
+    /// containers stay hidden inside the view. On iOS 26 the wrapper follows
+    /// as a pixelless coplanar child so its attributes stay reachable.
+    ///
+    /// Toggle on: the backing layer becomes a node of its own — nested inside
+    /// the wrapper node when there is one — carrying its whole non-backing
+    /// sublayer tree, drawing containers included; it comes first because it
+    /// renders below every subview, and the subviews follow. The view's
+    /// pixels then belong to that subtree: no solo image, so the expanded
+    /// view renders as a wireframe, while the group keeps the folded look.
+    private static func assemblingLayerAwareChildren(
+        ownerIdentifier: String,
+        ownedLayers: OwnedLayers,
+        subviewItems: [LookinDisplayItem],
+        session: ConversionSession
+    ) -> [LookinDisplayItem] {
+        let backingIdentifier = ownedLayers.backingNode.objectIdentifier
+        if session.showsBackingLayers {
+            session.filing(soloOf: nil, groupOf: backingIdentifier, excludingHostedViews: false, under: ownerIdentifier)
+            var children: [LookinDisplayItem] = []
+            if let outerNode = ownedLayers.outerNode {
+                // Xcode's nesting for a wrapped view: view → wrapper → backing layer.
+                let outerItem = makingOuterLayerItem(outerNode, session: session)
+                var outerChildren: [LookinDisplayItem] = []
+                for sublayerIdentifier in outerNode.childIdentifiers {
+                    if sublayerIdentifier == backingIdentifier {
+                        outerChildren.append(makingBackingLayerItem(ownedLayers.backingNode, session: session))
+                    } else if let parkedItem = makingLayerItem(sublayerIdentifier, session: session) {
+                        // UIKit parks only the backing layer on the wrapper
+                        // today, but anything else there belongs under it.
+                        outerChildren.append(parkedItem)
+                    }
+                }
+                outerItem.subitems = outerChildren
+                children.append(outerItem)
+            } else {
+                children.append(makingBackingLayerItem(ownedLayers.backingNode, session: session))
+            }
+            children.append(contentsOf: subviewItems)
+            return children
+        }
+
+        session.filing(soloOf: backingIdentifier, groupOf: backingIdentifier, excludingHostedViews: false, under: backingIdentifier)
+        var children = interleaving(subviewItems, amongSublayersOf: ownedLayers.backingNode, session: session)
+        if let outerNode = ownedLayers.outerNode {
+            session.convertedLayerIdentifiers.insert(outerNode.objectIdentifier)
+            for sublayerIdentifier in outerNode.childIdentifiers where sublayerIdentifier != backingIdentifier {
+                if let parkedItem = makingLayerItem(sublayerIdentifier, session: session) {
+                    children.append(parkedItem)
+                }
+            }
+            children.append(makingOuterLayerItem(outerNode, session: session))
+        }
+        return children
+    }
+
+    /// Subview nodes in the z order of the backing layer's sublayers, with
+    /// the sublayers that back no view as layer nodes between them — the
+    /// server's `_orderedSubviewAndSublayerItemsForView:`.
+    ///
+    /// A subview's anchor is the direct sublayer on the way down to its
+    /// layer: usually that layer itself, but on macOS 26 AppKit inserts
+    /// container layers, and then the container becomes a layer node at that
+    /// z position with the subviews it carries right after it. Subviews whose
+    /// layer is not below the backing layer at all keep their own order at
+    /// the end.
+    private static func interleaving(
+        _ subviewItems: [LookinDisplayItem],
+        amongSublayersOf backingNode: LKXcodeViewHierarchyNode,
+        session: ConversionSession
+    ) -> [LookinDisplayItem] {
+        var anchoredItems: [String: [LookinDisplayItem]] = [:]
+        var unanchoredItems: [LookinDisplayItem] = []
+        for subviewItem in subviewItems {
+            guard let subviewIdentifier = subviewItem.viewObject?.memoryAddress,
+                  let subviewNode = session.graph.node(subviewIdentifier),
+                  let subviewLayerIdentifier = subviewNode.associatedIdentifiers(inGroup: GroupIdentifier.layer).first,
+                  let anchorIdentifier = session.topology.childOfAncestor(
+                      backingNode.objectIdentifier, onPathTo: subviewLayerIdentifier
+                  )
+            else {
+                unanchoredItems.append(subviewItem)
+                continue
+            }
+            anchoredItems[anchorIdentifier, default: []].append(subviewItem)
+        }
+
+        var orderedItems: [LookinDisplayItem] = []
+        for sublayerIdentifier in backingNode.childIdentifiers {
+            if let anchored = anchoredItems[sublayerIdentifier] {
+                // A container layer wrapping subviews sits at this z position
+                // as a node; the subviews it carries follow it. A subview's own
+                // layer is hosted, so makingLayerItem yields nothing for it.
+                if let containerItem = makingLayerItem(sublayerIdentifier, session: session) {
+                    orderedItems.append(containerItem)
+                }
+                orderedItems.append(contentsOf: anchored)
+            } else if let orphanItem = makingLayerItem(sublayerIdentifier, session: session) {
+                orderedItems.append(orphanItem)
+            }
+        }
+        orderedItems.append(contentsOf: unanchoredItems)
+        return orderedItems
+    }
+
+    /// A sublayer that backs no view, as a node of its own with its subtree,
+    /// fenced off from the layers that back a view: those subtrees belong to
+    /// the view skeleton. Nil for a hosted layer, a layer already emitted, or
+    /// — with the toggle off, on AppKit — a drawing container.
+    private static func makingLayerItem(
+        _ layerIdentifier: String,
+        session: ConversionSession
+    ) -> LookinDisplayItem? {
+        guard !session.topology.isHosted(layerIdentifier),
+              let layerNode = session.graph.node(layerIdentifier)
+        else { return nil }
+        if !session.showsBackingLayers, representsDrawingContainer(layerNode, session: session) {
+            return nil
+        }
+        guard session.convertedLayerIdentifiers.insert(layerIdentifier).inserted else { return nil }
+
+        let item = makingDisplayItem(kind: .layer)
+        item.layerObject = makingLookinObject(for: layerNode, graph: session.graph)
+        applyingGeometry(from: layerNode, to: item)
+        applyingLayerVisibility(from: layerNode, to: item)
+        applyingBackgroundColor(from: layerNode, to: item)
+        item.attributesGroupList = makingLayerAttributeGroups(for: layerNode, session: session)
+        item.subitems = layerNode.childIdentifiers.compactMap { makingLayerItem($0, session: session) }
+        session.filing(soloOf: layerIdentifier, groupOf: layerIdentifier, excludingHostedViews: true, under: layerIdentifier)
+        return item
+    }
+
+    /// A view's backing layer as a node of its own, only with the toggle on:
+    /// the server's `_backingLayerItemForLayer:`. It covers the view's node
+    /// edge to edge; its solo is the layer's own content and its group the
+    /// subtree minus the subviews' planes, which render on their own nodes.
+    private static func makingBackingLayerItem(
+        _ backingNode: LKXcodeViewHierarchyNode,
+        session: ConversionSession
+    ) -> LookinDisplayItem {
+        session.convertedLayerIdentifiers.insert(backingNode.objectIdentifier)
+        let item = makingDisplayItem(kind: .backingLayer)
+        item.layerObject = makingLookinObject(for: backingNode, graph: session.graph)
+        applyingCoveringGeometry(from: backingNode, to: item)
+        applyingLayerVisibility(from: backingNode, to: item)
+        item.attributesGroupList = makingLayerAttributeGroups(for: backingNode, session: session)
+        item.subitems = backingNode.childIdentifiers.compactMap { makingLayerItem($0, session: session) }
+        session.filing(
+            soloOf: backingNode.objectIdentifier,
+            groupOf: backingNode.objectIdentifier,
+            excludingHostedViews: true,
+            under: backingNode.objectIdentifier
+        )
+        return item
+    }
+
+    /// The `_UIMultiLayer` wrapper as a child of the view it wraps — Xcode's
+    /// placement, and the server's `_outerLayerItemForLayer:`. It has no
+    /// pixels (the contents stayed on the backing layer), so no image is
+    /// filed for it; the host suppresses screenshots for this kind.
+    private static func makingOuterLayerItem(
+        _ outerNode: LKXcodeViewHierarchyNode,
+        session: ConversionSession
+    ) -> LookinDisplayItem {
+        session.convertedLayerIdentifiers.insert(outerNode.objectIdentifier)
+        let item = makingDisplayItem(kind: .viewOuterLayer)
+        item.layerObject = makingLookinObject(for: outerNode, graph: session.graph)
+        applyingCoveringGeometry(from: outerNode, to: item)
+        applyingLayerVisibility(from: outerNode, to: item)
+        applyingBackgroundColor(from: outerNode, to: item)
+        item.attributesGroupList = makingLayerAttributeGroups(for: outerNode, session: session)
+        return item
+    }
+
+    private static func makingLayerAttributeGroups(
+        for layerNode: LKXcodeViewHierarchyNode,
+        session: ConversionSession
+    ) -> [LookinAttributesGroup] {
+        let context = LKXcodeViewHierarchyAttributeContext(role: .layer, environment: session.environment)
+        return LKXcodeViewHierarchyAttributes.makingGroups(
+            for: layerNode, layerNode: layerNode, graph: session.graph, context: context
+        )
+    }
+
+    /// The server's `lks_representsBackingLayerDrawingContainer`: a sublayer
+    /// of a view's backing layer with no delegate, whose contents are AppKit's
+    /// own drawing (a CGDisplayList) rather than an image the app assigned.
+    /// Its pixels are the host view's; with the toggle off it is no node.
+    private static func representsDrawingContainer(
+        _ layerNode: LKXcodeViewHierarchyNode,
+        session: ConversionSession
+    ) -> Bool {
+        guard session.vocabulary.isAppKit else { return false }
+        if case .objectReference? = layerNode.property(named: "delegate")?.value { return false }
+        guard let parentIdentifier = session.topology.parentByLayerIdentifier[layerNode.objectIdentifier],
+              session.topology.isHosted(parentIdentifier)
+        else { return false }
+        guard let contentsDescription = layerNode.property(named: "contentsDescription")?.value.textValue,
+              !contentsDescription.isEmpty
+        else { return false }
+        return !contentsDescription.hasPrefix("<CGImage")
+    }
+
+    /// A layer node covering its parent node edge to edge: origin zero, the
+    /// layer's own size (the server's shape for backing and wrapper nodes).
+    private static func applyingCoveringGeometry(from layerNode: LKXcodeViewHierarchyNode, to item: LookinDisplayItem) {
+        applyingGeometry(from: layerNode, to: item)
+        item.frame = CGRect(origin: .zero, size: item.bounds.size)
+    }
+
+    private static func applyingLayerVisibility(from layerNode: LKXcodeViewHierarchyNode, to item: LookinDisplayItem) {
+        applyingVisibility(from: layerNode, to: item)
+        // The server reads a layer node's flip off the layer itself.
+        item.isFlipped = layerNode.property(named: "geometryFlipped")?.value.boolValue ?? false
     }
 
     /// Layout guides mark out a region of their owner and carry no pixels of
@@ -735,16 +1106,6 @@ enum LKXcodeViewHierarchyConverter {
         var text = objectIdentifier
         if text.hasPrefix("0x") || text.hasPrefix("0X") { text = String(text.dropFirst(2)) }
         return UInt(text, radix: 16) ?? 0
-    }
-
-    private static func keyingByObjectIdentifier(_ images: [String: Data]) -> [NSNumber: Data] {
-        var keyed: [NSNumber: Data] = [:]
-        for (objectIdentifier, imageData) in images {
-            let oid = objectIdentifierValue(objectIdentifier)
-            guard oid != 0 else { continue }
-            keyed[NSNumber(value: UInt64(oid))] = imageData
-        }
-        return keyed
     }
 
     // MARK: App info

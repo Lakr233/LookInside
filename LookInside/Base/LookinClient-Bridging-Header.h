@@ -30,6 +30,7 @@
 #import "LookinHierarchyInfo.h"
 #import "LookinHierarchyFile.h"
 #import "LookinArchiveDocument.h"
+#import "LKReadWindowController.h"
 #import "LKInspectableApp.h"
 // The MCPBridge event publisher watches this manager's two RACSubjects
 // (channelWillEnd, didReceivePush) to turn target disconnects and

@@ -19,4 +19,9 @@
 /// archives flow through `NSDocumentController.openDocumentWithContentsOfURL:`).
 - (instancetype)initWithDocument:(LookinArchiveDocument *)document;
 
+/// This window's own preference set: the reader's view settings, including
+/// the show-backing-layers toggle, are per document window. A document that
+/// can rebuild its tree reads the toggle from here.
+@property(nonatomic, strong, readonly) LKPreferenceManager *preferenceManager;
+
 @end

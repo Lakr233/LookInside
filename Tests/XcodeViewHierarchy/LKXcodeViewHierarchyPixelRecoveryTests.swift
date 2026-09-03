@@ -23,6 +23,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         testFlippedSubtreeRendersAsItDoesInsideItsRoot()
         testNestedLayersOfAYDownTreeKeepTheirOrderAtEveryDepth()
         testCancelledRecoveryProducesNoImages()
+        testLayerImagesLeaveOutTheViewsBeneath()
         testEmptyLayerProducesNoImage()
         testZeroSizedLayerProducesNoImage()
         testLargeLayerIsScaledWithinTheCap()
@@ -179,6 +180,40 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         expectRows(screenshots, "0x4", "level two", [(2, "green"), (10, "yellow")])
     }
 
+    // MARK: - Views beneath a layer
+
+    /// A layer node's group image must leave out the subtrees of the layers
+    /// that back a view — those render on nodes of their own — while the
+    /// node's plain group image, which a merged view node shows folded, keeps
+    /// them. The root here has one sublayer a view owns (a red band on top)
+    /// and one orphan (a blue band at the bottom).
+    private static func testLayerImagesLeaveOutTheViewsBeneath() {
+        let root = coloredLayer(width: 100, height: 100, at: .zero, color: .white)
+        let hosted = coloredLayer(width: 100, height: 40, at: CGPoint(x: 0, y: 60), color: .red)
+        let orphan = coloredLayer(width: 100, height: 40, at: .zero, color: .blue)
+        root.addSublayer(hosted)
+        root.addSublayer(orphan)
+        guard let archiveData = archiveData(rootLayer: root, geometryFlipped: false) else {
+            fail("could not build the archive fixture")
+        }
+        let capture = layerCapture(
+            archiveData: archiveData,
+            tree: LayerNodeFixture("0x1", [LayerNodeFixture("0x2"), LayerNodeFixture("0x3")]),
+            hostedLayerIdentifiers: ["0x2"]
+        )
+        let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture)
+        expectRows(screenshots, "0x1", "the root's group", [(10, "red"), (90, "blue")])
+        guard let excludingData = screenshots.groupExcludingHostedViewsByObjectIdentifier["0x1"],
+              let excludingBitmap = NSBitmapImageRep(data: excludingData)
+        else { fail("recovery produced no image of the root without its hosted subtree") }
+        let column = excludingBitmap.pixelsWide / 2
+        let actual = [colorName(excludingBitmap, x: column, y: 10), colorName(excludingBitmap, x: column, y: 90)]
+        expect(actual == ["white", "blue"], "the root without its hosted subtree: expected [white, blue], got \(actual)")
+        expect(screenshots.groupExcludingHostedViewsByObjectIdentifier["0x3"] == nil,
+               "a layer with no view beneath it needs no second image")
+        expect(screenshots.groupByObjectIdentifier["0x2"] != nil, "the hosted layer still renders on its own")
+    }
+
     // MARK: - Cancellation
 
     /// The document cancels a running import when its window closes, and the
@@ -312,8 +347,13 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         }
     }
 
-    /// A capture whose CALayer group mirrors `tree`, with the archive on its root.
-    private static func layerCapture(archiveData: Data, tree: LayerNodeFixture) -> LKXcodeViewHierarchyObjectGraph {
+    /// A capture whose CALayer group mirrors `tree`, with the archive on its
+    /// root. Each of `hostedLayerIdentifiers` gets a view that owns it.
+    private static func layerCapture(
+        archiveData: Data,
+        tree: LayerNodeFixture,
+        hostedLayerIdentifiers: [String] = []
+    ) -> LKXcodeViewHierarchyObjectGraph {
         func describing(_ node: LayerNodeFixture) -> [String: Any] {
             var object: [String: Any] = ["objectID": node.identifier, "className": "CALayer"]
             if !node.children.isEmpty {
@@ -324,15 +364,31 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
             }
             return object
         }
+        var topLevelGroups: [String: Any] = [
+            "com.apple.QuartzCore.CALayer": [
+                "groupingID": "com.apple.QuartzCore.CALayer",
+                "debugHierarchyObjects": [describing(tree)],
+            ],
+        ]
+        if !hostedLayerIdentifiers.isEmpty {
+            topLevelGroups["com.apple.AppKit.NSView"] = [
+                "groupingID": "com.apple.AppKit.NSView",
+                "debugHierarchyObjects": hostedLayerIdentifiers.enumerated().map { index, layerIdentifier in
+                    [
+                        "objectID": "0xv\(index)",
+                        "className": "NSView",
+                        "additionalGroups": [[
+                            "groupingID": "com.apple.QuartzCore.CALayer",
+                            "debugHierarchyObjects": [["objectID": layerIdentifier]],
+                        ]],
+                    ] as [String: Any]
+                },
+            ]
+        }
         let builder = LKXcodeViewHierarchyObjectGraphBuilder()
         builder.ingesting(response: [
             "version": NSNumber(value: 2),
-            "topLevelGroups": [
-                "com.apple.QuartzCore.CALayer": [
-                    "groupingID": "com.apple.QuartzCore.CALayer",
-                    "debugHierarchyObjects": [describing(tree)],
-                ],
-            ],
+            "topLevelGroups": topLevelGroups,
             "topLevelPropertyDescriptions": [
                 "\(tree.identifier).encodedPresentationLayer": [
                     "propertyName": "encodedPresentationLayer",

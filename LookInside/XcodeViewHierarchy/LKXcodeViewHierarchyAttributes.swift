@@ -48,6 +48,11 @@ struct LKXcodeViewHierarchyAttributeContext {
         case windowScene
         case cell
         case layoutGuide
+        /// A layer that is a node of its own: an orphan sublayer, a view's
+        /// backing layer with the show-backing-layers toggle on, or the
+        /// wrapper UIKit puts above it. Its cards are the pure layer rows,
+        /// as the server's `attrGroupsForLayer:` gives a hostless layer.
+        case layer
     }
 
     let role: Role
@@ -129,6 +134,7 @@ enum LKXcodeViewHierarchyAttributes {
         static let scene = "UIScene"
         static let cell = "NSCell"
         static let layoutGuide = ["UILayoutGuide", "NSLayoutGuide"]
+        static let layer = "CALayer"
     }
 
     /// Builds every attribute group for one captured object, in card order.
@@ -215,7 +221,7 @@ enum LKXcodeViewHierarchyAttributes {
 
         default:
             return makingSpecifiedAttribute(
-                identifier, node: node, layerNode: layerNode, classChain: classChain, graph: graph
+                identifier, node: node, layerNode: layerNode, classChain: classChain, graph: graph, context: context
             )
         }
     }
@@ -226,11 +232,18 @@ enum LKXcodeViewHierarchyAttributes {
         node: LKXcodeViewHierarchyNode,
         layerNode: LKXcodeViewHierarchyNode?,
         classChain: [String],
-        graph: LKXcodeViewHierarchyObjectGraph
+        graph: LKXcodeViewHierarchyObjectGraph,
+        context: LKXcodeViewHierarchyAttributeContext
     ) -> LookinAttribute? {
         guard let specification = Catalog.specifications[identifier] else { return nil }
-        guard specification.classNames.isEmpty || specification.classNames.contains(where: classChain.contains)
-        else { return nil }
+        if context.role == .layer {
+            // A hostless layer answers only the rows the blueprint aims at a
+            // CALayer; the view rows have no object to read from.
+            guard LookinDashboardBlueprint.targetKind(forAttrID: identifier) == .layer else { return nil }
+        } else {
+            guard specification.classNames.isEmpty || specification.classNames.contains(where: classChain.contains)
+            else { return nil }
+        }
         guard let property = capturedProperty(for: specification, node: node, layerNode: layerNode, graph: graph)
         else { return nil }
 
@@ -442,6 +455,8 @@ enum LKXcodeViewHierarchyAttributes {
             chains.append(trimmingChain(classChain, throughAnyOf: [ChainEnd.cell]))
         case .layoutGuide:
             chains.append(trimmingChain(classChain, throughAnyOf: ChainEnd.layoutGuide))
+        case .layer:
+            chains.append(trimmingChain(classChain, throughAnyOf: [ChainEnd.layer]))
         }
         return chains
     }
@@ -489,7 +504,7 @@ enum LKXcodeViewHierarchyAttributes {
             if let ownerClassName = context.ownerNode?.className {
                 relations.append("(\(ownerClassName) *).cell")
             }
-        case .layoutGuide:
+        case .layoutGuide, .layer:
             break
         }
         return relations
