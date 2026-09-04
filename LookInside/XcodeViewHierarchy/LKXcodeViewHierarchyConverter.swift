@@ -867,6 +867,10 @@ enum LKXcodeViewHierarchyConverter {
         item.layerObject = makingLookinObject(for: backingNode, graph: session.graph)
         applyingCoveringGeometry(from: backingNode, to: item)
         applyingLayerVisibility(from: backingNode, to: item)
+        // A backing layer that only paints its background gets no image of
+        // its own (pixel recovery skips plain colour fills); the preview
+        // paints this colour in its place.
+        applyingBackgroundColor(from: backingNode, to: item)
         item.attributesGroupList = makingLayerAttributeGroups(for: backingNode, session: session)
         item.subitems = backingNode.childIdentifiers.compactMap { makingLayerItem($0, session: session) }
         session.filing(

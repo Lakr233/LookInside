@@ -27,6 +27,8 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         testEmptyLayerProducesNoImage()
         testZeroSizedLayerProducesNoImage()
         testLargeLayerIsScaledWithinTheCap()
+        testTallLayerStaysWithinTheTextureEdge()
+        testPlainColorLayersRenderNoImageOfTheirOwn()
         testArchiveRoundTripsThroughDecoder()
         testMalformedArchiveIsRejected()
         print("Xcode view hierarchy pixel recovery tests passed")
@@ -190,6 +192,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
     private static func testLayerImagesLeaveOutTheViewsBeneath() {
         let root = coloredLayer(width: 100, height: 100, at: .zero, color: .white)
         let hosted = coloredLayer(width: 100, height: 40, at: CGPoint(x: 0, y: 60), color: .red)
+        hosted.borderWidth = 1   // draws more than a plain fill, so it keeps an image of its own
         let orphan = coloredLayer(width: 100, height: 40, at: .zero, color: .blue)
         root.addSublayer(hosted)
         root.addSublayer(orphan)
@@ -258,6 +261,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         layer.bounds = CGRect(x: 0, y: 0, width: 6000, height: 4000)
         layer.contentsScale = 2
         layer.backgroundColor = NSColor.red.cgColor
+        layer.borderWidth = 1   // something to draw, so the plain-colour skip does not apply
         guard let data = LKXcodeViewHierarchyPixelRecovery.renderingPNG(
             of: layer, includingSublayers: true, isFlipped: false
         ) else { fail("a large opaque layer should still render") }
@@ -265,7 +269,52 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         let renderedPixelCount = image.pixelsWide * image.pixelsHigh
         expect(renderedPixelCount <= LKXcodeViewHierarchyPixelRecovery.maximumRenderedPixelCount,
                "rendered \(renderedPixelCount) pixels, above the cap")
-        expect(image.pixelsWide > 1000, "the cap should reduce the scale, not the usefulness")
+        expect(image.pixelsWide > 4000, "the cap should reduce the scale, not the usefulness")
+    }
+
+    /// A folded node's image covers its whole subtree, and a scroll view's
+    /// content can be tens of thousands of points tall. The preview cannot
+    /// upload a texture longer than 16384 pixels on a side, so such a layer
+    /// renders coarser to fit — never dropped, which would leave a hole.
+    private static func testTallLayerStaysWithinTheTextureEdge() {
+        let layer = CALayer()
+        layer.bounds = CGRect(x: 0, y: 0, width: 600, height: 21530)
+        layer.contentsScale = 2
+        layer.backgroundColor = NSColor.red.cgColor
+        layer.borderWidth = 1
+        let scale = LKXcodeViewHierarchyPixelRecovery.renderingScale(for: layer)
+        expect(abs(scale - 16384.0 / 21530.0) < 0.001, "the longest side sets the scale; got \(scale)")
+        guard let data = LKXcodeViewHierarchyPixelRecovery.renderingPNG(
+            of: layer, includingSublayers: true, isFlipped: false
+        ) else { fail("a tall layer should still render") }
+        guard let image = NSBitmapImageRep(data: data) else { fail("rendered data was not a bitmap") }
+        expect(image.pixelsHigh <= 16384, "a side longer than the texture limit; got \(image.pixelsHigh)")
+        expect(image.pixelsHigh > 16000, "the tall side should use the whole texture edge; got \(image.pixelsHigh)")
+    }
+
+    /// A plain CALayer with nothing but a background colour needs no image:
+    /// the inspector paints the node's colour where an image is missing.
+    /// Its subtree still gets a group image, and a layer that draws anything
+    /// else (a border here) keeps its own.
+    private static func testPlainColorLayersRenderNoImageOfTheirOwn() {
+        let root = coloredLayer(width: 60, height: 60, at: .zero, color: .red)
+        let plainChild = coloredLayer(width: 20, height: 20, at: .zero, color: .blue)
+        let borderedChild = coloredLayer(width: 20, height: 20, at: CGPoint(x: 40, y: 40), color: .green)
+        borderedChild.borderWidth = 2
+        root.addSublayer(plainChild)
+        root.addSublayer(borderedChild)
+        guard let archiveData = archiveData(rootLayer: root, geometryFlipped: false) else {
+            fail("could not build the archive fixture")
+        }
+        let capture = layerCapture(
+            archiveData: archiveData,
+            tree: LayerNodeFixture("0x1", [LayerNodeFixture("0x2"), LayerNodeFixture("0x3")])
+        )
+        let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture)
+        expect(screenshots.groupByObjectIdentifier["0x1"] != nil, "a plain layer with sublayers still needs its group image")
+        expect(screenshots.soloByObjectIdentifier["0x1"] == nil, "a plain layer's own picture is its background colour: no solo")
+        expect(screenshots.groupByObjectIdentifier["0x2"] == nil, "a plain leaf layer needs no image at all")
+        expect(screenshots.groupByObjectIdentifier["0x3"] != nil, "a layer that draws a border keeps its image")
     }
 
     // MARK: - Archive decoding

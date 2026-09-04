@@ -54,11 +54,22 @@ struct LKXcodeViewHierarchyScreenshots {
 enum LKXcodeViewHierarchyPixelRecovery {
     /// Upper bound on the pixels of one rendered image.
     ///
-    /// A full-screen retina layer is already ~13 megapixels, and a capture
-    /// holds thousands of layers; without a cap the import of a large window
-    /// allocates gigabytes. Anything larger is rendered at a reduced scale
-    /// rather than skipped, so the preview stays complete but coarser.
-    static let maximumRenderedPixelCount = 4_000_000
+    /// A capture holds thousands of layers; without a cap the import of a
+    /// large window allocates gigabytes. Anything larger is rendered at a
+    /// reduced scale rather than skipped, so the preview stays complete but
+    /// coarser. Sixteen megapixels is the budget Xcode's own view debugger
+    /// allows a layer image (it refuses anything bigger outright); a
+    /// full-screen retina layer is about thirteen.
+    static let maximumRenderedPixelCount = 16_000_000
+
+    /// Upper bound on either side of one rendered image, in pixels.
+    ///
+    /// The preview puts every image on a SceneKit material, and a texture
+    /// longer than this cannot be uploaded — the host asserts the same bound
+    /// (`LookinNodeImageMaxLengthInPx`). A layer taller than this at its own
+    /// scale is rendered coarser to fit, never dropped: a folded node's whole
+    /// subtree lives in this one image, so a missing image is a hole.
+    static let maximumRenderedEdgeLength: CGFloat = 16384
 
     /// Layers below this size carry no useful preview and are common enough
     /// (separators, hairlines, zero-size containers) to be worth skipping.
@@ -102,7 +113,15 @@ enum LKXcodeViewHierarchyPixelRecovery {
                 )
             }
             let isFlipped = layer.contentsAreFlipped()
-            if let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
+            let hasSublayers = !(layer.sublayers?.isEmpty ?? true)
+            // A layer that paints nothing but its background colour needs no
+            // image of its own: the inspector fills a node that has no image
+            // with the node's background colour, which is the same picture
+            // for a fraction of the memory and import time. Its subtree
+            // still needs the group image.
+            let paintsOnlyItsBackground = representsPlainColorFill(layer)
+            if !paintsOnlyItsBackground || hasSublayers,
+               let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
                 groupByObjectIdentifier[objectIdentifier] = groupImage
             }
             // The views beneath a layer node render on planes of their own;
@@ -117,7 +136,7 @@ enum LKXcodeViewHierarchyPixelRecovery {
             }
             // A node with no sublayers renders identically either way; storing
             // the second copy would double the memory for no visible gain.
-            guard let sublayers = layer.sublayers, !sublayers.isEmpty else { continue }
+            guard hasSublayers, !paintsOnlyItsBackground else { continue }
             if let soloImage = renderingPNG(of: layer, includingSublayers: false, isFlipped: isFlipped) {
                 soloByObjectIdentifier[objectIdentifier] = soloImage
             }
@@ -147,8 +166,10 @@ enum LKXcodeViewHierarchyPixelRecovery {
         else { return nil }
 
         let scale = renderingScale(for: layer)
-        let pixelWidth = Int((bounds.width * scale).rounded())
-        let pixelHeight = Int((bounds.height * scale).rounded())
+        // Rounded down so a layer sitting exactly at a cap cannot creep past
+        // it by a row of pixels.
+        let pixelWidth = Int((bounds.width * scale).rounded(.down))
+        let pixelHeight = Int((bounds.height * scale).rounded(.down))
         guard pixelWidth > 0, pixelHeight > 0 else { return nil }
 
         guard let context = CGContext(
@@ -188,14 +209,44 @@ enum LKXcodeViewHierarchyPixelRecovery {
         return bitmap.representation(using: .png, properties: [:])
     }
 
-    /// Scale that keeps the layer's own resolution without exceeding the cap.
-    private static func renderingScale(for layer: CALayer) -> CGFloat {
+    /// Scale that keeps the layer's own resolution without exceeding either
+    /// cap: first the longest side, then the pixel budget.
+    static func renderingScale(for layer: CALayer) -> CGFloat {
         let bounds = layer.bounds
-        let preferredScale = layer.contentsScale > 0 ? layer.contentsScale : 1
-        let preferredPixelCount = bounds.width * preferredScale * bounds.height * preferredScale
-        guard preferredPixelCount > CGFloat(maximumRenderedPixelCount) else { return preferredScale }
-        let reduction = (CGFloat(maximumRenderedPixelCount) / preferredPixelCount).squareRoot()
-        return max(preferredScale * reduction, 0.1)
+        var scale = layer.contentsScale > 0 ? layer.contentsScale : 1
+        let longestSide = max(bounds.width, bounds.height)
+        if longestSide * scale > maximumRenderedEdgeLength {
+            scale = maximumRenderedEdgeLength / longestSide
+        }
+        let pixelCount = bounds.width * scale * bounds.height * scale
+        if pixelCount > CGFloat(maximumRenderedPixelCount) {
+            scale *= (CGFloat(maximumRenderedPixelCount) / pixelCount).squareRoot()
+        }
+        return max(scale, 0.1)
+    }
+
+    /// Xcode's `-[DBGViewSurface _needsImageSnapshot]`, negated: a plain
+    /// CALayer whose only drawing is a solid background colour. Anything that
+    /// draws more — contents, a mask, a border, rounded corners, a shadow, a
+    /// filter, a subclass with its own drawing, a pattern colour — needs a
+    /// real render.
+    static func representsPlainColorFill(_ layer: CALayer) -> Bool {
+        guard type(of: layer) == CALayer.self,
+              layer.contents == nil,
+              layer.mask == nil,
+              layer.borderWidth <= 0,
+              layer.cornerRadius <= 0,
+              layer.shadowOpacity <= 0,
+              layer.compositingFilter == nil,
+              layer.filters?.isEmpty ?? true,
+              layer.backgroundFilters?.isEmpty ?? true
+        else { return false }
+        if let backgroundColor = layer.backgroundColor,
+           let colorSpace = backgroundColor.colorSpace,
+           colorSpace.model == .pattern {
+            return false
+        }
+        return true
     }
 
     /// True when anything was drawn.
