@@ -176,6 +176,17 @@ typedef NS_ENUM(NSInteger, LookinDisplayItemNodeKind) {
 /// 无论是否存在 subitems，该属性始终存在
 @property(nonatomic, strong) LookinImage *groupScreenshot;
 
+/// The part of `bounds`, in the node's own coordinate space, that
+/// `soloScreenshot` was rendered for. CGRectZero — the default, and what
+/// every server sends — means the whole of `bounds`. A producer that renders
+/// only the region a node actually draws into (a scroll view's content is
+/// mostly empty, and a texture cannot exceed 16384 px on a side) records that
+/// region here; the preview then shows the image over that region and leaves
+/// the rest of the node transparent.
+@property(nonatomic, assign) CGRect soloScreenshotRegion;
+/// Same for `groupScreenshot`.
+@property(nonatomic, assign) CGRect groupScreenshotRegion;
+
 @property(nonatomic, strong) LookinObject *windowObject;
 @property(nonatomic, strong) LookinObject *viewObject;
 @property(nonatomic, strong) LookinObject *layerObject;

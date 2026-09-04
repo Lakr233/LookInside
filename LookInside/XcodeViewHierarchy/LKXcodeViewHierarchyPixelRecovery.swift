@@ -47,6 +47,15 @@ struct LKXcodeViewHierarchyScreenshots {
     /// only where a hosted layer exists below the node; elsewhere the group
     /// image already is that picture.
     var groupExcludingHostedViewsByObjectIdentifier: [String: Data] = [:]
+    /// Where a group image was rendered when it covers less than the layer's
+    /// bounds: the region the subtree actually draws into, measured from the
+    /// bounds origin. Absent when the image covers the whole bounds. A scroll
+    /// view's content is mostly empty, so its region is the visible band —
+    /// and that band can then be rendered at full scale rather than the
+    /// whole content at whatever scale fits a texture.
+    var groupRegionByObjectIdentifier: [String: CGRect] = [:]
+    /// Same for `groupExcludingHostedViewsByObjectIdentifier`.
+    var groupExcludingHostedViewsRegionByObjectIdentifier: [String: CGRect] = [:]
     /// Layer archives that failed to decode; the nodes below them have no pixels.
     let failedArchiveIdentifiers: [String]
 }
@@ -101,6 +110,8 @@ enum LKXcodeViewHierarchyPixelRecovery {
         var soloByObjectIdentifier: [String: Data] = [:]
         var groupByObjectIdentifier: [String: Data] = [:]
         var groupExcludingHostedViewsByObjectIdentifier: [String: Data] = [:]
+        var groupRegionByObjectIdentifier: [String: CGRect] = [:]
+        var groupExcludingHostedViewsRegionByObjectIdentifier: [String: CGRect] = [:]
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -121,18 +132,28 @@ enum LKXcodeViewHierarchyPixelRecovery {
             // still needs the group image.
             let paintsOnlyItsBackground = representsPlainColorFill(layer)
             if !paintsOnlyItsBackground || hasSublayers,
-               let groupImage = renderingPNG(of: layer, includingSublayers: true, isFlipped: isFlipped) {
+               let region = drawingRegion(of: layer, hiding: []),
+               let groupImage = renderingPNG(
+                   of: layer, includingSublayers: true, region: region.rect, isFlipped: isFlipped
+               ) {
                 groupByObjectIdentifier[objectIdentifier] = groupImage
+                if region.isPartial {
+                    groupRegionByObjectIdentifier[objectIdentifier] = region.relativeRect
+                }
             }
             // The views beneath a layer node render on planes of their own;
             // a layer node's group therefore leaves their subtrees out.
             let hostedDescendants = topology.hostedDescendantIdentifiers(of: objectIdentifier, graph: graph)
                 .compactMap { alignment[$0] }
             if !hostedDescendants.isEmpty,
+               let region = drawingRegion(of: layer, hiding: hostedDescendants),
                let excludingImage = renderingPNG(
-                   of: layer, includingSublayers: true, hiding: hostedDescendants, isFlipped: isFlipped
+                   of: layer, includingSublayers: true, hiding: hostedDescendants, region: region.rect, isFlipped: isFlipped
                ) {
                 groupExcludingHostedViewsByObjectIdentifier[objectIdentifier] = excludingImage
+                if region.isPartial {
+                    groupExcludingHostedViewsRegionByObjectIdentifier[objectIdentifier] = region.relativeRect
+                }
             }
             // A node with no sublayers renders identically either way; storing
             // the second copy would double the memory for no visible gain.
@@ -146,26 +167,101 @@ enum LKXcodeViewHierarchyPixelRecovery {
             soloByObjectIdentifier: soloByObjectIdentifier,
             groupByObjectIdentifier: groupByObjectIdentifier,
             groupExcludingHostedViewsByObjectIdentifier: groupExcludingHostedViewsByObjectIdentifier,
+            groupRegionByObjectIdentifier: groupRegionByObjectIdentifier,
+            groupExcludingHostedViewsRegionByObjectIdentifier: groupExcludingHostedViewsRegionByObjectIdentifier,
             failedArchiveIdentifiers: failedIdentifiers
         )
+    }
+
+    // MARK: - Drawing region
+
+    /// Where a subtree draws, in its root layer's bounds space.
+    struct DrawingRegion {
+        /// The part of the root's bounds to render.
+        let rect: CGRect
+        /// The same rect measured from the bounds origin.
+        let relativeRect: CGRect
+        /// Whether the rect is smaller than the bounds.
+        let isPartial: Bool
+    }
+
+    /// The part of `layer.bounds` that `layer` and its sublayers draw into,
+    /// or nil when nothing below it draws at all. `hiddenLayers` are treated
+    /// as hidden, as they will be for the render.
+    ///
+    /// A layer's drawing is taken to fill its bounds, plus a shadow's spread
+    /// and a shape layer's path, and a `masksToBounds` layer clips what is
+    /// below it. Hidden and fully transparent layers count for nothing. The
+    /// estimate errs on the large side: it can include blank space, never
+    /// cut drawing off.
+    static func drawingRegion(of layer: CALayer, hiding hiddenLayers: [CALayer]) -> DrawingRegion? {
+        let bounds = layer.bounds
+        let hidden = Set(hiddenLayers.map(ObjectIdentifier.init))
+        let union = drawingUnion(of: layer, in: layer, clip: bounds, hiddenLayers: hidden)
+        guard !union.isNull else { return nil }
+        let rect = union.intersection(bounds).integral
+        guard !rect.isEmpty else { return nil }
+        let isPartial = rect != bounds.integral
+        return DrawingRegion(
+            rect: rect,
+            relativeRect: rect.offsetBy(dx: -bounds.origin.x, dy: -bounds.origin.y),
+            isPartial: isPartial
+        )
+    }
+
+    private static func drawingUnion(
+        of layer: CALayer,
+        in root: CALayer,
+        clip: CGRect,
+        hiddenLayers: Set<ObjectIdentifier>
+    ) -> CGRect {
+        guard !layer.isHidden, layer.opacity > 0, !hiddenLayers.contains(ObjectIdentifier(layer)) else { return .null }
+        var union = CGRect.null
+        if drawsSomething(layer) {
+            var own = layer.bounds
+            if let shapeLayer = layer as? CAShapeLayer, let path = shapeLayer.path {
+                // A path is not clipped to the layer's bounds.
+                own = own.union(path.boundingBoxOfPath.insetBy(dx: -shapeLayer.lineWidth, dy: -shapeLayer.lineWidth))
+            }
+            if layer.shadowOpacity > 0 {
+                let spread = layer.shadowRadius * 2 + max(abs(layer.shadowOffset.width), abs(layer.shadowOffset.height))
+                own = own.insetBy(dx: -spread, dy: -spread)
+            }
+            union = layer.convert(own, to: root).intersection(clip)
+        }
+        let childClip = layer.masksToBounds ? layer.convert(layer.bounds, to: root).intersection(clip) : clip
+        guard !childClip.isNull, !childClip.isEmpty else { return union }
+        for sublayer in layer.sublayers ?? [] {
+            union = union.union(drawingUnion(of: sublayer, in: root, clip: childClip, hiddenLayers: hiddenLayers))
+        }
+        return union
+    }
+
+    /// Whether a layer puts any pixels of its own on screen.
+    private static func drawsSomething(_ layer: CALayer) -> Bool {
+        guard representsPlainColorFill(layer) else { return true }
+        return (layer.backgroundColor?.alpha ?? 0) > 0
     }
 
     // MARK: - Rendering
 
     /// `hiddenLayers` are hidden for the duration of the render and restored
-    /// afterwards; they must be descendants of `layer`.
+    /// afterwards; they must be descendants of `layer`. `region`, a rect in
+    /// the layer's bounds space, limits the render to that part of the
+    /// bounds; the image then covers exactly the region.
     static func renderingPNG(
         of layer: CALayer,
         includingSublayers: Bool,
         hiding hiddenLayers: [CALayer] = [],
+        region: CGRect? = nil,
         isFlipped: Bool
     ) -> Data? {
-        let bounds = layer.bounds
+        let bounds = region ?? layer.bounds
         guard bounds.width >= minimumRenderedEdgeLength, bounds.height >= minimumRenderedEdgeLength,
               bounds.width.isFinite, bounds.height.isFinite
         else { return nil }
 
-        let scale = renderingScale(for: layer)
+        let scale = renderingScale(contentsScale: layer.contentsScale, size: bounds.size)
         // Rounded down so a layer sitting exactly at a cap cannot creep past
         // it by a row of pixels.
         let pixelWidth = Int((bounds.width * scale).rounded(.down))
@@ -212,13 +308,16 @@ enum LKXcodeViewHierarchyPixelRecovery {
     /// Scale that keeps the layer's own resolution without exceeding either
     /// cap: first the longest side, then the pixel budget.
     static func renderingScale(for layer: CALayer) -> CGFloat {
-        let bounds = layer.bounds
-        var scale = layer.contentsScale > 0 ? layer.contentsScale : 1
-        let longestSide = max(bounds.width, bounds.height)
+        renderingScale(contentsScale: layer.contentsScale, size: layer.bounds.size)
+    }
+
+    static func renderingScale(contentsScale: CGFloat, size: CGSize) -> CGFloat {
+        var scale = contentsScale > 0 ? contentsScale : 1
+        let longestSide = max(size.width, size.height)
         if longestSide * scale > maximumRenderedEdgeLength {
             scale = maximumRenderedEdgeLength / longestSide
         }
-        let pixelCount = bounds.width * scale * bounds.height * scale
+        let pixelCount = size.width * scale * size.height * scale
         if pixelCount > CGFloat(maximumRenderedPixelCount) {
             scale *= (CGFloat(maximumRenderedPixelCount) / pixelCount).squareRoot()
         }

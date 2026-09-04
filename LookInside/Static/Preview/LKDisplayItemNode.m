@@ -19,6 +19,12 @@
 
 @property(nonatomic, strong) SCNNode *contentNode;
 @property(nonatomic, strong) SCNPlane *contentPlane;
+/// Shows the screenshot when it covers only a region of the node (see
+/// LookinDisplayItem.groupScreenshotRegion). The content plane stays the
+/// size of the whole node underneath it — it is the plane hit-testing
+/// selects by — and shows the background colour, or nothing.
+@property(nonatomic, strong) SCNPlane *regionPlane;
+@property(nonatomic, strong) SCNNode *regionNode;
 
 @property(nonatomic, strong) SCNGeometry *borderGeometry;
 @property(nonatomic, strong) SCNNode *borderNode;
@@ -54,6 +60,18 @@ static const NSInteger LookinPreviewOverlayBorderRenderingOrderBase = 1000000;
         self.contentNode.name = @"screenshot";
         self.contentNode.categoryBitMask = LookinPreviewBitMask_NoLight;
         [self addChildNode:self.contentNode];
+
+        self.regionPlane = [SCNPlane geometry];
+        self.regionPlane.firstMaterial.doubleSided = YES;
+        self.regionPlane.firstMaterial.lightingModelName = SCNLightingModelConstant;
+        self.regionNode = [SCNNode nodeWithGeometry:self.regionPlane];
+        self.regionNode.name = @"screenshot-region";
+        // Just above the content plane, which shows the background colour
+        // beneath a partial screenshot.
+        self.regionNode.position = SCNVector3Make(0, 0, .0005);
+        self.regionNode.categoryBitMask = LookinPreviewBitMask_NoLight;
+        self.regionNode.hidden = YES;
+        [self addChildNode:self.regionNode];
         
         // 注意这里并没有 add maskNode，需要的时候再 add
         self.maskPlane = [SCNPlane geometry];
@@ -215,6 +233,50 @@ static const NSInteger LookinPreviewOverlayBorderRenderingOrderBase = 1000000;
     }
 }
 
+/// The region `screenshot` covers, or CGRectZero when it covers the whole
+/// node — which is also the answer for an image that is neither of the
+/// node's two screenshots, or a region that equals the bounds anyway.
+- (CGRect)_regionOfScreenshot:(LookinImage *)screenshot {
+    if (!screenshot) {
+        return CGRectZero;
+    }
+    CGRect region = CGRectZero;
+    if (screenshot == self.displayItem.soloScreenshot) {
+        region = self.displayItem.soloScreenshotRegion;
+    } else if (screenshot == self.displayItem.groupScreenshot) {
+        region = self.displayItem.groupScreenshotRegion;
+    }
+    if (CGRectIsEmpty(region) || !LookinIsUsableRect(self.displayItem.bounds) || CGRectEqualToRect(region, self.displayItem.bounds)) {
+        return CGRectZero;
+    }
+    return region;
+}
+
+/// Places the region plane over `region`, a rect in the node's bounds space.
+/// It maps to root space the way a subview's frame does (see
+/// -[LookinDisplayItem calculateFrameToRoot]): offset from the bounds
+/// origin, measured from the bottom when the node is flipped, and the
+/// y axis negated for iOS targets as the node's own position is.
+- (void)_layoutRegionNodeWithRegion:(CGRect)region frameToRoot:(CGRect)frameToRoot {
+    CGFloat factor = 0.01;
+    CGRect bounds = self.displayItem.bounds;
+    CGFloat x = region.origin.x - bounds.origin.x;
+    CGFloat y;
+    if (self.displayItem.isFlipped) {
+        y = bounds.size.height - region.origin.y - region.size.height;
+    } else {
+        y = region.origin.y - bounds.origin.y;
+    }
+    CGFloat offsetX = (x + region.size.width / 2) - frameToRoot.size.width / 2;
+    CGFloat offsetY = (y + region.size.height / 2) - frameToRoot.size.height / 2;
+    self.regionPlane.width = region.size.width * factor;
+    self.regionPlane.height = region.size.height * factor;
+    SCNVector3 position = self.regionNode.position;
+    position.x = offsetX * factor;
+    position.y = (self.isMacTarget ? offsetY : -offsetY) * factor;
+    self.regionNode.position = position;
+}
+
 - (void)_renderImageAndColor {
 //    NSLog(@"LKDisplayItemNode - renderImageAndColor");
     
@@ -225,7 +287,18 @@ static const NSInteger LookinPreviewOverlayBorderRenderingOrderBase = 1000000;
     if (appropriateScreenshot) {
         NSAssert(MAX(appropriateScreenshot.representations.firstObject.pixelsWide, appropriateScreenshot.representations.firstObject.pixelsHigh) <= LookinNodeImageMaxLengthInPx , @"image is too large");
     }
-    self.contentPlane.firstMaterial.diffuse.contents = appropriateScreenshot ?: (self.displayItem.backgroundColor ?: [NSColor clearColor]);
+    CGRect region = [self _regionOfScreenshot:appropriateScreenshot];
+    if (CGRectIsEmpty(region)) {
+        self.contentPlane.firstMaterial.diffuse.contents = appropriateScreenshot ?: (self.displayItem.backgroundColor ?: [NSColor clearColor]);
+        self.regionNode.hidden = YES;
+    } else {
+        // A partial screenshot: the node's own plane shows what the image
+        // does not cover, the region plane shows the image where it belongs.
+        self.contentPlane.firstMaterial.diffuse.contents = self.displayItem.backgroundColor ?: [NSColor clearColor];
+        self.regionPlane.firstMaterial.diffuse.contents = appropriateScreenshot;
+        self.regionNode.hidden = NO;
+        [self _layoutRegionNodeWithRegion:region frameToRoot:[self.displayItem calculateFrameToRoot]];
+    }
     
     BOOL tooLargeToFetchScreenshot = !appropriateScreenshot && self.displayItem.doNotFetchScreenshotReason == LookinDoNotFetchScreenshotForTooLarge;
 
@@ -324,6 +397,9 @@ static const NSInteger LookinPreviewOverlayBorderRenderingOrderBase = 1000000;
         
         self.maskPlane.width = self.contentPlane.width;
         self.maskPlane.height = self.contentPlane.height;
+        if (!self.regionNode.hidden) {
+            [self _layoutRegionNodeWithRegion:[self _regionOfScreenshot:self.displayItem.appropriateScreenshot] frameToRoot:frameToRoot];
+        }
         
         SCNVector3 position = self.position;
         position.x = transformedX * factor;

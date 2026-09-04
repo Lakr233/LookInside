@@ -206,16 +206,19 @@ enum LKXcodeViewHierarchyConverter {
         }
 
         /// Files the images of the layer `imageIdentifier` under the object the
-        /// node routes by. With `excludingHostedViews` the group image leaves
-        /// out the subtrees of the layers that back a view — the shape of a
-        /// layer node, whose views render on nodes of their own — and is
-        /// absent when that render drew nothing, rather than falling back to
-        /// a picture that includes those views.
+        /// node routes by, and records on `item` the region a group image
+        /// covers when it covers less than the node. With
+        /// `excludingHostedViews` the group image leaves out the subtrees of
+        /// the layers that back a view — the shape of a layer node, whose
+        /// views render on nodes of their own — and is absent when that
+        /// render drew nothing, rather than falling back to a picture that
+        /// includes those views.
         func filing(
             soloOf soloIdentifier: String?,
             groupOf groupIdentifier: String?,
             excludingHostedViews: Bool,
-            under keyIdentifier: String
+            under keyIdentifier: String,
+            onto item: LookinDisplayItem
         ) {
             let oid = LKXcodeViewHierarchyConverter.objectIdentifierValue(keyIdentifier)
             guard oid != 0 else { return }
@@ -229,8 +232,16 @@ enum LKXcodeViewHierarchyConverter {
             let group = hostsViews
                 ? screenshots.groupExcludingHostedViewsByObjectIdentifier[groupIdentifier]
                 : screenshots.groupByObjectIdentifier[groupIdentifier]
-            if let group {
-                groupScreenshotsByOid[key] = group
+            guard let group else { return }
+            groupScreenshotsByOid[key] = group
+            // The region is measured from the rendered layer's bounds origin;
+            // the node's bounds may sit at another origin (a wrapped view's
+            // node carries the wrapper's bounds), so re-anchor it there.
+            let relativeRegion = hostsViews
+                ? screenshots.groupExcludingHostedViewsRegionByObjectIdentifier[groupIdentifier]
+                : screenshots.groupRegionByObjectIdentifier[groupIdentifier]
+            if let relativeRegion {
+                item.groupScreenshotRegion = relativeRegion.offsetBy(dx: item.bounds.origin.x, dy: item.bounds.origin.y)
             }
         }
     }
@@ -577,7 +588,8 @@ enum LKXcodeViewHierarchyConverter {
             // A UIWindow's layer tree is a view's: its orphan sublayers and,
             // with the toggle on, its backing layer become nodes too.
             subitems = assemblingLayerAwareChildren(
-                ownerIdentifier: windowIdentifier, ownedLayers: ownedLayers, subviewItems: rootViewItems, session: session
+                ownerIdentifier: windowIdentifier, ownerItem: item, ownedLayers: ownedLayers,
+                subviewItems: rootViewItems, session: session
             )
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
@@ -658,7 +670,8 @@ enum LKXcodeViewHierarchyConverter {
         var subitems = subviewItems
         if let ownedLayers {
             subitems = assemblingLayerAwareChildren(
-                ownerIdentifier: viewIdentifier, ownedLayers: ownedLayers, subviewItems: subviewItems, session: session
+                ownerIdentifier: viewIdentifier, ownerItem: item, ownedLayers: ownedLayers,
+                subviewItems: subviewItems, session: session
             )
         }
         subitems.append(contentsOf: makingLayoutGuideItems(
@@ -734,13 +747,16 @@ enum LKXcodeViewHierarchyConverter {
     /// view renders as a wireframe, while the group keeps the folded look.
     private static func assemblingLayerAwareChildren(
         ownerIdentifier: String,
+        ownerItem: LookinDisplayItem,
         ownedLayers: OwnedLayers,
         subviewItems: [LookinDisplayItem],
         session: ConversionSession
     ) -> [LookinDisplayItem] {
         let backingIdentifier = ownedLayers.backingNode.objectIdentifier
         if session.showsBackingLayers {
-            session.filing(soloOf: nil, groupOf: backingIdentifier, excludingHostedViews: false, under: ownerIdentifier)
+            session.filing(
+                soloOf: nil, groupOf: backingIdentifier, excludingHostedViews: false, under: ownerIdentifier, onto: ownerItem
+            )
             var children: [LookinDisplayItem] = []
             if let outerNode = ownedLayers.outerNode {
                 // Xcode's nesting for a wrapped view: view → wrapper → backing layer.
@@ -764,7 +780,10 @@ enum LKXcodeViewHierarchyConverter {
             return children
         }
 
-        session.filing(soloOf: backingIdentifier, groupOf: backingIdentifier, excludingHostedViews: false, under: backingIdentifier)
+        session.filing(
+            soloOf: backingIdentifier, groupOf: backingIdentifier, excludingHostedViews: false,
+            under: backingIdentifier, onto: ownerItem
+        )
         var children = interleaving(subviewItems, amongSublayersOf: ownedLayers.backingNode, session: session)
         if let outerNode = ownedLayers.outerNode {
             session.convertedLayerIdentifiers.insert(outerNode.objectIdentifier)
@@ -850,7 +869,9 @@ enum LKXcodeViewHierarchyConverter {
         applyingBackgroundColor(from: layerNode, to: item)
         item.attributesGroupList = makingLayerAttributeGroups(for: layerNode, session: session)
         item.subitems = layerNode.childIdentifiers.compactMap { makingLayerItem($0, session: session) }
-        session.filing(soloOf: layerIdentifier, groupOf: layerIdentifier, excludingHostedViews: true, under: layerIdentifier)
+        session.filing(
+            soloOf: layerIdentifier, groupOf: layerIdentifier, excludingHostedViews: true, under: layerIdentifier, onto: item
+        )
         return item
     }
 
@@ -877,7 +898,8 @@ enum LKXcodeViewHierarchyConverter {
             soloOf: backingNode.objectIdentifier,
             groupOf: backingNode.objectIdentifier,
             excludingHostedViews: true,
-            under: backingNode.objectIdentifier
+            under: backingNode.objectIdentifier,
+            onto: item
         )
         return item
     }

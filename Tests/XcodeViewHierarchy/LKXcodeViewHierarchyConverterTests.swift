@@ -371,6 +371,9 @@ struct LKXcodeViewHierarchyConverterTests {
         expect(file.groupScreenshots?[0x10] == nil && file.soloScreenshots?[0x10] == nil,
                "nothing is filed under the view oid while the layer routes the node")
         expect(file.groupScreenshots?[0x101] == imageData("group-101"), "a layer node's images are filed under its own oid")
+        expect(contentView.groupScreenshotRegion == CGRect(x: 10, y: 10, width: 100, height: 50),
+               "a partial group image carries its region onto the node; got \(contentView.groupScreenshotRegion)")
+        expect(contentView.soloScreenshotRegion == .zero, "solo images always cover the node")
     }
 
     /// Toggle on: the backing layer is a node of its own, first among the
@@ -401,6 +404,10 @@ struct LKXcodeViewHierarchyConverterTests {
                "the backing layer's group leaves out the subviews' planes")
         expect(file.groupScreenshots?[0x110] == imageData("group-110"),
                "a backing layer with no views beneath shows its whole subtree")
+        expect(contentView.groupScreenshotRegion == CGRect(x: 10, y: 10, width: 100, height: 50),
+               "the view node's folded image keeps the full render's region; got \(contentView.groupScreenshotRegion)")
+        expect(backingLayer.groupScreenshotRegion == CGRect(x: 0, y: 0, width: 200, height: 30),
+               "the backing layer's image keeps the region of the render without the subviews; got \(backingLayer.groupScreenshotRegion)")
     }
 
     /// iOS 26 wraps a view's backing layer in a `_UIMultiLayer`, and the
@@ -472,6 +479,8 @@ struct LKXcodeViewHierarchyConverterTests {
                 "0x110": imageData("group-110"), "0x111": imageData("group-111"),
             ],
             groupExcludingHostedViewsByObjectIdentifier: ["0x100": imageData("excluding-100")],
+            groupRegionByObjectIdentifier: ["0x100": CGRect(x: 10, y: 10, width: 100, height: 50)],
+            groupExcludingHostedViewsRegionByObjectIdentifier: ["0x100": CGRect(x: 0, y: 0, width: 200, height: 30)],
             failedArchiveIdentifiers: []
         )
     }

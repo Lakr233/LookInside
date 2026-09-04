@@ -29,6 +29,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         testLargeLayerIsScaledWithinTheCap()
         testTallLayerStaysWithinTheTextureEdge()
         testPlainColorLayersRenderNoImageOfTheirOwn()
+        testSparseLayerIsRenderedOnlyWhereItDraws()
         testArchiveRoundTripsThroughDecoder()
         testMalformedArchiveIsRejected()
         print("Xcode view hierarchy pixel recovery tests passed")
@@ -112,6 +113,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         root.bounds = CGRect(x: 0, y: 0, width: 100, height: 100)
         let flippedChild = CALayer()
         flippedChild.bounds = CGRect(x: 0, y: 0, width: 100, height: 40)
+        markingAsDrawingEverywhere(flippedChild)
         flippedChild.anchorPoint = .zero
         flippedChild.position = CGPoint(x: 0, y: 60)   // the top 40 rows of the root
         flippedChild.isGeometryFlipped = true
@@ -215,6 +217,48 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
         expect(screenshots.groupExcludingHostedViewsByObjectIdentifier["0x3"] == nil,
                "a layer with no view beneath it needs no second image")
         expect(screenshots.groupByObjectIdentifier["0x2"] != nil, "the hosted layer still renders on its own")
+    }
+
+    // MARK: - Drawing region
+
+    /// A scroll view's content layer is tens of thousands of points tall but
+    /// only the visible band holds anything (a table view materialises rows
+    /// as they scroll into view). Rendering the whole bounds spends the
+    /// texture budget on blank space; rendering the region that draws keeps
+    /// full resolution, and the region tells the preview where the image
+    /// belongs. A layer that draws all over its bounds gets no region.
+    private static func testSparseLayerIsRenderedOnlyWhereItDraws() {
+        let content = CALayer()
+        content.bounds = CGRect(x: 0, y: 0, width: 200, height: 4000)
+        content.anchorPoint = .zero
+        content.position = .zero
+        let visibleRow = coloredLayer(width: 50, height: 50, at: CGPoint(x: 10, y: 3950), color: .red)
+        visibleRow.borderWidth = 1
+        content.addSublayer(visibleRow)
+        let opaque = coloredLayer(width: 200, height: 100, at: .zero, color: .blue)
+        opaque.borderWidth = 1
+        let root = CALayer()
+        root.bounds = CGRect(x: 0, y: 0, width: 200, height: 4000)
+        root.addSublayer(content)
+        root.addSublayer(opaque)
+        guard let archiveData = archiveData(rootLayer: root, geometryFlipped: false) else {
+            fail("could not build the archive fixture")
+        }
+        let capture = layerCapture(
+            archiveData: archiveData,
+            tree: LayerNodeFixture("0x1", [LayerNodeFixture("0x2", [LayerNodeFixture("0x3")]), LayerNodeFixture("0x4")])
+        )
+        let screenshots = LKXcodeViewHierarchyPixelRecovery.recovering(from: capture)
+        guard let contentData = screenshots.groupByObjectIdentifier["0x2"],
+              let contentBitmap = NSBitmapImageRep(data: contentData)
+        else { fail("the sparse content layer should still render") }
+        expect(contentBitmap.pixelsWide == 50 && contentBitmap.pixelsHigh == 50,
+               "only the drawn region is rendered; got \(contentBitmap.pixelsWide)x\(contentBitmap.pixelsHigh)")
+        expect(screenshots.groupRegionByObjectIdentifier["0x2"] == CGRect(x: 10, y: 3950, width: 50, height: 50),
+               "the region records where the image belongs; got \(String(describing: screenshots.groupRegionByObjectIdentifier["0x2"]))")
+        expect(screenshots.groupRegionByObjectIdentifier["0x4"] == nil, "a layer drawing all over its bounds needs no region")
+        expect(screenshots.groupRegionByObjectIdentifier["0x1"] == nil,
+               "the root draws from its bottom band to its top row, so its region is the whole bounds")
     }
 
     // MARK: - Cancellation
@@ -355,6 +399,7 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
     private static func orientationFixture() -> CALayer {
         let root = CALayer()
         root.bounds = CGRect(x: 0, y: 0, width: 100, height: 100)
+        markingAsDrawingEverywhere(root)
 
         let band = CALayer()
         band.bounds = CGRect(x: 0, y: 0, width: 100, height: 20)
@@ -448,6 +493,15 @@ struct LKXcodeViewHierarchyPixelRecoveryTests {
             ],
         ])
         return builder.build()
+    }
+
+    /// Keeps a transparent fixture layer's drawing region at its whole
+    /// bounds, so the orientation samples below stay where they were before
+    /// recovery started rendering only the region a layer draws into: a
+    /// border counts as drawing, and a clear one leaves every pixel as is.
+    private static func markingAsDrawingEverywhere(_ layer: CALayer) {
+        layer.borderWidth = 1
+        layer.borderColor = NSColor.clear.cgColor
     }
 
     private static func coloredLayer(width: CGFloat, height: CGFloat, at position: CGPoint, color: NSColor) -> CALayer {
