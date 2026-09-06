@@ -56,6 +56,8 @@
 #endif
     newDisplayItem.soloScreenshot = self.soloScreenshot;
     newDisplayItem.groupScreenshot = self.groupScreenshot;
+    newDisplayItem.soloScreenshotRegion = self.soloScreenshotRegion;
+    newDisplayItem.groupScreenshotRegion = self.groupScreenshotRegion;
     newDisplayItem.viewObject = self.viewObject.copy;
     newDisplayItem.layerObject = self.layerObject.copy;
     newDisplayItem.windowObject = self.windowObject.copy;
@@ -117,11 +119,15 @@
 #if TARGET_OS_IPHONE
     [aCoder encodeCGRect:self.frame forKey:@"frame"];
     [aCoder encodeCGRect:self.bounds forKey:@"bounds"];
+    [aCoder encodeCGRect:self.soloScreenshotRegion forKey:@"soloScreenshotRegion"];
+    [aCoder encodeCGRect:self.groupScreenshotRegion forKey:@"groupScreenshotRegion"];
     [aCoder encodeObject:self.backgroundColor.lks_rgbaComponents forKey:@"backgroundColor"];
     
 #elif TARGET_OS_OSX
     [aCoder encodeRect:self.frame forKey:@"frame"];
     [aCoder encodeRect:self.bounds forKey:@"bounds"];
+    [aCoder encodeRect:self.soloScreenshotRegion forKey:@"soloScreenshotRegion"];
+    [aCoder encodeRect:self.groupScreenshotRegion forKey:@"groupScreenshotRegion"];
     [aCoder encodeObject:self.backgroundColor.lookin_rgbaComponents forKey:@"backgroundColor"];
 #endif
 }
@@ -181,10 +187,15 @@
 #if TARGET_OS_IPHONE
         self.frame = [aDecoder decodeCGRectForKey:@"frame"];
         self.bounds = [aDecoder decodeCGRectForKey:@"bounds"];
+        // Absent in archives and wire data that predate the field: zero, the whole of bounds.
+        self.soloScreenshotRegion = [aDecoder decodeCGRectForKey:@"soloScreenshotRegion"];
+        self.groupScreenshotRegion = [aDecoder decodeCGRectForKey:@"groupScreenshotRegion"];
         self.backgroundColor = [UIColor lks_colorFromRGBAComponents:[aDecoder decodeObjectForKey:@"backgroundColor"]];
 #elif TARGET_OS_OSX
         self.frame = [aDecoder decodeRectForKey:@"frame"];
         self.bounds = [aDecoder decodeRectForKey:@"bounds"];
+        self.soloScreenshotRegion = [aDecoder decodeRectForKey:@"soloScreenshotRegion"];
+        self.groupScreenshotRegion = [aDecoder decodeRectForKey:@"groupScreenshotRegion"];
         self.backgroundColor = [NSColor lookin_colorFromRGBAComponents:[aDecoder decodeObjectForKey:@"backgroundColor"]];
         
 #endif
