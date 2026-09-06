@@ -292,8 +292,24 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
     }
 }
 
+// Debug builds leave SPARKLE_PUBLIC_ED_KEY empty -- only the release workflow
+// injects the real key -- so SUPublicEDKey resolves to an empty string and
+// Sparkle refuses to start, putting up an "Unable to Check For Updates" alert
+// on every launch. Skip the updater entirely in that case; dropping a key into
+// Configuration/custom.xcconfig restores the real update flow locally.
+- (BOOL)_shouldStartSparkleUpdater {
+#if DEBUG
+    NSString *publicKey = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"SUPublicEDKey"];
+    return publicKey.length > 0;
+#else
+    return YES;
+#endif
+}
+
 - (void)setup {
-    self.updaterController = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:nil userDriverDelegate:nil];
+    if ([self _shouldStartSparkleUpdater]) {
+        self.updaterController = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:nil userDriverDelegate:nil];
+    }
     [self _installMainMenu];
 
     self.delegatingTagToSelMap = @{
@@ -407,6 +423,12 @@ static NSMenuItem *LKSubmenuItem(NSString *title, NSMenu *submenu, NSInteger tag
         if (selString) {
             SEL delegateSel = NSSelectorFromString(selString);
             obj.enabled = [wc respondsToSelector:delegateSel];
+            return;
+        }
+        if (obj.tag == kTag_CheckUpdates) {
+            // Nil whenever the build carries no Sparkle public key; see
+            // -_shouldStartSparkleUpdater.
+            obj.enabled = self.updaterController != nil;
             return;
         }
         // Phase E: NSDocument-aware validation for standard responder actions.
